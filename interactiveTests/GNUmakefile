@@ -1,0 +1,2 @@
+
+include ../quickbuild.make

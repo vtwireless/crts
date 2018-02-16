@@ -1,0 +1,105 @@
+DEVELOPER NOTES:
+
+
+
+Classes internal to program crts_radio:
+
+
+   Thread
+
+         static global thread barrier
+         static mainThread
+
+
+     each Thread
+
+         is a list of FilterModule
+
+
+  FilterModule
+
+         container for CRTSFilter
+
+         FilterModule::write()
+
+              1) if not different thread calls CRTSFilter::write()
+    
+            or
+
+              2) or signals cond to thread to call CRTSFilter::write()
+                 or blocks and ... if the queue is full
+
+
+  Stream
+
+         static factory of Stream
+         static mutex
+         static cond
+
+    each Stream
+
+         atomic bool isRunning
+
+         is a factory of FilterModule
+
+            load()   - create a FilterModule for a stream
+            unload() - delete a FilterModule from a stream
+
+         is a factory of Thread
+
+             createThread()
+
+             destroyThread()
+
+         is a list of Thread
+
+
+
+
+
+Tests:
+
+
+
+cat /dev/urandom | hexdump  | dd count=100 > xxx1
+cat /dev/urandom | hexdump  | dd count=100 > xxx2
+
+while ./crts_radio\
+ -l sleepTest\
+ -f fileIn [ --file xxx1 ]\
+ -f fileIn [ --file xxx2 ]\
+ -f sleepTest -f sleepTest\
+ -f stdout\
+ -t 0 -t 1 -t 3 -t 4\
+ -c 0 2 1 3 2 4 3 4\
+ > xxxx ;\
+ do echo -e "\n\nSuccess\n\n" ;\
+ sleep 1 ; done
+
+
+./crts_radio -l sleepTest\
+ -f sourceFeed\
+ -f fileIn [ --file xxx1 ]\
+ -f fileIn [ --file xxx2 ]\
+ -f sleepTest\
+ -f sleepTest\
+ -f stdout\
+ -c 0 1 0 2 1 3 2 4 3 5 4 5\
+ -d -e
+
+ # or with a single thread running all
+while ./crts_radio -l sleepTest\
+ -f sourceFeed\
+ -f fileIn [ --file xxx1 ]\
+ -f fileIn [ --file xxx2 ]\
+ -f sleepTest\
+ -f sleepTest\
+ -f stdout\
+ -c 0 1 0 2 1 3 2 4 3 5 4 5\
+  > xxxx ; do \
+  echo -e "\n\nSuccess\n\n" ; sleep 1 ; done
+
+
+ rm xxx*
+
+

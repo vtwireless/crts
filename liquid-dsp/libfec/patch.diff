@@ -1,0 +1,12 @@
+diff -ur src/makefile.in x/makefile.in
+--- src/makefile.in	2016-02-22 19:37:43.000000000 -0500
++++ x/makefile.in	2017-06-21 19:11:21.135774214 -0400
+@@ -43,8 +43,6 @@
+ install: all
+ 	mkdir -p @libdir@ 
+ 	install -m 644 -p $(SHARED_LIB) libfec.a @libdir@
+-#	(cd @libdir@;ln -f -s $(SHARED_LIB) libfec.so)
+-	@REBIND@
+ 	mkdir -p @includedir@
+ 	install -m 644 -p fec.h @includedir@
+ 	mkdir -m 0755 -p @mandir@/man3

@@ -1,0 +1,27 @@
+#!/bin/bash
+
+set -ex
+
+
+tar -xzf liquid-dsp.tar.gz
+
+mv jgaeddert-liquid-dsp* src
+
+cd src
+
+# We created a patch with a diff from two directories
+# and you want src to be the same as A
+# diff -ur src A > patch.diff
+
+patch -p1 < ../patch.diff
+
+./bootstrap.sh
+
+CFLAGS="-march=native -g -O2 -Wall"\
+ CPPFLAGS="-I../libfec/src"\
+ LDFLAGS="-L../libfec/src"\
+ ./configure --prefix=${PREFIX}
+
+make -f makefile -j $(nproc || echo '3')
+
+ln -s . include/liquid

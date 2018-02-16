@@ -1,0 +1,20 @@
+The libcrts library is not intended to provide CRTS user interfaces.  The
+libcrts library is used to override bad behavior of the libuhd.so library,
+which writes crap to stdout.  Libraries should not write to stdout or
+stderr, it's considered a very bad practice.  libuhd.so writes to stdout
+in it's library constructor, which is very bad behavior for a library.
+
+
+ref (these to not provide a fix but explain the problem):
+
+  https://stackoverflow.com/questions/22941756/how-do-i-prevent-a-library-to-print-to-stdout-in-linux-c
+
+  https://stackoverflow.com/questions/37122208/shared-library-is-outputting-into-stdout
+
+
+We added linking "bin/crts_radio" with libcrts.so in order to override
+this bad behavior.  This fix had to be a linked shared library in order to
+make the "override" code get executed before the libuhd.so constructor
+code.  Using LD_PRELOAD was not as good of an option, because that would
+make programs require a separate fork and execute bootstrap step, or a
+shell wrapper (which is also a fork and execute bootstrap step).

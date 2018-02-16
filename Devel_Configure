@@ -1,0 +1,49 @@
+#!/bin/bash
+
+# This script sets up the software for a typical development
+# configuration.  You are not necessarily encouraged to use this, but
+# copying it and making your own local version of it is encouraged.
+
+set -e
+
+# Get in this directory where this file is:
+dir="$(dirname ${BASH_SOURCE[0]})"
+[ -n "$dir" ] || exit 1
+cd "$dir"
+
+
+[ ! -f quickbuild.make ] && ./bootstrap
+
+cat > config.make << EOF
+# This is a generated file
+
+CFLAGS := -g -Wall -Werror
+
+CXXFLAGS := \$(CFLAGS)
+
+# Comment this out to not add extra code to debug the buffering.
+CPPFLAGS := -DBUFFER_DEBUG
+
+
+# select 1 of the next two lines, effects include/crts/debug.h
+DEBUG := \#define DEBUG
+#DEBUG := // DEBUG is not defined
+
+
+# select 1 of the next few lines, effects include/crts/debug.h
+#SPEW_LEVEL := \#define SPEW_LEVEL_ERROR
+#SPEW_LEVEL := \#define SPEW_LEVEL_WARN
+#SPEW_LEVEL := \#define SPEW_LEVEL_NOTICE
+#SPEW_LEVEL := \#define SPEW_LEVEL_INFO
+SPEW_LEVEL  := \#define SPEW_LEVEL_DEBUG
+
+
+PREFIX := ${HOME}/installed/crts
+EOF
+
+echo
+echo "############# config.make #############"
+echo
+
+cat config.make
+echo

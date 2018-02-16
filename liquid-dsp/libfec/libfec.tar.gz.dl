@@ -1,0 +1,9 @@
+#!/bin/bash
+
+source ../../GetSrcFromGithub.bash
+
+#Usage: GetSrcFromGithub user package tag tarname [sha512]
+
+GetSrcFromGithub quiet libfec 1.0 libfec\
+ b919904179ae0fd6fa2e56adb878eba9cd9db124828348c30c321921fa88884af4b0\
+12f6488f49cbd01330e3d33c0c9da7f7ace7ce77a755dc147728f65dd0fd

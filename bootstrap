@@ -1,0 +1,108 @@
+#!/bin/bash
+
+# This file is part of the quickbuild software package.
+# 
+# quickbuild is free software that is distributed under the free software
+# foundation's GNU Affero General Public License (AGPL) version 3.
+#
+# For more information see the quickbuild package homepage at:
+#   https://github.com/lanceman2/quickbuild
+#
+# You can get the latest version of this file from:
+# 
+#  https://raw.githubusercontent.com/lanceman2/quickbuild/master/examples/bootstrap_download/bootstrap
+#
+##############################################################################
+
+
+# The tag can be "master" or a full git check-in hash in lower case hex
+# like for example:
+#tag=dc184319be9a272ffa4528f5bb5d0902f1edbbbb
+tag=master
+url=https://raw.githubusercontent.com/lanceman2/quickbuild/$tag/quickbuild.make
+
+# If we wanted a particular file, so we checks it's sha512 sum.
+# Run:
+#
+#    sha512sum quickbuild.make
+#
+# to get this long hex number
+
+#sha512sum=8c586f7d3a587e449667d547a4cb2dac6a3ece4e764a2d1494888d12c94a10384520be70ab76b580d966ecd94a20a14690530e33c2db5e0a5252d05ed42581aa
+
+
+function usage()
+{
+    cat <<EOF
+
+  Usage: $0
+
+  This bootstrap script downloads and compresses a make file
+  from the web via url:
+
+     $url
+
+  We call it bootstrap because you need this make file before
+  you can configure and make this package.
+
+EOF
+    exit 1
+}
+
+
+[ "$1" = "--help" ] && usage
+[ "$1" = "-h" ] && usage
+
+set -ex
+
+# Go to the directory there this script is.
+cd $(dirname ${BASH_SOURCE[0]})
+
+if [ -z "$*" ] && [ -e quickbuild.make ] ; then
+    set +x
+    cat <<EOF
+
+  The file quickbuild.make exists.
+  If you wish to regenerate it remove it first.
+  Or run
+
+      $0 -f
+
+EOF
+    exit 1
+fi
+
+
+set -e
+cat <<EOF > quickbuild.make.tmp
+# This is a generated file
+#
+#  You can get the uncompressed and better commented original version
+#  of this file from:
+#
+#      $url
+#
+
+EOF
+
+
+# get the quickbuild.make file from the web
+wget $url -O quickbuild.make.org 
+
+if [ -n "$sha512sum" ] ; then
+    set +x
+    # We wanted a particular file, so we checks it's sha512 sum.
+    echo "$sha512sum  quickbuild.make.org" | sha512sum -c
+    set -x
+else
+    set +x
+    echo "The sha512sum of the downloaded file, before compressing it:"
+    set -x
+    sha512sum quickbuild.make.org
+fi
+
+sed quickbuild.make.org -e 's/^\s*\#.*$//g' -e '/^$/d' >> quickbuild.make.tmp
+
+rm quickbuild.make.org
+mv quickbuild.make.tmp quickbuild.make
+

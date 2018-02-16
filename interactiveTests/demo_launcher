@@ -1,0 +1,7 @@
+#!/bin/bash
+
+set -e
+cd $(dirname ${BASH_SOURCE[0]})
+
+
+(for i in *.bash ; do echo ./$i ; done) | qs_demo_launcher --list -
