@@ -36,12 +36,11 @@ class Sin : public CRTSFilter
         // and recompute the initialPhase and amplitude in order to keep X
         // and V continuous, any time a parameter changes.
         //
-        // TODO: Using ODEs (ordinary differential equations) and at
-        // solver may make it easier to keep continuity when parameters
-        // change.  Then nothing would need to be calculated just change
-        // the parameters of the ODEs and continuity is automatically kept
-        // to 2nd order.
-
+        // TODO: Using ODEs (ordinary differential equations) and a solver
+        // may make it easier to keep continuity when parameters change.
+        // Then nothing would need to be calculated just change the
+        // parameters of the ODEs and continuity (C-2) is automatically
+        // kept in X and V. 
 
         float X, V, amplitude, angularFreq, initialPhase,
               sampleRate/*Hz*/, t/*time in seconds*/;
