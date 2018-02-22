@@ -178,8 +178,35 @@ class CRTSFilter
         // at once.
         CRTSFilter(bool canWriteBufferIn = true);
 
-
         CRTSStream *stream;
+
+
+        // releaseBuffer() is not required to be called in
+        // CRTSFilter::write().  It is used to free up the buffer that may
+        // be being accessed in another thread where by freeing up
+        // contention between threads that is associated with the sharing
+        // of buffers between threads.  You can call this in your modules
+        // CRTSFilter::write() when you know that CRTSFilter::write() is
+        // in a part of your code that may take a while and it will not
+        // access (read or write) to the buffer again in that call to
+        // CRTSFilter::write().
+        //
+        // What releaseBuffers() does is depends on filter module
+        // connection topology and thread grouping.  Using it may or may
+        // not make the stream run faster.  It just depends.
+        //
+        // TODO: This may not be needed given the source filters no longer
+        // loop, and return without looping in CRTSFilter::write().
+        //void releaseBuffers(void);
+
+        // Releases a buffer lock if this module has a different thread
+        // than the module that wrote to this module.  The module may
+        // hold more than one lock, so that adjacent buffers may be
+        // compared without memory copies.
+        //
+        // This is automatically done for after CRTSFilter::write().
+        //
+        static void releaseBuffer(void *buffer);
 
     protected:
 
@@ -223,29 +250,12 @@ class CRTSFilter
         void *getBuffer(size_t bufferLen);
 
 
-        // releaseBuffers() is not required to be called.  It is used to
-        // free up the buffer that may be being accessed in another thread
-        // where by freeing up contention between threads that is
-        // associated with the sharing of buffers between threads.  You
-        // can call this in your modules CRTSFilter::write() when you know
-        // that CRTSFilter::write() is in a part of your code that may
-        // take a while and it will not access (read or write) to the
-        // buffer again in that call to CRTSFilter::write().
-        //
-        // What releaseBuffers() does is depends on filter module
-        // connection topology and thread grouping.  Using it may or may
-        // not make the stream run faster.  It just depends.
-        //
-        // TODO: This may not be needed given the source filters no longer
-        // loop, and return without looping in CRTSFilter::write().
-        //void releaseBuffers(void);
 
-        // Releases a buffer lock if this module has a different thread
-        // than the module that wrote to this module.  The module may
-        // hold more than one lock, so that adjacent buffers may be
-        // compared without memory copies.
-        // TODO: This is automatically done...
-        //void releaseBuffer(void *buffer);
+        // Increment the buffer useCount.  Since the buffers created by
+        // CRTSFilter::getBuffer() are shared between threads, we needed a
+        // buffer use count thingy.  This needs to be called before the
+        // buffer is passed to another thread for use.
+        void incrementBuffer(void *buffer);
 
 
         // TODO: this...

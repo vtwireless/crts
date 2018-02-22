@@ -356,12 +356,9 @@ Thread::~Thread()
             INFO("total remaining buffers = %" PRIu64 " very nice!!",
                     bufferDBNum);
         else
-            WARN("total remaining buffers = %" PRIu64 " crap!!",
+            WARN("Total remaining unfreed buffers = %" PRIu64,
                     bufferDBNum);
 
-        DASSERT(bufferDBNum == 0,
-                "There are %" PRIu64 " unfreed buffers",
-                bufferDBNum);
         MUTEX_UNLOCK(&bufferDBMutex);
     }
 #endif

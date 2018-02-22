@@ -3,6 +3,11 @@
 
 ROOT := ../../../../
 
+QS_CPPFLAGS := $(shell pkg-config --cflags quickscope)
+#QS_CPPFLAGS := -I$(shell pkg-config --variable=includedir quickscope)
+QS_LDFLAGS := $(shell pkg-config --libs quickscope) -lm
+
+
 CPPFLAGS := -I$(ROOT)include -I$(ROOT)lib -I$(ROOT)liquid-dsp/src/include
 
 INSTALL_DIR = $(PREFIX)/share/crts/plugins/$(notdir $(CURDIR))
@@ -23,7 +28,23 @@ LIBFEC_LDFLAGS := -L$(LIBFEC_SRC) -lfec
 # TODO: This will not work in a build tree that is not the same as the
 # source tree.  *.cpp is in the source.  That may explain why GNU automake
 # never uses wildcards.
-srcs := $(patsubst %.cpp,%,$(wildcard *.cpp))
+#srcs := $(patsubst %.cpp,%,$(wildcard *.cpp))
+srcs :=\
+ fileIn.cpp\
+ fileOut.cpp\
+ liquidFrame.cpp\
+ liquidSync.cpp\
+ passThrough.cpp\
+ readline.cpp\
+ rx.cpp\
+ sin.cpp\
+ sleepTest.cpp\
+ sourceFeed.cpp\
+ stdin.cpp\
+ stdout.cpp\
+ tx.cpp
+srcs := $(patsubst %.cpp,%,$(srcs))
+# skipped: quickscope.cpp
 
 define MkSource
   $(1).so_SOURCES := $(1).cpp
@@ -37,6 +58,10 @@ readline.so_LDFLAGS := -lreadline
 
 rx.so_LDFLAGS := -luhd
 tx.so_LDFLAGS := -luhd
+
+quickscope.so_CPPFLAGS := $(QS_CPPFLAGS)
+quickscope.so_LDFLAGS := $(QS_LDFLAGS)
+
 
 liquidSync.so_LDFLAGS :=\
  $(LIQUID_LDFLAGS)\

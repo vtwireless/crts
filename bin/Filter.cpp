@@ -337,17 +337,46 @@ void *CRTSFilter::getBuffer(size_t bufferLen)
     // to another FilterModule::write() from within modules
     // CRTSFilter::write() call; otherwise if is freed in the last
     // FilterModule::write() in a stack of FilterModule::write() calls.
-    this->filterModule->buffers.push(buf);
+    filterModule->buffers.push(buf);
 
     return BUFFER_PTR(buf);
 }
 
-#if 0
-void CRTSFilter::releaseBuffers(void)
+
+// Increment the buffer useCount.  Since the buffers created by
+// CRTSFilter::getBuffer() are shared between threads, we needed a buffer
+// use count thingy.  This needs to be called before the buffer is passed
+// to another thread for use, and then CRTSFilter::releaseBuffer(buffer)
+// needs to be called in the thread when it's done accessing the buffer.
+void CRTSFilter::incrementBuffer(void *buffer)
 {
-    filterModule->removeUnusedBuffers();
+    DASSERT(buffer, "");
+    DASSERT(BUFFER_HEADER(buffer)->magic == MAGIC, "");
+    ++(BUFFER_HEADER(buffer)->useCount);
 }
-#endif
+
+
+// This decrements the buffer useCount will free the buffer if the
+// useCount count goes to zero.  This is only required to be called
+// in threads and functions that are not CRTSFilter::write() or are
+// not in threads that crts_radio did not make.
+void CRTSFilter::releaseBuffer(void *buffer)
+{
+    DASSERT(buffer, "");
+    struct Header *h = BUFFER_HEADER(buffer);
+    // This buffer can't become invalid while we are accessing it,
+    // otherwise we are violating the coding assumption that all threads
+    // that access the buffer increment the buffers useCount before they
+    // enter the function that uses the buffer.  For
+    // CRTSFilter::write(buffer,,) that's done automatically before it's
+    // called, and decremented after it returns.
+    DASSERT(h->magic == MAGIC, "");
+    // Atomic get and set.
+    if(h->useCount.fetch_sub(1) == 1)
+        // The value was 1 so now the useCount is 0.
+        // Free it.
+        freeBuffer(h);
+}
 
 
 // The buffer used here must be from CRTSFilter::getBuffer().
@@ -480,7 +509,8 @@ void FilterModule::write(void *buffer, size_t len, uint32_t channelNum,
             WriteQueue_push(thread->writeQueue, &entry);
 
             // We release the mutex lock and wait for signal:
-            ASSERT((errno = pthread_cond_wait(&entry.cond, &thread->mutex)) == 0, "");
+            ASSERT((errno = pthread_cond_wait(&entry.cond,
+                            &thread->mutex)) == 0, "");
             // Now we have the mutex lock again.
 
             // The thread that called pthread_cond_signal() will have

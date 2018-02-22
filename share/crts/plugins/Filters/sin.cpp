@@ -45,8 +45,8 @@ class Sin : public CRTSFilter, private RK4<float, float, float>
         // somewhat regularly so we have a regular changing source of
         // floating point data, with parameters that can be changed.  It's
         // just for testing/development.
-        
-        long samplePeriod/*nano seconds must be less than 1,000,000,000 */;
+
+        long writePeriod/*in nano seconds must be less than 1,000,000,000 */;
         size_t samplesPerWrite;
 
         // Since we are changing parameters, if we wish to keep continuity
@@ -67,7 +67,7 @@ class Sin : public CRTSFilter, private RK4<float, float, float>
             angularFreq_2, // angular frequency squared
             // period saves having to take a square root of angularFreq_2
             period,
-            sampleRate/*Hz*/, t/*time in seconds*/;
+            writeRate/*Hz rate at which write() is called*/;
 
         // TODO: add limits to the parameters that can be changed.
 };
@@ -75,7 +75,7 @@ class Sin : public CRTSFilter, private RK4<float, float, float>
 
 Sin::Sin(int argc, const char **argv):
     RK4(2/*num degree of freedom*/, 0.0F/*time step gets set in setPeriod()*/),
-    samplesPerWrite(10), sampleRate(2.0F)
+    samplesPerWrite(10), writeRate(10.0F)
 {
     DSPEW();
 
@@ -83,7 +83,8 @@ Sin::Sin(int argc, const char **argv):
 
     x = 1.0F; // initial x
     v = 0.0F; // initial v = x_dot
-    samplePeriod = 1.0e9F/sampleRate; // in nano seconds
+    writePeriod = 1.0e9F/writeRate; // in nano seconds
+    setPeriod(8.0F); // period of the sine wave.
 }
 
 Sin::~Sin(void)
@@ -97,6 +98,10 @@ void Sin::derivatives(float t, const float *x, float *xDot)
     xDot[1] = - angularFreq_2 * x[0]; // v^\dot = - \omega^2 x
 }
 
+
+// This just produces samplesPerWrite pairs of float in about every
+// writePeriod, plus a little compute time.  Very crude.
+//
 ssize_t Sin::write(void *buffer, size_t len, uint32_t channelNum)
 {
     // This filter is a source so there no data passed to
@@ -104,7 +109,7 @@ ssize_t Sin::write(void *buffer, size_t len, uint32_t channelNum)
     //
     DASSERT(buffer == 0, "");
 
-    struct timespec ts { 0, samplePeriod /*nano seconds*/ };
+    struct timespec ts { 0, writePeriod /*nano seconds*/ };
     nanosleep(&ts, 0);
 
     // TODO: This is pretty much a test.  We don't know yet what is good
@@ -119,20 +124,24 @@ ssize_t Sin::write(void *buffer, size_t len, uint32_t channelNum)
     xv[0] = x;
     xv[1] = v;
 
-    // This set of ODEs does not depend on t, so we can start at
-    // 0 at each write().
-    float dt = 1.0F/(samplesPerWrite * sampleRate);
+    // This set of ODEs does not depend on t, so we can start at 0 at each
+    // write().  By restarting at t = 0 every loop we do not need to worry
+    // about t getting too large.
+    float dt = 1.0F/((float) samplesPerWrite * (float) writeRate),
+          t = 0;
     size_t i;
 
     for(i=0; i<samplesPerWrite-1; ++i)
     {
         // TODO: Remove this data copying, which means fix the interface
         // to the rk4 solver.
-        go(&xv[i*2], i * dt);
+        go(&xv[i*2], t, (i+1)*dt);
         xv[(i+1)*2] = xv[i*2];
         xv[(i+1)*2+1] = xv[i*2+1];
+        t = (i+1)*dt;
     }
-    go(&xv[i*2], i * dt);
+
+    go(&xv[i*2], t, (i+1)*dt);
 
     // Save the last value as the initial conditions for the next write().
     x = xv[2*(samplesPerWrite-1)];
