@@ -55,6 +55,13 @@ Classes internal to program crts_radio:
 
 
 
+How does GNUradio work:  After reading this I see that we are doing many
+of the same things as GNU radio, but we have some things that are much
+more efficient than GNU radio:
+
+    https://www.gnuradio.org/blog/buffers/
+
+
 
 
 Tests:
