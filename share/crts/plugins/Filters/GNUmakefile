@@ -21,6 +21,8 @@ SRC_RPATH := -Wl,-rpath,$(LIQUID_SRC):$(LIBFEC_SRC)
 LIQUID_LDFLAGS := -L$(LIQUID_SRC) -lliquid
 LIBFEC_LDFLAGS := -L$(LIBFEC_SRC) -lfec
 
+# uncomment to build quickscope.so
+BUILD_QUICKSCOPE := yes
 
 # Make every *.cpp file into a DSO (dynamic shared object) plugin that is
 # installed.
@@ -28,6 +30,8 @@ LIBFEC_LDFLAGS := -L$(LIBFEC_SRC) -lfec
 # TODO: This will not work in a build tree that is not the same as the
 # source tree.  *.cpp is in the source.  That may explain why GNU automake
 # never uses wildcards.
+
+# from: echo *.cpp
 #srcs := $(patsubst %.cpp,%,$(wildcard *.cpp))
 srcs :=\
  fileIn.cpp\
@@ -43,8 +47,11 @@ srcs :=\
  stdin.cpp\
  stdout.cpp\
  tx.cpp
+ifdef BUILD_QUICKSCOPE
+srcs := $(srcs) quickscope.cpp
+endif
+
 srcs := $(patsubst %.cpp,%,$(srcs))
-# skipped: quickscope.cpp
 
 define MkSource
   $(1).so_SOURCES := $(1).cpp
