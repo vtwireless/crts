@@ -97,6 +97,8 @@ class Stream
         static size_t wait(void);
 
 
+        static void signalMainThreadCleanup(void);
+    
     private:
 
         static bool printGraph(FILE *f);

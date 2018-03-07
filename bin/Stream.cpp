@@ -39,6 +39,39 @@ pthread_cond_t Stream::cond = PTHREAD_COND_INITIALIZER;
 bool Stream::waiting = false; // flag that main thread is waiting on cond
 
 
+// We have yet another thread call this, because it catches the exit
+// signal, and signal handlers and pthread synchronization primitives do
+// not mix well.  The alternative would be to add timeouts to the pthread
+// synchronization calls and thats not a clean design.
+//
+// See signalExitThreadCB() in crts_radio.cpp.
+//
+//
+void Stream::signalMainThreadCleanup(void)
+{
+    // This better not be the main thread
+    DASSERT(!pthread_equal(Thread::mainThread, pthread_self()), "");
+    // Or any of the other filter thread either.
+
+    MUTEX_LOCK(&mutex);
+
+    for(auto stream: streams)
+        // Let the other threads know that we are shutting down.
+        // The main thread will handle signaling them if need be.
+        stream->isRunning = false;
+
+    if(Stream::waiting)
+    {
+        // Tell the main thread to wake up and go into cleanup
+        // mode.
+        ASSERT((errno = pthread_cond_signal(&cond)) == 0, "");
+    }
+
+    MUTEX_UNLOCK(&mutex);
+}
+
+
+
 // Waits until a stream and all it's threads is cleaned up.  Returns the
 // number of remaining running streams.
 //
@@ -49,6 +82,7 @@ bool Stream::waiting = false; // flag that main thread is waiting on cond
 //
 //
 // We must has the streams mutex lock before calling this.
+//
 //
 size_t Stream::wait(void)
 {
@@ -102,8 +136,10 @@ size_t Stream::wait(void)
     waiting = true;
 
     // Here we loose the mutex lock and wait
-    // TODO:  Let COND_WAIT() macro wrapper recall the pthread_cond_wait()
-    // if a signal interrupts the call.
+    //
+    // pthread_cond_wait() will still block after a signal handler is
+    // called, so the main thread can catch the exit signal and this will
+    // not return.
     errno = pthread_cond_wait(&cond, &mutex);
     ASSERT(errno == 0, "");
 

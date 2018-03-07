@@ -65,17 +65,22 @@ ssize_t Feed::write(void *buffer, size_t bufferLen,
 // atomic flags and wait for the threads to finish the last loop, if they
 // have not already.
 //
-//   SIGINT is from Ctrl-C in a terminal.
-//
 static const int exitSignals[] =
 {
-    SIGINT,
+    SIGINT, // from Ctrl-C in a terminal.
+
+    // We must catch SIGPIPE as an exit signal for the case when we are
+    // reading or writing a UNIX bash pipe line; otherwise a broken pipe
+    // will not let us cleanly exit.
+    SIGPIPE,
     //
     // TODO: add more clean exit signal numbers here.
     //
     0/*0 terminator*/
 };
 
+
+static pthread_t exitSignalThread;
 
 
 // TODO: Extend this to work for the case when there is more than one
@@ -88,10 +93,10 @@ void crtsExit(void)
 {
     errno = 0;
     // We signal using just the first exit signal in the list.
-    INFO("Sending signal %d to main thread", exitSignals[0]);
-    errno = pthread_kill(Thread::mainThread, exitSignals[0]);
+    INFO("Sending signal %d to exit signal thread", exitSignals[0]);
+    errno = pthread_kill(exitSignalThread, exitSignals[0]);
     // All we could do is try and report.
-    WARN("Signal %d sent to main thread", exitSignals[0]);
+    WARN("Signal %d sent to exit signal thread", exitSignals[0]);
 
     // TODO: cleanup all thread and processes
 
@@ -217,18 +222,70 @@ static int usage(const char *argv0, const char *uopt=0)
     return 1; // return error status
 }
 
+////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////
+//
+// This signalExitThreadIsRunning variable is only accessed by the exit
+// signal catcher thread.
+//
+//
+static bool signalExitThreadIsRunning = true;
 
+static pthread_barrier_t *startupBarrier = 0;
 
 static void signalExitProgramCatcher(int sig)
 {
     INFO("Caught signal %d waiting to cleanly exit", sig);
 
-    // Deal with multi-stream
-    // Let them finish the last/current loop
-
-    for(auto stream : Stream::streams)
-        stream->isRunning = false;
+    // To keep this re-entrant we can only set the
+    // signalExitThreadIsRunning value here.
+    signalExitThreadIsRunning = false;
 }
+
+// We have yet another thread call this, because it catches the exit
+// signal, and signal handlers and pthread synchronization primitives do
+// not mix well.  The alternative would be to add timeouts to the pthread
+// synchronization calls, but that's not a clean design; that's bad
+// design, kind-of like polling.
+//
+static void *signalExitThreadCB(void *ptr)
+{
+    DASSERT(startupBarrier, "");
+    sigset_t exitSigs;
+    ASSERT(sigemptyset(&exitSigs) == 0, "");
+    //ASSERT(sigfillset(&exitSigs) == 0, "");
+    for(int i=0; exitSignals[i]; ++i)
+        ASSERT(sigaddset(&exitSigs, exitSignals[i]) == 0, "");
+
+    // This thread can handle itself.  If the main thread exits we do not
+    // care, this will just exit with it.  The Stream object will stay
+    // consistent since Stream::signalMainThreadCleanup() calls a mutex
+    // lock in it, which will keep the main thread from exiting if this
+    // thread races to call Stream::signalMainThreadCleanup() before
+    // or after the main thread shuts down.
+    ASSERT(pthread_detach(pthread_self()) == 0, "");
+
+    // Let this thread catch these "exit" signals now.
+    ASSERT(sigprocmask(SIG_UNBLOCK, &exitSigs, 0) == 0, "");
+
+    BARRIER_WAIT(startupBarrier);
+
+    // We know that all threads that are created by crts_radio are now
+    // running.  There may be other threads from other libraries like
+    // libuhd from loaded filter modules.
+
+    // Loop forever or until we catch a exit signal or the main thread
+    // returns (exits).
+    while(signalExitThreadIsRunning) pause();
+
+    Stream::signalMainThreadCleanup();
+
+    return 0;
+}
+//
+//
+////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////
 
 
 static int setDefaultStreamConnections(Stream* &stream)
@@ -641,6 +698,10 @@ int main(int argc, const char **argv)
         memset(&act, 0, sizeof(act));
         act.sa_handler = badSigCatcher;
         act.sa_flags = SA_RESETHAND;
+#if 1
+        // block all signals when in the signal handlers.
+        sigfillset(&act.sa_mask);
+#endif
         errno = 0;
         // Set a signal handler for "bad" signals so we can debug it and
         // see what was wrong if we're lucky.
@@ -724,7 +785,7 @@ int main(int argc, const char **argv)
                         filterModule2->thread->threadNum,
                         filterModule->name.c_str(),
                         filterModule2->name.c_str());
-        
+
                     for(auto stream : Stream::streams)
                         // Flag the streams as not running in regular mode.
                         stream->isRunning = false;
@@ -744,16 +805,33 @@ int main(int argc, const char **argv)
         // We just use this barrier once at the starting of the threads,
         // so we use this stack memory to create and use it.
         pthread_barrier_t barrier;
+        startupBarrier = &barrier;
+
         DSPEW("have %zu threads", Thread::getTotalNumThreads());
         ASSERT((errno = pthread_barrier_init(&barrier, 0,
-                    Thread::getTotalNumThreads() + 1)) == 0, "");
+                    Thread::getTotalNumThreads() + 2)) == 0, "");
+
+        // Compose a set of signal to block in the other threads.
+        sigset_t exitSigs;
+        ASSERT(sigemptyset(&exitSigs) == 0, "");
+        //ASSERT(sigfillset(&exitSigs) == 0, "");
+        for(int i=0; exitSignals[i]; ++i)
+        {
+            //WARN("blocking sig=%d", exitSignals[i]);
+            ASSERT(sigaddset(&exitSigs, exitSignals[i]) == 0, "");
+        }
+        // The other thread will inherit this mask that we set now.
+        ASSERT(sigprocmask(SIG_BLOCK, &exitSigs, 0) == 0, "");
 
         // Start the threads.
         for(auto stream : Stream::streams)
             for(auto thread : stream->threads)
+                // Launch the threads via pthread_create():
                 thread->launch(&barrier);
 
         MUTEX_LOCK(&Stream::mutex);
+
+        ASSERT(pthread_create(&exitSignalThread, 0, signalExitThreadCB, 0) == 0, "");
 
         // Now we wait for all threads to be running past this
         // barrier.
@@ -827,8 +905,9 @@ int main(int argc, const char **argv)
         // Stream::wait() returns the number of streams running.
 
 
-   for(auto stream : Stream::streams)
+    for(auto stream : Stream::streams)
         for(auto filterModule : stream->sources)
+        {
             // Above we checked that all source filters belong to a
             // particular thread.
             //
@@ -839,13 +918,14 @@ int main(int argc, const char **argv)
             //
             // Source filter modules will loop until they are done.  These
             // ModuleFilter::write() calls will trigger a call to
-            // CRTSFilter::write() in their own threads.
+            // CRTSFilter::write() in their own threads.  At this point
+            // this source filter that filterModule refers to is of
+            // class Feed.
+            DASSERT(dynamic_cast<Feed *>(filterModule->filter),"");
             filterModule->write(0,0,0, true);
+        }
 
-    while(Stream::wait());
-
-    MUTEX_UNLOCK(&Stream::mutex);
-
+    while(Stream::wait()); // The wait will unlock and lock the mutex.
 
     // This will try to gracefully shutdown the stream and join the rest
     // of the threads:
@@ -854,7 +934,9 @@ int main(int argc, const char **argv)
     // that up, and may exit when you try to gracefully shutdown.
     //
     Stream::destroyStreams();
- 
+
+    MUTEX_UNLOCK(&Stream::mutex);
+
     cleanupModules();
  
     DSPEW("FINISHED");
