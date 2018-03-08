@@ -19,16 +19,12 @@ class Tx : public CRTSFilter
         Tx(int argc, const char **argv);
         ~Tx(void);
 
-        ssize_t write(void *buffer, size_t bufferLen,
-                uint32_t channelNum);
-    private:
+        ssize_t write(void *buffer, size_t bufferLen, uint32_t channelNum);
 
-        void init(void);
+    private:
 
         uhd::usrp::multi_usrp::sptr usrp;
         uhd::device::sptr device;
-        std::string uhd_args;
-        double freq, rate, gain;
         uhd::tx_metadata_t metadata;
 };
 
@@ -111,9 +107,10 @@ static double getDouble(const char *str)
 
 
 Tx::Tx(int argc, const char **argv):
-    usrp(0), device(0), uhd_args(""),
-    freq(TX_FREQ), rate(TX_RATE), gain(TX_GAIN)
+    usrp(0), device(0)
 {
+    std::string uhd_args = "";
+    double freq = TX_FREQ, rate = TX_RATE, gain = TX_GAIN;
     int i;
 #ifdef DEBUG
     DSPEW();
@@ -152,11 +149,7 @@ Tx::Tx(int argc, const char **argv):
     // Convert the rate and freq to Hz from MHz
     freq *= 1.0e6;
     rate *= 1.0e6;
-}
 
-
-void Tx::init(void)
-{
     usrp = uhd::usrp::multi_usrp::make(uhd_args);
 
     crts_usrp_tx_set(usrp, freq, rate, gain);
@@ -185,10 +178,6 @@ Tx::~Tx(void)
 // len is the number of bytes not complex floats.
 ssize_t Tx::write(void *buffer, size_t len, uint32_t channelNum)
 {
-    // This init() call creates libuhd resources that must be in this
-    // thread, because of libuhd.
-    if(!device) init();
-
     // TODO: check for error here, and retry?
     size_t ret = device->send(buffer, len/sizeof(std::complex<float>),
             metadata,

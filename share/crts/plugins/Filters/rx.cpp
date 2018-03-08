@@ -64,17 +64,13 @@ class Rx : public CRTSFilter
         Rx(int argc, const char **argv);
         ~Rx(void);
 
-        ssize_t write(void *buffer, size_t bufferLen,
-                uint32_t channelNum);
-    private:
+        ssize_t write(void *buffer, size_t bufferLen, uint32_t channelNum);
 
-        void init(void);
+    private:
 
         uhd::usrp::multi_usrp::sptr usrp;
         uhd::device::sptr device;
         size_t numComplexFloats;
-        std::string uhd_args;
-        double freq, rate, gain;
 };
 
 
@@ -156,9 +152,11 @@ static double getDouble(const char *str)
 
 
 Rx::Rx(int argc, const char **argv):
-    usrp(0), device(0), uhd_args(""),
-    freq(RX_FREQ), rate(RX_RATE), gain(RX_GAIN)
+    usrp(0), device(0)
 {
+    std::string uhd_args = "";
+    double freq = RX_FREQ, rate = RX_RATE, gain = RX_GAIN;
+
     int i;
 #ifdef DEBUG
     DSPEW();
@@ -198,15 +196,6 @@ Rx::Rx(int argc, const char **argv):
     freq *= 1.0e6;
     rate *= 1.0e6;
 
-    // This init() call fails.  We think because is is not running in the
-    // same thread that is reading the RX, or maybe it's just not reading
-    // soon enough.
-    //init();
-}
-
-
-void Rx::init(void)
-{
     usrp = uhd::usrp::multi_usrp::make(uhd_args);
 
     crts_usrp_rx_set(usrp, freq, rate, gain);
@@ -250,11 +239,6 @@ ssize_t Rx::write(void *buffer_in, size_t len, uint32_t channelNum)
     //
     // TODO:  or we could just ignore the input buffer??
     DASSERT(buffer_in == 0, "");
-
-    // This init() call creates libuhd resources that must be in this
-    // thread, because of libuhd.
-    if(!device) init();
-
 
 
     std::complex<float> *buffer = (std::complex<float> *)
