@@ -225,10 +225,13 @@ static int usage(const char *argv0, const char *uopt=0)
 ////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////
 //
+// We went to great lengths to make it so that crts_radio can cleanly exit
+// due to the exit signals in exitSignals[].
+//
 // This signalExitThreadIsRunning variable is only accessed by the exit
 // signal catcher thread.
 //
-//
+
 static bool signalExitThreadIsRunning = true;
 
 static pthread_barrier_t *startupBarrier = 0;
@@ -728,6 +731,18 @@ int main(int argc, const char **argv)
         act.sa_handler = signalExitProgramCatcher;
         for(int i=0; exitSignals[i]; ++i)
             ASSERT(sigaction(exitSignals[i], &act, 0) == 0, "");
+
+        // Compose a set of signals to block in the other threads.
+        sigset_t exitSigs;
+        ASSERT(sigemptyset(&exitSigs) == 0, "");
+        //ASSERT(sigfillset(&exitSigs) == 0, "");
+        for(int i=0; exitSignals[i]; ++i)
+        {
+            //WARN("blocking sig=%d", exitSignals[i]);
+            ASSERT(sigaddset(&exitSigs, exitSignals[i]) == 0, "");
+        }
+        // The other thread will inherit this mask that we set now.
+        ASSERT(sigprocmask(SIG_BLOCK, &exitSigs, 0) == 0, "");
     }
 
 #if 0
@@ -768,7 +783,8 @@ int main(int argc, const char **argv)
         Stream::destroyStreams();
 
         cleanupModules();
-        
+
+        DSPEW("EXITING due to startup error");
         return 1; // return failure status
     }
 
@@ -809,6 +825,7 @@ int main(int argc, const char **argv)
 
                     cleanupModules();
 
+                    DSPEW("EXITING due to startup error");
                     return 1; // error fail exit.
                 }
     //
@@ -826,17 +843,6 @@ int main(int argc, const char **argv)
         ASSERT((errno = pthread_barrier_init(&barrier, 0,
                     Thread::getTotalNumThreads() + 2)) == 0, "");
 
-        // Compose a set of signal to block in the other threads.
-        sigset_t exitSigs;
-        ASSERT(sigemptyset(&exitSigs) == 0, "");
-        //ASSERT(sigfillset(&exitSigs) == 0, "");
-        for(int i=0; exitSignals[i]; ++i)
-        {
-            //WARN("blocking sig=%d", exitSignals[i]);
-            ASSERT(sigaddset(&exitSigs, exitSignals[i]) == 0, "");
-        }
-        // The other thread will inherit this mask that we set now.
-        ASSERT(sigprocmask(SIG_BLOCK, &exitSigs, 0) == 0, "");
 
         // Start the threads.
         for(auto stream : Stream::streams)

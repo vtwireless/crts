@@ -19,7 +19,7 @@
 // crts/BaseMod.hpp should include crts/MakeModule.hpp:
 //#include <crts/MakeModule.hpp>
 
-#inlcude <crts/BaseMod.hpp>
+#include <crts/BaseMod.hpp>
 
 
 class MyModule : public BaseMod

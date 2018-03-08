@@ -525,7 +525,6 @@ void FilterModule::write(void *buffer, size_t len, uint32_t channelNum,
             MUTEX_UNLOCK(&thread->mutex);
             return;
         }
-            
 
         // TODO: We need to add a queue with an entry for each thread
         /* that is connected.  With the variables:
