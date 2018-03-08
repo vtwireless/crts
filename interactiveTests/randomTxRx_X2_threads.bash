@@ -20,7 +20,7 @@ crts_radio="../bin/crts_radio"
  -f liquidSync\
  -f stdout\
  -t 0 -t 1 -t 2\
- -d |\
+ -D |\
  hexdump -v"
 
 
@@ -34,6 +34,6 @@ crts_radio="../bin/crts_radio"
  -f liquidFrame\
  -f tx [ --uhd addr=192.168.10.4 --freq 915.5 --rate 0.2 --gain 0 ]\
  -t 0 -t 1 -t 2\
- -d |\
+ -D |\
  hexdump -v"
 

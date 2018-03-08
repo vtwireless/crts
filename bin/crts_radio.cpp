@@ -68,7 +68,7 @@ ssize_t Feed::write(void *buffer, size_t bufferLen,
 static const int exitSignals[] =
 {
     SIGINT, // from Ctrl-C in a terminal.
-
+    SIGTERM, // default kill signal
     // We must catch SIGPIPE as an exit signal for the case when we are
     // reading or writing a UNIX bash pipe line; otherwise a broken pipe
     // will not let us cleanly exit.
@@ -238,7 +238,10 @@ static void signalExitProgramCatcher(int sig)
     INFO("Caught signal %d waiting to cleanly exit", sig);
 
     // To keep this re-entrant we can only set the
-    // signalExitThreadIsRunning value here.
+    // signalExitThreadIsRunning value here.  By adding this extra
+    // signalExitThreadIsRunning flag we keep this re-entrant.  Calling a
+    // Stream method, with it's mutex locking, would not be safe in
+    // general.
     signalExitThreadIsRunning = false;
 }
 
@@ -258,31 +261,43 @@ static void *signalExitThreadCB(void *ptr)
         ASSERT(sigaddset(&exitSigs, exitSignals[i]) == 0, "");
 
     // This thread can handle itself.  If the main thread exits we do not
-    // care, this will just exit with it.  The Stream object will stay
-    // consistent since Stream::signalMainThreadCleanup() calls a mutex
-    // lock in it, which will keep the main thread from exiting if this
-    // thread races to call Stream::signalMainThreadCleanup() before
-    // or after the main thread shuts down.
+    // care, this will just terminate with it.  The Stream object will
+    // stay consistent since Stream::signalMainThreadCleanup() calls a
+    // mutex lock in it, which will keep the main thread from exiting if
+    // this thread races to call Stream::signalMainThreadCleanup() before
+    // or after the main thread shuts down.  Also having this thread
+    // terminate in the middle of calling
+    // Stream::signalMainThreadCleanup() is okay,
+    // Stream::signalMainThreadCleanup() never makes any new system
+    // resources.
+    //
+    // Now if this thread required a join with the main thread, then that
+    // would be a problem because then we'd need a way the main thread
+    // could check if there was a exit signal which would require the use
+    // of a pthread thread synchronization primitive, which could dead
+    // lock in the signal catcher.
     ASSERT(pthread_detach(pthread_self()) == 0, "");
+
+    BARRIER_WAIT(startupBarrier);
 
     // Let this thread catch these "exit" signals now.
     ASSERT(sigprocmask(SIG_UNBLOCK, &exitSigs, 0) == 0, "");
-
-    BARRIER_WAIT(startupBarrier);
 
     // We know that all threads that are created by crts_radio are now
     // running.  There may be other threads from other libraries like
     // libuhd from loaded filter modules.
 
     // Loop forever or until we catch a exit signal or the main thread
-    // returns (exits).
+    // returns (exits).  If we never catch a signal that's okay, this
+    // thread will just get terminated when the main thread returns.
+    DSPEW("Exit signal catcher thread pausing");
     while(signalExitThreadIsRunning) pause();
 
     Stream::signalMainThreadCleanup();
 
     return 0;
 }
-//
+// End stuff that the signal catcher thread uses.
 //
 ////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////

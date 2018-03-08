@@ -300,7 +300,7 @@ Thread::Thread(Stream *stream_in):
     // and it better be in a running mode.
     DASSERT(stream.isRunning, "");
     stream.threads.push_back(this);
-    DSPEW("thread %" PRIu32, threadNum);
+    //DSPEW("thread %" PRIu32, threadNum);
 }
 
 

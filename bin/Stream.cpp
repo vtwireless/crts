@@ -42,10 +42,14 @@ bool Stream::waiting = false; // flag that main thread is waiting on cond
 // We have yet another thread call this, because it catches the exit
 // signal, and signal handlers and pthread synchronization primitives do
 // not mix well.  The alternative would be to add timeouts to the pthread
-// synchronization calls and thats not a clean design.
+// synchronization calls, but that's not a clean design.
 //
 // See signalExitThreadCB() in crts_radio.cpp.
 //
+// This call must be thread terminate safe, we can have the thread that
+// calls it get terminated at any point in the call.  It has no system
+// resources that will persist if the calling thread terminates in the
+// middle of calling this.
 //
 void Stream::signalMainThreadCleanup(void)
 {
