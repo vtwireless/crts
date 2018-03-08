@@ -22,7 +22,7 @@ LIQUID_LDFLAGS := -L$(LIQUID_SRC) -lliquid
 LIBFEC_LDFLAGS := -L$(LIBFEC_SRC) -lfec
 
 # uncomment to build quickscope.so
-BUILD_QUICKSCOPE := yes
+#BUILD_QUICKSCOPE := yes
 
 # Make every *.cpp file into a DSO (dynamic shared object) plugin that is
 # installed.
