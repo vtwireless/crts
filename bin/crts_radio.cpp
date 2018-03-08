@@ -292,7 +292,7 @@ static void *signalExitThreadCB(void *ptr)
     // thread will just get terminated when the main thread returns.
     DSPEW("Exit signal catcher thread pausing");
     while(signalExitThreadIsRunning) pause();
-
+    DSPEW("Exit signal catcher thread cleaning up");
     Stream::signalMainThreadCleanup();
 
     return 0;
