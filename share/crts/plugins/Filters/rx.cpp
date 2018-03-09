@@ -6,6 +6,7 @@
 
 #include "crts/debug.h"
 #include "crts/Filter.hpp"
+#include "crts/Control.hpp"
 #include "crts/crts.hpp" // for:  FILE *crtsOut
 
 #include "usrp_set_parameters.hpp" // UHD usrp wrappers
@@ -67,6 +68,8 @@ class Rx : public CRTSFilter
         ssize_t write(void *buffer, size_t bufferLen, uint32_t channelNum);
 
     private:
+
+        CRTSControl control;
 
         uhd::usrp::multi_usrp::sptr usrp;
         uhd::device::sptr device;
@@ -152,6 +155,7 @@ static double getDouble(const char *str)
 
 
 Rx::Rx(int argc, const char **argv):
+    control(this, "rx"),
     usrp(0), device(0)
 {
     std::string uhd_args = "";

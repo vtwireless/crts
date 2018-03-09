@@ -373,6 +373,7 @@ FilterModule* Stream::load(CRTSFilter *crtsFilter,
     // This is the main thread.
     DASSERT(pthread_equal(Thread::mainThread, pthread_self()), "");
 
+    // Add the opaque FilterModule data to the new CRTSFilter.
     FilterModule *m = new FilterModule(this, crtsFilter,
             destroyFilter, loadCount, name);
 

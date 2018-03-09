@@ -43,7 +43,9 @@ crts_radio_SOURCES :=\
  Thread.cpp\
  Stream.cpp\
  timer.cpp\
- Filter.cpp
+ Filter.cpp\
+ Control.cpp\
+ Controller.cpp
 # stdout may be needed for user pipe line or whatever.
 crts_radio_LDFLAGS := $(COMMON_LD)
 

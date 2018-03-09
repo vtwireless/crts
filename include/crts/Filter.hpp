@@ -4,6 +4,7 @@
 #include <inttypes.h>
 #include <pthread.h>
 #include <list>
+#include <map>
 #include <atomic>
 
 #include <crts/MakeModule.hpp>
@@ -19,6 +20,7 @@
 //
 class FilterModule;
 
+class CRTSControl;
 
 // CRTSStream is a user interface to set and get attributes of the Stream
 // which is the related to the group of Filters that are connected (write
@@ -291,9 +293,14 @@ class CRTSFilter
     // recompile the users CRTSFilter code, because the users CRTSFilter
     // ABI does not change.  The cost is one pointer deference at most
     // CRTSFilter methods.
-    friend FilterModule;  // The rest of the filter code and data.
+    friend FilterModule; // The rest of the filter code and data.
+    friend CRTSControl;
 
     private:
+
+        // TODO: It'd be nice to hide this list in filterModule but
+        // it's a major pain, and I give up; time is money.
+        std::map<const char *,CRTSControl *>controls;
 
         // Pointer to the opaque FilterModule co-object.  The two objects
         // could be one object, except that we need to hide the data and

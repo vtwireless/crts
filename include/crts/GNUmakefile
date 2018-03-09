@@ -7,6 +7,8 @@ INSTALLED :=\
  MakeModule.hpp\
  Module.hpp\
  Filter.hpp\
+ Control.hpp\
+ Controller.hpp\
  debug.h
 
 

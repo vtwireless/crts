@@ -25,10 +25,13 @@
 // Read comments in ../include/crts/Filter.hpp.
 #include "crts/Filter.hpp"
 #include "crts/Module.hpp"
+#include "crts/Controller.hpp"
 #include "FilterModule.hpp"
 #include "Thread.hpp"
 #include "Stream.hpp"
 #include "LoadModule.hpp"
+#include "Controller.hpp"
+
 
 
 
@@ -169,6 +172,11 @@ static int usage(const char *argv0, const char *uopt=0)
 "                                    uninterrupted list of filter options than a\n"
 "                                    default connectivity will be setup that connects\n"
 "                                    all adjacent filters in a single line.\n"
+"\n"
+"\n"
+"   -C | --controller CNAME          load a CRTS Controller plugin module named CNAME.\n"
+"                                    CRTS Controller plugin module need to be loaded\n"
+"                                    after the FILTER modules.\n"
 "\n"
 "\n"
 "   -d | --display                   display a DOT graph via dot and imagemagick\n"
@@ -448,6 +456,53 @@ bool crtsRequireModule(const char *name, int argc, const char **argv)
 }
 
 
+// This number is just so the module writers can't access these two
+// accidentally exposed functions removeCRTSCControllers() and
+// LoadCRTSController().
+#define CONTROLLER_MAGIC  0x3F237301
+
+
+void removeCRTSCControllers(uint32_t magic)
+{
+    // Do not let module writers use this function.
+    ASSERT(magic == CONTROLLER_MAGIC, "This is not a module writer interface.");
+
+    while(Controller::controllers.size())
+    {
+        CRTSController *c = Controller::controllers.back();
+        DASSERT(c, "");
+        DASSERT(c->destroyController, "");
+        // The CRTSController::~CRTSController() will remove
+        // itself from this Controller::controllers list.
+        c->destroyController(c);
+    }
+}
+
+
+// TODO: This function is exposed as extern in crts/Controller.hpp and
+// that's a terrible hack.  The user will not know the magic number, so if
+// they try to use this it will fail as we would prefer.
+//
+int LoadCRTSController(const char *name, int argc, const char **argv, uint32_t magic)
+{
+    // Do not let module writers use this function.
+    ASSERT(magic == CONTROLLER_MAGIC, "This is not a module writer interface.");
+
+    void *(*destroyController)(CRTSController *);
+
+    CRTSController *crtsController =
+        LoadModule<CRTSController>(name, "Controllers",
+                argc, argv, destroyController);
+
+    if(!crtsController || !destroyController)
+        return 1; // fail
+
+    // We set this now after the loader, LoadModule<>(), got it for us.
+    crtsController->destroyController = destroyController;
+
+    return 0; // Success
+}
+
 
 /////////////////////////////////////////////////////////////////////
 // Parsing command line arguments
@@ -457,6 +512,9 @@ bool crtsRequireModule(const char *name, int argc, const char **argv)
 //
 static int parseArgs(int argc, const char **argv)
 {
+    // This is the main thread.
+    DASSERT(pthread_equal(Thread::mainThread, pthread_self()), "");
+
     // Current stream as a pointer.  There are none yet.
     Stream *stream = 0;
 
@@ -485,6 +543,13 @@ static int parseArgs(int argc, const char **argv)
             if(stream->load(str.c_str(), Argc, Argv))
                 return 1;
 
+            continue;
+        }
+
+        if(get_opt(str, Argc, Argv, "-C", "--controller", argc, argv, i))
+        {
+            if(LoadCRTSController(str.c_str(), Argc, Argv, CONTROLLER_MAGIC))
+                return 1;
             continue;
         }
 
@@ -947,6 +1012,10 @@ int main(int argc, const char **argv)
         }
 
     while(Stream::wait()); // The wait will unlock and lock the mutex.
+
+
+    // The first cleanup thing is removing the controller modules.
+    removeCRTSCControllers(CONTROLLER_MAGIC);
 
     // This will try to gracefully shutdown the stream and join the rest
     // of the threads:

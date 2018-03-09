@@ -28,6 +28,7 @@ CRTSStream::CRTSStream(std::atomic<bool> &isRunning_in):
 }
 
 
+
 //const uint32_t CRTSFilter::defaultBufferQueueLength = 3;
 
 FilterModule::FilterModule(Stream *stream_in, CRTSFilter *filter_in,
@@ -42,6 +43,10 @@ FilterModule::FilterModule(Stream *stream_in, CRTSFilter *filter_in,
     thread(0)
     //, bufferQueueLength(CRTSFilter::defaultBufferQueueLength)
 {
+    // This is the main thread.
+    DASSERT(pthread_equal(Thread::mainThread, pthread_self()), "");
+    DASSERT(filter, "");
+
     // We will reuse filter->filterModule after using it
     // as the bool canWriteBufferIn:
     canWriteBufferIn = (filter->filterModule)?true:false;
@@ -228,6 +233,8 @@ CRTSFilter::CRTSFilter(bool canWriteBufferIn):
     // another variable in CRTSFilter.  See FilterModule::FilterModule().
     filterModule(canWriteBufferIn?((FilterModule*) 1/*nonzero*/):0)
 {
+    DASSERT(pthread_equal(Thread::mainThread, pthread_self()), "");
+
     DSPEW("canWriteBufferIn=%d", canWriteBufferIn);
 }
 
