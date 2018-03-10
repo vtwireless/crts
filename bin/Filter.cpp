@@ -224,7 +224,13 @@ FilterModule::~FilterModule(void)
 
 
 
-CRTSFilter::~CRTSFilter(void) { DSPEW(); }
+CRTSFilter::~CRTSFilter(void)
+{
+    while(controls.size())
+        delete controls.rbegin()->second;
+
+    DSPEW();
+}
 
 
 CRTSFilter::CRTSFilter(bool canWriteBufferIn):

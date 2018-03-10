@@ -8,6 +8,7 @@
 #include <atomic>
 
 #include <crts/MakeModule.hpp>
+#include <crts/Control.hpp>
 
 
 // FilterModule is a opaque module thingy that the user need not worry
@@ -19,8 +20,6 @@
 // you string together to build a CRTS filter "Stream".
 //
 class FilterModule;
-
-class CRTSControl;
 
 // CRTSStream is a user interface to set and get attributes of the Stream
 // which is the related to the group of Filters that are connected (write
@@ -136,6 +135,12 @@ class CRTSFilter
     public:
 
         static const uint32_t ALL_CHANNELS;
+
+        CRTSControl *makeControl(std::string name)
+        {
+            DASSERT(name.length(), "");
+            return new CRTSControl(this, name.c_str());
+        };
 
         // Function to write data to this filter.
         //
@@ -300,7 +305,7 @@ class CRTSFilter
 
         // TODO: It'd be nice to hide this list in filterModule but
         // it's a major pain, and I give up; time is money.
-        std::map<const char *,CRTSControl *>controls;
+        std::map<std::string, CRTSControl *>controls;
 
         // Pointer to the opaque FilterModule co-object.  The two objects
         // could be one object, except that we need to hide the data and

@@ -33,38 +33,24 @@ CRTSController::~CRTSController(void)
     DSPEW();
 }
 
-CRTSControl *CRTSController::getControl(const char *name)
+CRTSControl *CRTSController::getControl(const std::string name) const
 {
-    DASSERT(name && name[0], "");
-
-    WARN("name=\"%s\"", name);
+    DASSERT(name.length(), "");
 
     auto &controls = CRTSController::controller.controls;
-
-    /// STUCK HERE LANCE
-    //
-    //WTF:  THis suck map::find() does not work!!!!!!!!!!!!!!!! 
-
-    {
-        for(auto c : controls)
-            WARN("------ name=\"%s\"", c.first);
-    }
 
     CRTSControl *c = 0;
 
     auto search = controls.find(name);
     if(search != controls.end())
     {
-        WARN("FUG");
-
         c = search->second;
         DASSERT(c, "");
     }
 
-    WARN("got control \"%s\"=%p", name, c);
+    DSPEW("got control \"%s\"=%p", name.c_str(), c);
     return c;
 }
 
-
+// This is a single list of all CRTS controllers we defined here.
 Controller CRTSController::controller;
-

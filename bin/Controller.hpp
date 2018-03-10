@@ -1,3 +1,4 @@
+#include <string>
 #include <map>
 #include <list>
 
@@ -7,7 +8,7 @@ class Controller
 {
     public:
 
-        std::map<const char *, CRTSControl *> controls;
+        std::map<std::string, CRTSControl *> controls;
 
         static std::list<CRTSController *> controllers;
 

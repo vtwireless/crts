@@ -11,12 +11,17 @@ class TestRx: public CRTSController
         ~TestRx(void) {  DSPEW(); };
 };
 
+// TODO: make this a command line option
+#define RX_CONTROL_NAME  "rx"
+
 
 TestRx::TestRx(int argc, const char **argv)
 {
-    CRTSControl *c = getControl("rx");
+    CRTSControl *rx = getControl(RX_CONTROL_NAME);
 
-    DSPEW("c=%p", c);
+    if(rx == 0) throw "could not find control named \"rx\"";
+
+    DSPEW("rx=%p", rx);
 };
 
 

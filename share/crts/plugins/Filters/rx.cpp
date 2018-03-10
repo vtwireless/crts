@@ -69,12 +69,15 @@ class Rx : public CRTSFilter
 
     private:
 
-        CRTSControl control;
+        CRTSControl *control;
 
         uhd::usrp::multi_usrp::sptr usrp;
         uhd::device::sptr device;
         size_t numComplexFloats;
 };
+
+
+#define DEFAULT_CONTROL_NAME "rx"
 
 
 // This is called if the user ran something like: 
@@ -123,10 +126,13 @@ static void usage(void)
 "                   samples per second.\n"
 "\n"
 "\n"
+"   --control NAME  name the CRTS control name to NAME.  The default is \"%s\".\n"
+"\n"
+"\n"
 "\n",
         CRTSFILTER_NAME(name, 64),
         CRTSFILTER_NAME(name, 64),
-        RX_FREQ, RX_GAIN, RX_RATE);
+        RX_FREQ, RX_GAIN, RX_RATE, DEFAULT_CONTROL_NAME);
 
     errno = 0;
     throw "usage help"; // This is how return an error from a C++ constructor
@@ -155,10 +161,11 @@ static double getDouble(const char *str)
 
 
 Rx::Rx(int argc, const char **argv):
-    control(this, "rx"),
+    control(0),
     usrp(0), device(0)
 {
     std::string uhd_args = "";
+    std::string controlName = DEFAULT_CONTROL_NAME;
     double freq = RX_FREQ, rate = RX_RATE, gain = RX_GAIN;
 
     int i;
@@ -172,6 +179,11 @@ Rx::Rx(int argc, const char **argv):
 
     for(i=0; i<argc; ++i)
     {
+        if(!strcmp(argv[i], "--control") && i<argc+1)
+        {
+            controlName = argv[++i];
+            continue;
+        }
         if(!strcmp(argv[i], "--uhd") && i<argc+1)
         {
             uhd_args = argv[++i];
@@ -218,6 +230,9 @@ Rx::Rx(int argc, const char **argv):
     device = usrp->get_device();
 
     numComplexFloats = device->get_max_recv_samps_per_packet();
+
+    control = makeControl(controlName);
+
     DSPEW("RX numComplexFloats = %zu", numComplexFloats);
 }
 

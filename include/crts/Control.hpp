@@ -9,18 +9,21 @@ class CRTSControl
 
     public:
 
-        virtual ~CRTSControl(void);
-
-        CRTSControl(CRTSFilter *filter, const char *name);
-
         const char *getName(void) const { return name; };
 
+ 
     private:
+
+        // We let only CRTSFilter objects create a CRTSControl.
+        CRTSControl(CRTSFilter *filter, const char *name);
+        virtual ~CRTSControl(void);
 
         char *name;
 
         // The filter associated with this control.
         CRTSFilter *filter;
+        
+        friend CRTSFilter;
 };
 
 

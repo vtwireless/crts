@@ -3,6 +3,7 @@
 
 #include <inttypes.h>
 #include <pthread.h>
+#include <string>
 #include <list>
 #include <map>
 #include <atomic>
@@ -25,7 +26,9 @@ class CRTSController
 
     protected:
 
-        CRTSControl *getControl(const char *name);
+        // Returns 0 if the control with name name was not found in the
+        // list of all CRTS controls.
+        CRTSControl *getControl(const std::string name) const;
 
     private:
 
@@ -44,8 +47,8 @@ class CRTSController
         // as C++ plugins and destroyController must not be C++ name
         // mangled so that we can call the C wrapped delete.
         //
-        // TODO: We should be hiding this data from the C++ header user interface.
-        // But I'd too lazy to do that at this point.
+        // TODO: We should be hiding this data from the C++ header user
+        // interface; I'm too lazy to do that at this point.
         //
         void *(*destroyController)(CRTSController *);
 };

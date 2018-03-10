@@ -54,7 +54,7 @@ CRTSControl::~CRTSControl(void)
     // Remove this from the list of all controls.
     CRTSController::controller.controls.erase(name);
 
-    free(name);
+    DSPEW("Removing CRTS control named \"%s\"", name);
 
-    DSPEW();
+    free(name);
 }
