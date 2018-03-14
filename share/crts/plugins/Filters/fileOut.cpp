@@ -36,7 +36,7 @@ static void usage(void)
             "  output file is something like stdout.\n"
             "\n"
             "\n"
-            , CRTSFILTER_NAME(name, 64));
+            , CRTS_BASENAME(name, 64));
 
     throw ""; // This is how return an error from a C++ constructor
     // the module loader with catch this throw.

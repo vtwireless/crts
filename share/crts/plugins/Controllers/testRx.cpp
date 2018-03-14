@@ -1,7 +1,10 @@
 #include <stdio.h>
 
+#include "crts/crts.hpp"
 #include "crts/debug.h"
 #include "crts/Controller.hpp"
+
+#include "../Filters/rxControl.hpp"
 
 class TestRx: public CRTSController
 {
@@ -9,21 +12,64 @@ class TestRx: public CRTSController
 
         TestRx(int argc, const char **argv);
         ~TestRx(void) {  DSPEW(); };
+
+        void execute(void);
+
+    private:
+
+        RxControl *rx;
+
 };
 
-// TODO: make this a command line option
-#define RX_CONTROL_NAME  "rx"
+
+//
+//    crts_radio -f testRx [ --help ]
+//
+//
+static void usage(void)
+{
+    char nameBuf[64], *name;
+    name = CRTS_BASENAME(nameBuf, 64);
+    fprintf(stderr,
+"\n"
+"\n"
+"Usage: %s [ OPTIONS ]\n"
+"\n"
+"  OPTIONS are optional.\n"
+"\n"
+"\n"
+"  ---------------------------------------------------------------------------\n"
+"                           OPTIONS\n"
+"  ---------------------------------------------------------------------------\n"
+"\n"
+"\n"
+"   --control NAME   connect to RX control named NAME.  The default RX\n"
+"                    control name is \"%s\".\n"
+"\n"
+"\n", name, DEFAULT_RXCONTROL_NAME);
+}
+
 
 
 TestRx::TestRx(int argc, const char **argv)
 {
-    CRTSControl *rx = getControl(RX_CONTROL_NAME);
+    CRTSModuleOptions opt(argc, argv, usage);
 
-    if(rx == 0) throw "could not find control named \"rx\"";
+    rx = getControl<RxControl *>(opt.get("--control", DEFAULT_RXCONTROL_NAME));
 
-    DSPEW("rx=%p", rx);
-};
+    if(rx == 0) throw "could not get RxControl";
 
+    DSPEW();
+}
+
+
+void TestRx::execute(void)
+{
+    DSPEW("totalBytesIn=%" PRIu64
+        " totalBytesOut=%" PRIu64,
+        rx->totalBytesIn(),
+        rx->totalBytesOut());
+}
 
 
 // Define the module loader stuff to make one of these class objects.

@@ -138,4 +138,21 @@ class FilterModule
     // the heavy lifting for CRTSFilter.
 
     friend Stream;
+
+        void runUsersActions(void *buffer, size_t len, uint32_t channelNum)
+        {
+            // totalBytesIn is a std::atomic so we don't need the mutex
+            // lock here.  This can be read in an users' CRTS Control.
+            filter->_totalBytesIn += len;
+
+            // All the CRTSFilter::writePush() calls will add to
+            // _totalBytesOut.
+            filter->write(buffer, len, channelNum);
+
+            // If there are any users CRTS Contollers we call them like
+            // so:
+            for(auto const &controller: filter->controllers)
+                controller->execute();
+        };
+
 };

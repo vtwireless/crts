@@ -2,27 +2,24 @@
 #include <string.h>
 #include <stdlib.h>
 #include <stack>
-#include <string>
 
 #include "crts/debug.h"
 #include "crts/Filter.hpp"
 #include "crts/Control.hpp"
 #include "crts/Controller.hpp"
-#include "Controller.hpp"
 #include "FilterModule.hpp"
 
 
 
-CRTSControl::CRTSControl(CRTSFilter *filter_in, const char *name_in):
+CRTSControl::CRTSControl(CRTSFilter *filter_in, std::string name_in):
     filter(filter_in)
 {
-    ASSERT(name_in, "");
-    ASSERT(name_in[0], "");
-    name = strdup(name_in);
+    ASSERT(name_in.length(), "");
+    name = strdup(name_in.c_str());
     ASSERT(name, "strdup() failed");
     DASSERT(filter, "");
 
-    auto &controls = CRTSController::controller.controls;
+    auto &controls = CRTSController::controls;
 
     if(controls.find(name) != controls.end())
     {
@@ -40,7 +37,7 @@ CRTSControl::CRTSControl(CRTSFilter *filter_in, const char *name_in):
     // Add to the list of controls for this filter.
     filter->controls[name] = this;
 
-    DSPEW("Added CRTS Control named \"%s\"", name);
+    DSPEW("Added CRTS Control (%p) named \"%s\"", this, name);
 }
 
 CRTSControl::~CRTSControl(void)
@@ -50,9 +47,9 @@ CRTSControl::~CRTSControl(void)
 
     // Remove this from the list of controls for this filter.
     filter->controls.erase(name);
-    
+
     // Remove this from the list of all controls.
-    CRTSController::controller.controls.erase(name);
+    CRTSController::controls.erase(name);
 
     DSPEW("Removing CRTS control named \"%s\"", name);
 

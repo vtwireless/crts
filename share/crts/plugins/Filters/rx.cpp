@@ -12,13 +12,15 @@
 #include "usrp_set_parameters.hpp" // UHD usrp wrappers
 #include "defaultUSRP.hpp" // defaults: RX_FREQ, RX_RATE, RX_GAIN
 
+#include "rxControl.hpp"
+
 
 // RANT:
 //
 // It'd be real nice if the UHD API would document what is thread-safe and
-// what is not for all the API.  We can only guess how to use this stupid
-// UHD API by looking at example codes.  From the program crashes I've
-// seen there are clearly some things that are not thread safe.
+// what is not for all the API.  We can only guess how to use this UHD API
+// by looking at example codes.  From the program crashes I've seen there
+// are clearly some things that are not thread safe.
 //
 // The structure of the UHD API implies that you should be able to use a
 // single uhd::usrp::multi_usrp::sptr to do both transmission and
@@ -50,12 +52,11 @@
 //
 //    - spews to stdout (we made a work-around for this)
 //
-//    - catches signals
-//
 //
 // It may be libBOOST is doing some of this.
 //
 // We sometimes get Floating point exception and the program exits.
+//
 
 
 class Rx : public CRTSFilter
@@ -69,25 +70,25 @@ class Rx : public CRTSFilter
 
     private:
 
-        CRTSControl *control;
-
+        RxControl rxControl;
+        
         uhd::usrp::multi_usrp::sptr usrp;
         uhd::device::sptr device;
         size_t numComplexFloats;
 };
 
 
-#define DEFAULT_CONTROL_NAME "rx"
-
 
 // This is called if the user ran something like: 
 //
-//    crts_radio -f file [ --help ]
+//    crts_radio -f rx [ --help ]
 //
 //
 static void usage(void)
 {
-    char name[64];
+    char nameBuf[64], *name;
+    name = CRTS_BASENAME(nameBuf, 64);
+
     fprintf(stderr,
 "\n"
 "\n"
@@ -126,13 +127,13 @@ static void usage(void)
 "                   samples per second.\n"
 "\n"
 "\n"
-"   --control NAME  name the CRTS control name to NAME.  The default is \"%s\".\n"
+"   --control NAME  set the name of the CRTS control to NAME.  The default value of\n"
+"                   NAME is \"%s\".\n"
 "\n"
 "\n"
 "\n",
-        CRTSFILTER_NAME(name, 64),
-        CRTSFILTER_NAME(name, 64),
-        RX_FREQ, RX_GAIN, RX_RATE, DEFAULT_CONTROL_NAME);
+        name, name,
+        RX_FREQ, RX_GAIN, RX_RATE, DEFAULT_RXCONTROL_NAME);
 
     errno = 0;
     throw "usage help"; // This is how return an error from a C++ constructor
@@ -151,7 +152,7 @@ static double getDouble(const char *str)
     if(ptr == str || errno)
     {
         fprintf(crtsOut, "\nBad module %s arg: %s\n\n",
-                CRTSFILTER_NAME(name, 64), str);
+                CRTS_BASENAME(name, 64), str);
         usage();
     }
 
@@ -159,14 +160,32 @@ static double getDouble(const char *str)
 }
 
 
+// Get the control name from the command line arguments.
+static const char *getControlName(int argc, const char **argv)
+{
+    const char *controlName = DEFAULT_RXCONTROL_NAME;
+    int i;
+    for(i=0; i<argc; ++i)
+    {
+        if(!strcmp(argv[i], "--control") && i<argc+1)
+        {
+            controlName = argv[++i];
+            continue;
+        }
+        continue;
+    }
+    return controlName;
+}
+
 
 Rx::Rx(int argc, const char **argv):
-    control(0),
-    usrp(0), device(0)
+    rxControl(this, getControlName(argc, argv), usrp, device),
+    usrp(0), device(0), numComplexFloats(0)
 {
     std::string uhd_args = "";
-    std::string controlName = DEFAULT_CONTROL_NAME;
     double freq = RX_FREQ, rate = RX_RATE, gain = RX_GAIN;
+
+    WARN("&rxControl=%p", &rxControl);
 
     int i;
 #ifdef DEBUG
@@ -181,7 +200,7 @@ Rx::Rx(int argc, const char **argv):
     {
         if(!strcmp(argv[i], "--control") && i<argc+1)
         {
-            controlName = argv[++i];
+            ++i;
             continue;
         }
         if(!strcmp(argv[i], "--uhd") && i<argc+1)
@@ -230,8 +249,6 @@ Rx::Rx(int argc, const char **argv):
     device = usrp->get_device();
 
     numComplexFloats = device->get_max_recv_samps_per_packet();
-
-    control = makeControl(controlName);
 
     DSPEW("RX numComplexFloats = %zu", numComplexFloats);
 }

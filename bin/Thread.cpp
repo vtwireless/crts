@@ -118,9 +118,10 @@ static void *filterThreadWrite(Thread *thread)
         // While this thread it carrying out its' orders new orders
         // may be set, queued up, by another thread.
         //
-        // This may be a time consuming call.
+        // This may be a time consuming call, just how much is up
+        // to the CRTS filter writer.
         //
-        filterModule->filter->write(buffer, len, channelNum);
+        filterModule->runUsersActions(buffer, len, channelNum);
 
 
         MUTEX_LOCK(mutex);

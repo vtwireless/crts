@@ -39,7 +39,7 @@ static void usage(const char *arg = 0)
 
     if(arg)
         fprintf(stderr, "module: %s: unknown option arg=\"%s\"\n",
-                CRTSFILTER_NAME(name, 64), arg);
+                CRTS_BASENAME(name, 64), arg);
 
     fprintf(stderr,
 "\n"
@@ -66,7 +66,7 @@ static void usage(const char *arg = 0)
 "\n"
 "\n"
 "\n",
-    CRTSFILTER_NAME(name, 64));
+    CRTS_BASENAME(name, 64));
 
     errno = 0;
     throw "usage help"; // This is how return an error from a C++ constructor

@@ -226,6 +226,8 @@ FilterModule::~FilterModule(void)
 
 CRTSFilter::~CRTSFilter(void)
 {
+    controllers.clear();
+
     while(controls.size())
         delete controls.rbegin()->second;
 
@@ -237,7 +239,8 @@ CRTSFilter::CRTSFilter(bool canWriteBufferIn):
     // We use this pointer variable as a flag before we use it to be the
     // pointer to the Filtermodule, just so we do not have to declare
     // another variable in CRTSFilter.  See FilterModule::FilterModule().
-    filterModule(canWriteBufferIn?((FilterModule*) 1/*nonzero*/):0)
+    filterModule(canWriteBufferIn?((FilterModule*) 1/*nonzero*/):0),
+    _totalBytesIn(0), _totalBytesOut(0)
 {
     DASSERT(pthread_equal(Thread::mainThread, pthread_self()), "");
 
@@ -287,8 +290,11 @@ void CRTSFilter::writePush(void *buffer, size_t bufferLen,
                 // Is this writing to a different thread?
                 (to->thread != filterModule->thread)?
                 true: false);
+
+        _totalBytesOut += bufferLen;
     }
     else
+    {
         // Write to all readers that we have.
         for(uint32_t i=0; i < filterModule->numReaders; ++i)
         {
@@ -301,6 +307,9 @@ void CRTSFilter::writePush(void *buffer, size_t bufferLen,
                     (to->thread != filterModule->thread)?
                     true: false);
         }
+
+        _totalBytesOut += filterModule->numReaders*bufferLen;
+    }
 }
 
 
@@ -574,6 +583,9 @@ void FilterModule::write(void *buffer, size_t len, uint32_t channelNum,
     }
     else
     {
+        // We are not a different thread.  We call the CRTSFilter::write()
+        // on this stack below here:
+
         if(h)
             // We need to increment the buffer use count
             ++h->useCount;
@@ -583,13 +595,14 @@ void FilterModule::write(void *buffer, size_t len, uint32_t channelNum,
         // lock, the current thread stack keeps CRTSFilter::write()
         // function calls in a sequence.
         //
-        // The CRTSFilter::write() call can generate more
-        // FilterModule::writes() via module writer interface
-        // CRTSFilter::writePush().
-        filter->write(buffer, len, channelNum);
-   
+        // The CRTSFilter::write() from the runUsersActions() call can
+        // generate more FilterModule::writes() via module writer
+        // interface CRTSFilter::writePush().
+        runUsersActions(buffer, len, channelNum);
+
         // This filter may have made some buffers now we check if they are
-        // in use and free them if they are not in use.
+        // in use (via use counter) and free them if they are not in
+        // use.
         removeUnusedBuffers();
 
         // We check to free the buffer that was passed to us.

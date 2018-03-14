@@ -36,7 +36,9 @@ class Tx : public CRTSFilter
 //
 static void usage(void)
 {
-    char name[64];
+    char nameBuf[64], *name;
+    name = CRTS_BASENAME(nameBuf, 64);
+
     fprintf(stderr,
 "\n"
 "\n"
@@ -76,8 +78,7 @@ static void usage(void)
 "\n"
 "\n"
 "\n",
-        CRTSFILTER_NAME(name, 64),
-        CRTSFILTER_NAME(name, 64),
+        name, name,
         TX_FREQ, TX_GAIN, TX_RATE);
 
     errno = 0;
@@ -97,7 +98,7 @@ static double getDouble(const char *str)
     if(ptr == str || errno)
     {
         fprintf(crtsOut, "\nBad module %s arg: %s\n\n",
-                CRTSFILTER_NAME(name, 64), str);
+                CRTS_BASENAME(name, 64), str);
         usage();
     }
 

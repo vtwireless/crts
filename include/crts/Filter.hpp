@@ -6,9 +6,11 @@
 #include <list>
 #include <map>
 #include <atomic>
+#include <string>
 
 #include <crts/MakeModule.hpp>
-#include <crts/Control.hpp>
+
+
 
 
 // FilterModule is a opaque module thingy that the user need not worry
@@ -20,6 +22,50 @@
 // you string together to build a CRTS filter "Stream".
 //
 class FilterModule;
+class CRTSController;
+class CRTSFilter;
+
+// Forward declare the whole class CRTSControl
+
+class CRTSControl
+{
+
+    public:
+
+        const char *getName(void) const;
+
+        /** Total bytes from all CRTSFilter::write() calls since the
+         * program started.  When you know the approximate input rate, you
+         * can use this to get an approximate time without making a system
+         * call.
+         */
+        uint64_t totalBytesIn(void) const;
+
+        /** Total byte written out via CRTSFilter::writePush()
+         * since the program started.  Note: if there is more
+         * than one output channel this will include a total
+         * for all channels.  TODO: add per channel totals.
+         */
+        uint64_t totalBytesOut(void) const;
+
+    protected:
+
+        CRTSControl(CRTSFilter *filter, std::string controlName);
+
+        virtual ~CRTSControl(void);
+
+    private:
+
+        char *name;
+
+        // The filter associated with this control.
+        CRTSFilter *filter;
+
+        friend CRTSFilter;
+        friend CRTSController;
+};
+
+
 
 // CRTSStream is a user interface to set and get attributes of the Stream
 // which is the related to the group of Filters that are connected (write
@@ -135,12 +181,6 @@ class CRTSFilter
     public:
 
         static const uint32_t ALL_CHANNELS;
-
-        CRTSControl *makeControl(std::string name)
-        {
-            DASSERT(name.length(), "");
-            return new CRTSControl(this, name.c_str());
-        };
 
         // Function to write data to this filter.
         //
@@ -300,12 +340,21 @@ class CRTSFilter
     // CRTSFilter methods.
     friend FilterModule; // The rest of the filter code and data.
     friend CRTSControl;
+    friend CRTSController;
 
     private:
 
         // TODO: It'd be nice to hide this list in filterModule but
         // it's a major pain, and I give up; time is money.
+
+        // This is the list of controls that this filter as created.
         std::map<std::string, CRTSControl *>controls;
+
+        // This is the list of controllers that this filter calls
+        // CRTSController::execute() for.  This is is added to from
+        // CRTSController::getControl<>()
+        //
+        std::list<CRTSController *> controllers;
 
         // Pointer to the opaque FilterModule co-object.  The two objects
         // could be one object, except that we need to hide the data and
@@ -314,7 +363,115 @@ class CRTSFilter
         // co-class that does the heavy lifting, which keeps the exposed
         // parts of CRTSFilter smaller.
         FilterModule *filterModule;
+
+        // These counters wrap at 2^64 ~ 1.7x10^10 GB ~ 16 exabytes. At a
+        // rate of 10 GBits/s it will take 435 years, so higher rates may
+        // be a problem.  A rate of 1000 GBits/s will wrap in 4 years,
+        // and this would not be a good design.  In 10 years this counter
+        // will need to be of type uint128_t, or it needs to be made
+        // a circular counter, whatever that is, or just add an additional
+        // counter to count the number of 16 exabytes chucks, like the
+        // time structures do.
+        std::atomic<uint64_t> _totalBytesIn, _totalBytesOut;
 };
+
+class CRTSController
+{
+
+    public:
+
+        CRTSController(void);
+        virtual ~CRTSController(void);
+
+        virtual void execute(void) = 0;
+
+    protected:
+
+        // Returns 0 if the control with name name was not found in the
+        // list of all CRTS controls.  The particular CRTSController
+        // can get pointers to any CRTSControl objects.
+        template <class C>
+        C getControl(const std::string name) const
+        {
+            DASSERT(name.length(), "");
+            CRTSControl *crtsControl = 0;
+            C c = 0;
+
+            auto search = controls.find(name);
+            if(search != controls.end())
+            {
+                crtsControl = search->second;
+                DASSERT(crtsControl, "");
+                c = dynamic_cast<C>(crtsControl);
+                DASSERT(c, "dynamic_cast<CRTSControl super class>"
+                        " failed for control named \"%s\"", name);
+                DSPEW("got control \"%s\"=%p", name.c_str(), c);
+
+                // Add this CRTS Controller to the CRTS Filter's
+                // execute() callback list.
+                crtsControl->filter->controllers.push_back(
+                        (CRTSController *) this);
+            }
+            else
+                WARN("Did not find CRTS control named \"%s\"",
+                        name);
+
+            return c;
+        };
+
+
+    private:
+
+        // TODO: Ya, this is ugly.  It'd be nice to not expose these
+        // things to the module writer.
+        //
+        friend CRTSControl;
+        friend int LoadCRTSController(const char *name,
+                int argc, const char **argv, uint32_t magic);
+        friend void removeCRTSCControllers(uint32_t magic);
+
+
+        // Global list of all CRTSControl objects:
+        static std::map<std::string, CRTSControl *> controls;
+
+        // Global list of all loaded CRTSController plug-ins:
+        static std::list<CRTSController *> controllers;
+
+        // Used to destroy this object because CRTS Controllers are loaded
+        // as C++ plugins and destroyController must not be C++ name
+        // mangled so that we can call the C wrapped delete.
+        //
+        // TODO: We should be hiding this data from the C++ header user
+        // interface; I'm too lazy to do that at this point.
+        //
+        void *(*destroyController)(CRTSController *);
+};
+
+
+
+#define CRTSCONTROLLER_MAKE_MODULE(derived_class_name) \
+    CRTS_MAKE_MODULE(CRTSController, derived_class_name)
+
+
+
+inline const char *CRTSControl::getName(void) const { return name; };
+
+
+inline uint64_t CRTSControl::totalBytesIn(void) const
+{
+    DASSERT(filter, "");
+    return filter->_totalBytesIn;
+};
+
+inline uint64_t CRTSControl::totalBytesOut(void) const
+{
+    DASSERT(filter, "");
+    return filter->_totalBytesOut;
+};
+
+
+
+
 
 
 #define CRTSFILTER_MAKE_MODULE(derived_class_name) \

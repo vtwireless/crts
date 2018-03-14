@@ -25,12 +25,10 @@
 // Read comments in ../include/crts/Filter.hpp.
 #include "crts/Filter.hpp"
 #include "crts/Module.hpp"
-#include "crts/Controller.hpp"
 #include "FilterModule.hpp"
 #include "Thread.hpp"
 #include "Stream.hpp"
 #include "LoadModule.hpp"
-#include "Controller.hpp"
 
 
 
@@ -467,9 +465,9 @@ void removeCRTSCControllers(uint32_t magic)
     // Do not let module writers use this function.
     ASSERT(magic == CONTROLLER_MAGIC, "This is not a module writer interface.");
 
-    while(Controller::controllers.size())
+    while(CRTSController::controllers.size())
     {
-        CRTSController *c = Controller::controllers.back();
+        CRTSController *c = CRTSController::controllers.back();
         DASSERT(c, "");
         DASSERT(c->destroyController, "");
         // The CRTSController::~CRTSController() will remove
