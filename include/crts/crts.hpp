@@ -62,14 +62,56 @@ extern FILE *crtsOut;
 #endif
 
 
+static inline void _crtsThrowUsage(const char *arg, const char *opt,
+        void (*usage)(void))
+{
+    if(arg)
+        fprintf(stderr,
+"\n"
+"\n"
+"    Got exceptional CRTS plug-in module option: %s%s%s\n"
+"\n",
+    arg?arg:"", opt?" ":"", opt?opt:"");
 
+    if(usage)
+        usage();
+
+    throw "CRTS plug-in module usage";
+}
+
+
+static inline void _crtsDefaultUsage(void)
+{
+    fprintf(stderr,
+"\n"
+"    Who ever wrote this CRTS module did not pass in a\n"
+"  usage() function.  So this text is what you get.\n"
+"\n"
+"\n");
+}
+
+// A very small option argument parsing class for CRTS modules.  Meant to
+// be declared on the stack in your super class CRTSFilter, CRTSModule, or
+// CRTSController constructor.  This seems to be less messy than having
+// this object built into the CRTS base module class.  The CRTS has the
+// option of not using this, and using it just adds one line of code to
+// their constructor and one function call per option.  It can't get less
+// intrusive than that...
+//
+// TODO: I don't think so at this time: have the options parsing built
+// into the CRTS base module class object.
+//
+// TODO: Plug-in module configuration from configuration files and script
+// interpreters (like Python).
+//
 class CRTSModuleOptions
 {
     public:
 
         CRTSModuleOptions(int argc_in, const char **argv_in,
-                void (*usage)(void) = 0):
-            argc(argc_in), argv(argv_in)
+                void (*usage_in)(void) = _crtsDefaultUsage):
+            argc(argc_in), argv(argv_in), usage(usage_in),
+            parsedHelp(false)
         { };
 
         virtual ~CRTSModuleOptions(void) { };
@@ -94,11 +136,7 @@ class CRTSModuleOptions
             errno = 0;
             ret = strtod(arg, &endptr);
             if(errno || arg == endptr)
-            {
-                fprintf(stderr, "Bad option: %s %s\n\n", opt, arg);
-                usage();
-                throw "usage help";
-            }
+                _crtsThrowUsage(arg, optName, usage);
             return ret;
         };
 
@@ -114,11 +152,7 @@ class CRTSModuleOptions
             errno = 0;
             ret = strtof(arg, &endptr);
             if(errno || arg == endptr)
-            {
-                fprintf(stderr, "Bad option: %s %s\n\n", opt, arg);
-                usage();
-                throw "usage help";
-            }
+                _crtsThrowUsage(arg, optName, usage);
             return ret;
         };
 
@@ -134,29 +168,30 @@ class CRTSModuleOptions
             errno = 0;
             ret = strtol(arg, &endptr, 10);
             if(errno || arg == endptr)
-            {
-                fprintf(stderr, "Bad option: %s %s\n\n", opt, arg);
-                usage();
-                throw "usage help";
-            }
+                _crtsThrowUsage(arg, optName, usage);
             return ret;
         };
 
     private:
 
+        // It could be that opt and optName are not the same if we
+        // parse option arguments like: --file=foobar
+        //
         void getInit(const char * &arg, const char * &opt, const char *optName)
         {
             DASSERT(optName && optName[0], "");
+            DASSERT(usage, "");
+
             int i;
+            // argv is not necessarily Null terminated, so
+            // we use an "i" counter.
             for(i=0; i<argc; ++i)
             {
-                if(usage &&
+                if(!parsedHelp &&
                         (!strcmp(argv[i], "-h") ||
                         !strcmp(argv[i], "--help")))
-                {
-                    usage();
-                    throw "usage help";
-                }
+                    _crtsThrowUsage(argv[i], 0, usage);
+
                 if(!strcmp(argv[i], optName) && i<argc+1)
                 {
                     opt = argv[i];
@@ -164,13 +199,14 @@ class CRTSModuleOptions
                     continue;
                 }
             }
-            // We don't need to check for --help or -h again.
-            usage = 0;
+            // We don't need to check for --help or -h again,
+            parsedHelp = true;
         }
 
         int argc;
         const char **argv;
-        void *(*usage)(void);
+        void (*usage)(void);
+        bool parsedHelp;
 };
 
 

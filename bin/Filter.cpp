@@ -62,9 +62,14 @@ FilterModule::FilterModule(Stream *stream_in, CRTSFilter *filter_in,
 
 FilterModule::~FilterModule(void)
 {
-    // TODO: This destructor just removes the connection to and from
-    // this filter module.  Should it try to make new connections to and
-    // from the remaining filter modules?
+    // At this time the CRTSFilter object still exists and we will destroy
+    // it in the end of this function, but first while the filter still
+    // exists we need to do a few things.
+
+    for(auto const &control: filter->controls)
+        for(auto const &controller: control.second->controllers)
+            controller->controlShutdown(control.second);
+
 
     // In here we'll handle the editing of the reader and writer lists
     // for both this object and the reader and writer objects.

@@ -14,8 +14,6 @@
 // A CRTS Filter may have zero, one, or more CRTS Controls.
 
 
-// List of all controls
-std::map<std::string, CRTSControl *> CRTSController::controls;
 
 // List of all controllers
 std::list<CRTSController *> CRTSController::controllers;

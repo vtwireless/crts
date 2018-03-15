@@ -9,6 +9,7 @@
 #include <signal.h>
 #include <pthread.h>
 #include <inttypes.h>
+#include <stdlib.h>
 #include <map>
 #include <list>
 #include <string>
@@ -915,7 +916,8 @@ int main(int argc, const char **argv)
 
         MUTEX_LOCK(&Stream::mutex);
 
-        ASSERT(pthread_create(&exitSignalThread, 0, signalExitThreadCB, 0) == 0, "");
+        ASSERT(pthread_create(&exitSignalThread, 0,
+                    signalExitThreadCB, 0) == 0, "");
 
         // Now we wait for all threads to be running past this
         // barrier.

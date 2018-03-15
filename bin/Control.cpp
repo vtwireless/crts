@@ -11,6 +11,10 @@
 
 
 
+// Global list of all CRTSControl objects:
+std::map<std::string, CRTSControl *> CRTSControl::controls;
+
+
 CRTSControl::CRTSControl(CRTSFilter *filter_in, std::string name_in):
     filter(filter_in)
 {
@@ -19,7 +23,7 @@ CRTSControl::CRTSControl(CRTSFilter *filter_in, std::string name_in):
     ASSERT(name, "strdup() failed");
     DASSERT(filter, "");
 
-    auto &controls = CRTSController::controls;
+    auto &controls = CRTSControl::controls;
 
     if(controls.find(name) != controls.end())
     {
@@ -49,7 +53,7 @@ CRTSControl::~CRTSControl(void)
     filter->controls.erase(name);
 
     // Remove this from the list of all controls.
-    CRTSController::controls.erase(name);
+    CRTSControl::controls.erase(name);
 
     DSPEW("Removing CRTS control named \"%s\"", name);
 

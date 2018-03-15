@@ -58,11 +58,19 @@ class CRTSControl
 
         char *name;
 
+        // List of loaded CRTSController plug-ins that access
+        // this CRTS Control.
+        std::list<CRTSController *> controllers;
+
+        // Global list of all CRTSControl objects:
+        static std::map<std::string, CRTSControl *> controls;
+
         // The filter associated with this control.
         CRTSFilter *filter;
 
         friend CRTSFilter;
         friend CRTSController;
+        friend FilterModule;
 };
 
 
@@ -383,7 +391,13 @@ class CRTSController
         CRTSController(void);
         virtual ~CRTSController(void);
 
-        virtual void execute(void) = 0;
+        virtual void execute(CRTSControl *c) = 0;
+
+        // This is called by each CRTS Filter as it finishes running.
+        // We don't get access to the CRTSFilter, we get access to the
+        // CRTSControl that the filter makes.
+        virtual void controlShutdown(CRTSControl *c) = 0;
+
 
     protected:
 
@@ -397,8 +411,8 @@ class CRTSController
             CRTSControl *crtsControl = 0;
             C c = 0;
 
-            auto search = controls.find(name);
-            if(search != controls.end())
+            auto search = CRTSControl::controls.find(name);
+            if(search != CRTSControl::controls.end())
             {
                 crtsControl = search->second;
                 DASSERT(crtsControl, "");
@@ -409,18 +423,18 @@ class CRTSController
 
                 // Add this CRTS Controller to the CRTS Filter's
                 // execute() callback list.
-                crtsControl->filter->controllers.push_back(
+                crtsControl->controllers.push_back(
                         (CRTSController *) this);
             }
             else
-                WARN("Did not find CRTS control named \"%s\"",
-                        name);
+                WARN("Did not find CRTS control named \"%s\"", name);
 
             return c;
         };
 
 
     private:
+
 
         // TODO: Ya, this is ugly.  It'd be nice to not expose these
         // things to the module writer.
@@ -430,9 +444,6 @@ class CRTSController
                 int argc, const char **argv, uint32_t magic);
         friend void removeCRTSCControllers(uint32_t magic);
 
-
-        // Global list of all CRTSControl objects:
-        static std::map<std::string, CRTSControl *> controls;
 
         // Global list of all loaded CRTSController plug-ins:
         static std::list<CRTSController *> controllers;

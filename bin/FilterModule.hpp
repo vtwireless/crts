@@ -1,13 +1,12 @@
 // A class for keeping the CRTSFilter loaded modules with other data.
-// Basically a stupid container struct, because we wanted to decrease the
-// amount of data in the CRTSFilter (private or otherwise) which will tend
-// to make the user interface change less.  We can add more stuff to this
-// and the user interface will not change at all.  Even adding private
-// data to the user interface in the class CRTSFilter will change the API
+// Basically a container struct, because we wanted to decrease the amount
+// of data in the CRTSFilter (private or otherwise) which will tend to
+// make the user interface change less.  We can add more stuff to this and
+// the user interface will not change at all.  Even adding private data to
+// the user interface in the class CRTSFilter will change the API
 // (application programming interface) and more importantly ABI
-// (application binary interface), so this cuts down on interface changes.
-//
-// And that's a big deal.
+// (application binary interface), so this cuts down on interface
+// changes; and that could be a big deal.
 //
 
 class Stream;
@@ -141,18 +140,31 @@ class FilterModule
 
         void runUsersActions(void *buffer, size_t len, uint32_t channelNum)
         {
+            // TODO: The order of filter->write() and the
+            // controller->execute() calls could be different???
+            // Whatever is decided we will be stuck with it after this
+            // starts getting used.
+
             // totalBytesIn is a std::atomic so we don't need the mutex
             // lock here.  This can be read in an users' CRTS Control.
             filter->_totalBytesIn += len;
+
+            // If there are any users CRTS Contollers we call their
+            // execute() like so:
+            for(auto const &control: filter->controls)
+                for(auto const &controller: control.second->controllers)
+                    controller->execute(control.second);
 
             // All the CRTSFilter::writePush() calls will add to
             // _totalBytesOut.
             filter->write(buffer, len, channelNum);
 
-            // If there are any users CRTS Contollers we call them like
-            // so:
-            for(auto const &controller: filter->controllers)
-                controller->execute();
+            // If the controller needs a hook to be called after the last
+            // filter->write() they can use the controller destructor
+            // which is called after the last write.
+            //
+            // That hook come in all the connected CRTS Filters is called
+            // CRTSController::controlShutdown(CRTSControl *c)
         };
 
 };

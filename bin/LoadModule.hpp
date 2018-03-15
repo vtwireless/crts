@@ -74,6 +74,46 @@ ModuleLoader<Base, Create>::~ModuleLoader(void)
 }
 
 
+static inline char *GetPluginPathFromEnv(const char *category, const char *name)
+{
+    char *env = 0;
+
+    {
+        // Maybe more than one environment variable:
+        const char *envs[] = { "CRTS_MODULE_PATH", 0 };
+        const char **e = envs;
+
+        for(;*e; ++e)
+            if((env = getenv(*e)))
+                break;
+    }
+
+    // TODO: For now CRTS_MODULE_PATH is just a directory
+    // but we need this to work for a ':' separated list
+    // of directories.
+
+    if(!env) return env; // failed to find module this way.
+
+    // len = strlen("$env" + '/' + category + '/' + name)
+    const ssize_t len = strlen(env) + strlen(category) +
+        strlen(name) + 6/* for '//' and ".so" and '\0' */;
+    DASSERT(len > 0 && len < 1024*1024, "");
+    char *buf = (char *) malloc(len);
+    ASSERT(buf, "malloc() failed");
+
+    const char *suffix = ".so";
+    if(!strcmp(&name[strlen(name)-3], ".so"))
+        suffix = "";
+    snprintf(buf, len, "%s/%s/%s%s", env, category, name, suffix);
+
+    if(access(buf, R_OK) == 0)
+        return buf; // success, we can access this file.
+
+    free(buf);
+    return 0; // failed to access file
+}
+
+
 
 // The relative paths to crts_program and the module with name name is the
 // same in the source and installation is like so:
@@ -95,6 +135,7 @@ ModuleLoader<Base, Create>::~ModuleLoader(void)
 
 // The returned buffer must be free-d via free().
 
+
 #define PRE "/share/crts/plugins/"
 
 // A thread-safe path finder looks at /proc/self which is the same as
@@ -104,16 +145,21 @@ ModuleLoader<Base, Create>::~ModuleLoader(void)
 // The returned pointer must be free()ed.
 static inline char *GetPluginPath(const char *category, const char *name)
 {
-    DASSERT(strlen(name) >= 1, "");
-    DASSERT(strlen(category) >= 1, "");
+    DASSERT(name && strlen(name) >= 1, "");
+    DASSERT(category && strlen(category) >= 1, "");
+
+    char *buf;
+
+    if((buf = GetPluginPathFromEnv(category, name)))
+        return buf;
 
     // postLen = strlen("/share/crts/plugins/" + category + '/' + name)
-    static const ssize_t postLen =
+    const ssize_t postLen =
         strlen(PRE) + strlen(category) +
         strlen(name) + 5/* for '/' and ".so" and '\0' */;
     DASSERT(postLen > 0 && postLen < 1024*1024, "");
     ssize_t bufLen = 128 + postLen;
-    char *buf = (char *) malloc(bufLen);
+    buf = (char *) malloc(bufLen);
     ASSERT(buf, "malloc() failed");
     ssize_t rl = readlink("/proc/self/exe", buf, bufLen);
     ASSERT(rl > 0, "readlink(\"/proc/self/exe\",,) failed");
