@@ -3,6 +3,8 @@
 
 # This nothing to install from this directory.
 # There to install files built in this directory
-#INSTALL_DIR = $(PREFIX)/lib
+INSTALL_DIR = $(PREFIX)/lib/pkgconfig
 
-include ../quickbuild.make
+INSTALLED := crts.pc
+
+include ../../quickbuild.make

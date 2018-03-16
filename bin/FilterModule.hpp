@@ -163,8 +163,21 @@ class FilterModule
             // filter->write() they can use the controller destructor
             // which is called after the last write.
             //
-            // That hook come in all the connected CRTS Filters is called
-            // CRTSController::controlShutdown(CRTSControl *c)
+            // The hook comes in all the connected CRTS Filters is called:
+            // CRTSController::shutdown(CRTSControl *c)
         };
 
+        // So we may access the map (list) of controls for this filter
+        // internally.  Since CRTSFilter::controls must be private, so
+        // the user does not directly access it.
+        std::map<std::string, CRTSControl *> &getControls()
+        {
+            return filter->controls;
+        }
+
+        // Needed by the plug-in loader to make a default CRTSControl.
+        void makeControl(const char *controlName)
+        {
+            filter->makeControl(controlName);
+        }
 };

@@ -1,3 +1,6 @@
+#ifndef __usrp_set_parameters_hpp__
+#define __usrp_set_parameters_hpp__
+
 // This is NOT intended to be a user API.
 
 // functions that sets and checks RX and TX USRP parameters via UHD API
@@ -60,3 +63,5 @@ static inline void crts_usrp_tx_set(uhd::usrp::multi_usrp::sptr usrp,
     usrp->set_tx_gain(gain);
     CHECK_COMPARE("TX", gain, usrp->get_tx_gain());
 }
+
+#endif //#ifndef __usrp_set_parameters_hpp__

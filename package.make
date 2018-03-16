@@ -1,6 +1,6 @@
 # Define package specific GNU make variables in here.
 
-IN_VARS := SPEW_LEVEL DEBUG
+IN_VARS := SPEW_LEVEL DEBUG PREFIX VERSION
 
 # What to call a tarball file name prefix TAR_NAME-VERSION.tar.gz
 TAR_NAME := crts

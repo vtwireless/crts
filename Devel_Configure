@@ -1,5 +1,13 @@
 #!/bin/bash
 
+
+if [ "$(whoami)" = lance ] ; then
+    prefix=/usr/local/encap/crts-HEAD
+else
+    prefix=${HOME}/installed/crts
+fi
+
+
 # This script sets up the software for a typical development
 # configuration.  You are not necessarily encouraged to use this, but
 # copying it and making your own local version of it is encouraged.
@@ -38,7 +46,7 @@ DEBUG := \#define DEBUG
 SPEW_LEVEL  := \#define SPEW_LEVEL_DEBUG
 
 
-PREFIX := ${HOME}/installed/crts
+PREFIX := ${prefix}
 EOF
 
 echo

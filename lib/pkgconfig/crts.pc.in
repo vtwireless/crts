@@ -1,0 +1,20 @@
+
+prefix=@PREFIX@
+#libdir=@PREFIX@/lib
+includedir=@PREFIX@/include
+
+homepage=https://github.com/vtwireless/crts
+
+about=crts version: @VERSION@
+
+###################################
+# standard pkg-config options
+###################################
+Name: crts
+Description: The Cognitive Radio Test System (crts)
+Version: @VERSION@
+Homepage: https://github.com/vtwireless/crts
+URL: https://github.com/vtwireless/crts
+Requires:
+Libs:
+Cflags: -I${includedir}

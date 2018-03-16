@@ -24,7 +24,7 @@ class TestRx: public CRTSController
         // This is called by each CRTS Filter as it finishes running.
         // We don't get access to the CRTSFilter, we get access to the
         // CRTSControl that the filter makes.
-        void controlShutdown(CRTSControl *c)
+        void shutdown(CRTSControl *c)
         {
             DSPEW("last use of CRTS Control named \"%s\"",
                     c->getName());

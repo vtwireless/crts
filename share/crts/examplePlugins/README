@@ -1,0 +1,27 @@
+This directory tree contains user examples.
+
+After installing CRTS, and putting crts_radio in your PATH, we recommend
+copying this whole directory tree to some place in your home directory,
+and then run "make" to build the difference example plug-ins and than
+run/edit/run some of the example script programs like so:
+
+
+make
+
+
+export CRTS_MODULE_PATH=${PWD}/examplePlugins
+
+
+crts_radio\
+ -f stdin\
+ -f tx [ --uhd  addr=192.168.10.2 ]\
+ < /dev/urandom
+
+
+crts_radio\
+ -f stdin\
+ -f int2Float [ --scale 0.01 ]\
+ -f tx [ --uhd  addr=192.168.10.2 ]\
+ < /dev/urandom
+
+

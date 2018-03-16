@@ -1,6 +1,6 @@
 
 # There to install files from in this directory
-INSTALL_DIR = $(PREFIX)/crts/include
+INSTALL_DIR = $(PREFIX)/include/crts
 
 
 INSTALLED :=\
@@ -9,6 +9,8 @@ INSTALLED :=\
  Filter.hpp\
  Control.hpp\
  Controller.hpp\
+ usrp_set_parameters.hpp\
+ crts.hpp\
  debug.h
 
 

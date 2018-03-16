@@ -19,6 +19,7 @@
 #include <queue>
 
 #include "crts/debug.h"
+#include "crts/crts.hpp"
 
 #include "LoadModule.hpp"
 #include "pthread_wrappers.h" // some pthread_*() wrappers
@@ -402,7 +403,17 @@ bool Stream::load(const char *name, int argc, const char **argv)
     if(!crtsFilter || !destroyFilter)
         return true; // fail
 
-    load(crtsFilter, destroyFilter, name);
+    FilterModule *m = load(crtsFilter, destroyFilter, name);
+
+    // If there was no CRTSControl for this CRTS Filter we will add
+    // a default CRTSControl.
+    //
+    if(m->getControls().size() == 0)
+    {
+        CRTSModuleOptions opt(argc, argv);
+        const char *controlName = opt.get("--control", m->name.c_str());
+        m->makeControl(controlName);
+    }
 
     return false; // success
 }

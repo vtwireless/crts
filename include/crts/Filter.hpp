@@ -331,7 +331,7 @@ class CRTSFilter
         //void setBufferQueueLength(uint32_t n);
         //
         //static const uint32_t defaultBufferQueueLength;
-        
+
 
     // The FilterModule has to manage the CRTSFilter adding readers and
     // writers from between separate CRTSFilter objects.  This is better
@@ -363,6 +363,12 @@ class CRTSFilter
         // CRTSController::getControl<>()
         //
         std::list<CRTSController *> controllers;
+
+        // Needed by the plug-in loader to make a default CRTSControl.
+        void makeControl(const char *controlName)
+        {
+            new CRTSControl(this, controlName);
+        }
 
         // Pointer to the opaque FilterModule co-object.  The two objects
         // could be one object, except that we need to hide the data and
@@ -396,7 +402,7 @@ class CRTSController
         // This is called by each CRTS Filter as it finishes running.
         // We don't get access to the CRTSFilter, we get access to the
         // CRTSControl that the filter makes.
-        virtual void controlShutdown(CRTSControl *c) = 0;
+        virtual void shutdown(CRTSControl *c) = 0;
 
 
     protected:

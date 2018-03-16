@@ -68,7 +68,7 @@ FilterModule::~FilterModule(void)
 
     for(auto const &control: filter->controls)
         for(auto const &controller: control.second->controllers)
-            controller->controlShutdown(control.second);
+            controller->shutdown(control.second);
 
 
     // In here we'll handle the editing of the reader and writer lists

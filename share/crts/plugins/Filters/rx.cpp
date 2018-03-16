@@ -8,8 +8,8 @@
 #include "crts/Filter.hpp"
 #include "crts/Control.hpp"
 #include "crts/crts.hpp" // for:  FILE *crtsOut
+#include "crts/usrp_set_parameters.hpp" // UHD usrp wrappers
 
-#include "usrp_set_parameters.hpp" // UHD usrp wrappers
 #include "defaultUSRP.hpp" // defaults: RX_FREQ, RX_RATE, RX_GAIN
 
 #include "rxControl.hpp"
@@ -71,7 +71,7 @@ class Rx : public CRTSFilter
     private:
 
         RxControl rxControl;
-        
+
         uhd::usrp::multi_usrp::sptr usrp;
         uhd::device::sptr device;
         size_t numComplexFloats;

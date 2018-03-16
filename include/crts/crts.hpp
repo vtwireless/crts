@@ -98,11 +98,15 @@ static inline void _crtsDefaultUsage(void)
 // their constructor and one function call per option.  It can't get less
 // intrusive than that...
 //
-// TODO: I don't think so at this time: have the options parsing built
-// into the CRTS base module class object.
+// TODO: Have the options parsing built into the CRTS base module class
+// object. I don't think so at this time...
 //
 // TODO: Plug-in module configuration from configuration files and script
-// interpreters (like Python).
+// interpreters (like Python).  Hence the name ModuleOptions and not
+// ParseArgumentOptions or whatever.  So now we just parse command line
+// arguments, but we could extend it to parsing a configuration file.
+// This interface does not seem to fit the script interpreter idea, but
+// it will interfere with it.
 //
 class CRTSModuleOptions
 {
