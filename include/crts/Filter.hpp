@@ -424,7 +424,7 @@ class CRTSController
                 DASSERT(crtsControl, "");
                 c = dynamic_cast<C>(crtsControl);
                 DASSERT(c, "dynamic_cast<CRTSControl super class>"
-                        " failed for control named \"%s\"", name);
+                        " failed for control named \"%s\"", name.c_str());
                 DSPEW("got control \"%s\"=%p", name.c_str(), c);
 
                 // Add this CRTS Controller to the CRTS Filter's
@@ -433,7 +433,7 @@ class CRTSController
                         (CRTSController *) this);
             }
             else
-                WARN("Did not find CRTS control named \"%s\"", name);
+                WARN("Did not find CRTS control named \"%s\"", name.c_str());
 
             return c;
         };

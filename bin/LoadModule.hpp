@@ -77,40 +77,101 @@ ModuleLoader<Base, Create>::~ModuleLoader(void)
 static inline char *GetPluginPathFromEnv(const char *category, const char *name)
 {
     char *env = 0;
-
+    char **envPaths = 0;
     {
-        // Maybe more than one environment variable:
+        // TODO: We could find the longest directory path string in this
+        // colon separated path list
+
+        // TODO: Maybe more than one environment variable can
+        // be added to this list of C strings.
         const char *envs[] = { "CRTS_MODULE_PATH", 0 };
-        const char **e = envs;
+
+        const char **e = envs; // dummy pointer.
 
         for(;*e; ++e)
             if((env = getenv(*e)))
                 break;
+
+        // We are now done with the envs and e stack memory pointers.
+
+        if(!env) return env; // move on to the next method.
+
+        DASSERT(*env, "env CRTS_MODULE_PATH has zero length");
+
+        DSPEW("Got env: %s=%s", envs[0], env);
+
+        // We make a copy of this colon separated path list.
+        env = strdup(env);
+        ASSERT(env, "strdup() failed");
+        char *s = env;
+
+        size_t i = 0;
+        if(*env) ++i; // 1 path
+        while(*s)
+            if(*(s++) == ':') ++i; // + 1 path
+
+        // Now "i" is the number of paths and we add a Null
+        // string terminator.
+
+        envPaths = (char **) malloc(sizeof(char *)*(i+1));
+        ASSERT(envPaths, "malloc() failed");
+
+        // Now go through the string again but find points in it
+        // to be our paths in this (:) string-list copy.
+        i = 0;
+        envPaths[i++] = env;
+        for(s=env; *s; ++s)
+            if(*s == ':')
+            {
+                // get a pointer to the next string.
+                envPaths[i++] = s+1;
+                // terminate the path string.
+                *s = '\0';
+            }
+
+        envPaths[i++] = 0; // Null terminate envPaths.
+
+        // Now we have env and envPaths to free.
+
     }
-
-    // TODO: For now CRTS_MODULE_PATH is just a directory
-    // but we need this to work for a ':' separated list
-    // of directories.
-
-    if(!env) return env; // failed to find module this way.
-
-    // len = strlen("$env" + '/' + category + '/' + name)
+    
+    // len = strlen("$env" + '/' + category + '/' + name + ".so")
+    // More than long enough.
     const ssize_t len = strlen(env) + strlen(category) +
-        strlen(name) + 6/* for '//' and ".so" and '\0' */;
+            strlen(name) + 6/* for '//' and ".so" and '\0' */;
+
+    // In case it's stupid long...
     DASSERT(len > 0 && len < 1024*1024, "");
+
     char *buf = (char *) malloc(len);
     ASSERT(buf, "malloc() failed");
 
-    const char *suffix = ".so";
+    const char *suffix;
     if(!strcmp(&name[strlen(name)-3], ".so"))
         suffix = "";
-    snprintf(buf, len, "%s/%s/%s%s", env, category, name, suffix);
+    else
+        suffix = ".so";
 
-    if(access(buf, R_OK) == 0)
-        return buf; // success, we can access this file.
+    // So now envPaths[] is an array of strings that is Null terminated.
+    for(char **path = envPaths; *path; ++path)
+    {
+        snprintf(buf, len, "%s/%s/%s%s", env, category, name, suffix);
 
+        if(access(buf, R_OK) == 0)
+        {
+            // No memory leaks here:
+            free(envPaths);
+            free(env);
+            // The user of this function must free buf.
+            return buf; // success, we can access this file.
+        }
+    }
+
+    // No memory leaks here:
+    free(envPaths);
+    free(env);
     free(buf);
-    return 0; // failed to access file
+    return 0; // failed to access a file
 }
 
 
