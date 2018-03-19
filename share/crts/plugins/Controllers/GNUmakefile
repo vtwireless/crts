@@ -20,4 +20,7 @@ undefine MkSource
 undefine s
 
 
+dualTx.so_LDFLAGS := -luhd
+
+
 include $(ROOT)quickbuild.make
