@@ -23,6 +23,7 @@
 
 #include "LoadModule.hpp"
 #include "pthread_wrappers.h" // some pthread_*() wrappers
+#include "crts/crts.hpp"
 #include "crts/Filter.hpp"
 #include "FilterModule.hpp"
 #include "Thread.hpp"
@@ -331,8 +332,8 @@ Stream::~Stream(void)
         DSPEW("Cleaning up filter modules with no threads set up");
         // We have not thread objects yet so we need to
         // delete the filter modules in the streams.
-        for(auto it : map)
-            delete it.second;
+        while(map.size())
+            delete map.rbegin()->second;
     }
     else
     {
@@ -386,6 +387,12 @@ FilterModule* Stream::load(CRTSFilter *crtsFilter,
 }
 
 
+// Welcome to name space hell.
+//
+// Here we find a unique CRTSControl name.
+
+
+
 // Return false on success.
 //
 // Each Stream is a factory of filter modules.  stream->load()
@@ -408,12 +415,8 @@ bool Stream::load(const char *name, int argc, const char **argv)
     // If there was no CRTSControl for this CRTS Filter we will add
     // a default CRTSControl.
     //
-    if(m->getControls().size() == 0)
-    {
-        CRTSModuleOptions opt(argc, argv);
-        const char *controlName = opt.get("--control", m->name.c_str());
-        m->makeControl(controlName);
-    }
+    if(m->getControls().size() == 0 && !m->makeControl(argc, argv))
+        return true; // fail
 
     return false; // success
 }
@@ -644,13 +647,15 @@ bool Stream::printGraph(FILE *f)
             "\n", Stream::streams.size()
     );
 
-    fprintf(f, "digraph FilterStreams {\n");
+    fprintf(f, "digraph {\n");
 
     for(auto stream : streams)
     {
         fprintf(f,
                 "\n"
-                "  // Stream index %d\n", n);
+                "  subgraph stream_%d {\n"
+                "    label=\"Stream %d\";\n"
+                , n, n);
 
         for(auto pair : stream->map)
         {
@@ -662,7 +667,7 @@ bool Stream::printGraph(FILE *f)
                     filterModule->loadIndex);
 
             // example f0_1 [label="stdin(0)\n1"] for thread 1
-            fprintf(f, "  %s [label=\"%s\nthread %" PRIu32 "\"];\n",
+            fprintf(f, "    %s [label=\"%s\\nthread %" PRIu32 "\"];\n",
                     wNodeName,
                     filterModule->name.c_str(),
                     (filterModule->thread)?
@@ -675,10 +680,11 @@ bool Stream::printGraph(FILE *f)
                 snprintf(rNodeName, 64, "f%" PRIu32 "_%" PRIu32, n,
                         filterModule->readers[i]->loadIndex);
 
-                fprintf(f, "  %s -> %s;\n", wNodeName, rNodeName);
+                fprintf(f, "    %s -> %s;\n", wNodeName, rNodeName);
             }
         }
 
+        fprintf(f, "  }\n\n");
 
         ++n;
     }

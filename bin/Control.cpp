@@ -5,6 +5,7 @@
 
 #include "crts/debug.h"
 #include "crts/Filter.hpp"
+#include "crts/crts.hpp"
 #include "crts/Control.hpp"
 #include "crts/Controller.hpp"
 #include "FilterModule.hpp"

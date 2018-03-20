@@ -11,6 +11,7 @@
 
 #include "crts/debug.h"
 #include "crts/Filter.hpp" // CRTSFilter user module interface
+#include "crts/crts.hpp"
 #include "pthread_wrappers.h"
 #include "FilterModule.hpp" // opaque co-class
 #include "Thread.hpp"

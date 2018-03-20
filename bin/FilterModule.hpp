@@ -176,8 +176,19 @@ class FilterModule
         }
 
         // Needed by the plug-in loader to make a default CRTSControl.
-        void makeControl(const char *controlName)
+        CRTSControl *makeControl(int argc, const char **argv)
         {
-            filter->makeControl(controlName);
+            CRTSModuleOptions opt(argc, argv);
+            bool generateName = false;
+            const char *controlName = opt.get("--control", "");
+            if(controlName[0] == '\0')
+            {
+                // The user did not pass in a --control NAME
+                // as a command line argument.
+                generateName = true;
+                controlName = name.c_str();
+            }
+
+            return filter->makeControl(controlName, generateName);
         }
 };

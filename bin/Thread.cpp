@@ -10,6 +10,7 @@
 #include <queue>
 
 #include "crts/debug.h"
+#include "crts/crts.hpp"
 #include "crts/Filter.hpp" // CRTSFilter user module interface
 #include "pthread_wrappers.h"
 #include "FilterModule.hpp" // opaque filter co-class

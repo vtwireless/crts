@@ -105,7 +105,7 @@ static const char *getControlName(int argc, const char **argv)
 
 
 Tx::Tx(int argc, const char **argv):
-    txControl(this, getControlName(argc, argv), usrp, device),
+    txControl(this, getControlName(argc, argv), usrp),
     usrp(0), device(0)
 {
     CRTSModuleOptions opt(argc, argv, usage);

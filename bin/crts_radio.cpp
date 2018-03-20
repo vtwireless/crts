@@ -23,7 +23,7 @@
 #include "get_opt.hpp"
 #include "pthread_wrappers.h" // some pthread_*() wrappers
 
-// Read comments in ../include/crts/Filter.hpp.
+#include "crts/crts.hpp"
 #include "crts/Filter.hpp"
 #include "crts/Module.hpp"
 #include "FilterModule.hpp"

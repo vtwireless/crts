@@ -365,9 +365,35 @@ class CRTSFilter
         std::list<CRTSController *> controllers;
 
         // Needed by the plug-in loader to make a default CRTSControl.
-        void makeControl(const char *controlName)
+        CRTSControl *makeControl(const char *controlName, bool generateName)
         {
-            new CRTSControl(this, controlName);
+            DASSERT(controlName && controlName[0], "");
+
+            auto &controls = CRTSControl::controls;
+
+            if(!generateName)
+            {
+                if(controls.find(controlName) != controls.end())
+                {
+                    ERROR("A control named \"%s\" is already loaded", controlName);
+                    return 0;
+                }
+                return new CRTSControl(this, controlName);
+            }
+
+            // We generate a unique CRTS Control name using a counter.
+            // Better than just failing.
+            std::string genName = controlName;
+            int count = 1;
+            while(controls.find(genName) != controls.end())
+            {
+                genName = controlName;
+                genName += "_";
+                genName += std::to_string(count++);
+                DASSERT(count < 10000, "");
+            }
+
+            return new CRTSControl(this, genName);
         }
 
         // Pointer to the opaque FilterModule co-object.  The two objects
