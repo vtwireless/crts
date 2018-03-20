@@ -24,6 +24,7 @@
 class FilterModule;
 class CRTSController;
 class CRTSFilter;
+class Stream;
 
 // Forward declare the whole class CRTSControl
 
@@ -349,6 +350,7 @@ class CRTSFilter
     friend FilterModule; // The rest of the filter code and data.
     friend CRTSControl;
     friend CRTSController;
+    friend Stream;
 
     private:
 
@@ -430,6 +432,7 @@ class CRTSController
         // CRTSControl that the filter makes.
         virtual void shutdown(CRTSControl *c) = 0;
 
+        const char *getName(void) { return (const char *) name; };
 
     protected:
 
@@ -475,6 +478,7 @@ class CRTSController
         friend int LoadCRTSController(const char *name,
                 int argc, const char **argv, uint32_t magic);
         friend void removeCRTSCControllers(uint32_t magic);
+        friend Stream;
 
 
         // Global list of all loaded CRTSController plug-ins:
@@ -488,6 +492,8 @@ class CRTSController
         // interface; I'm too lazy to do that at this point.
         //
         void *(*destroyController)(CRTSController *);
+
+        char *name;
 };
 
 

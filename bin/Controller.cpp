@@ -20,7 +20,7 @@ std::list<CRTSController *> CRTSController::controllers;
 
 
 
-CRTSController::CRTSController(void)
+CRTSController::CRTSController(void): name(0)
 {
     DSPEW();
     controllers.push_back(this);
@@ -30,5 +30,6 @@ CRTSController::CRTSController(void)
 CRTSController::~CRTSController(void)
 {
     controllers.remove(this);
+    if(name) free(name);
     DSPEW();
 }

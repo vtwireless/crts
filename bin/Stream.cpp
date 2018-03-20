@@ -653,9 +653,9 @@ bool Stream::printGraph(FILE *f)
     for(auto stream : streams)
     {
         fprintf(f,
-                "\n"
-                "  subgraph stream_%d {\n"
-                "    label=\"Stream %d\";\n"
+                "\n" // The word "cluster_" is needed for dot.
+                "  subgraph cluster_stream_%" PRIu32 " {\n"
+                "    label=\"Stream %" PRIu32 "\";\n"
                 , n, n);
 
         for(auto pair : stream->map)
@@ -689,6 +689,54 @@ bool Stream::printGraph(FILE *f)
 
         ++n;
     }
+
+    const auto &controllers = CRTSController::controllers;
+
+    fprintf(f, "// controllers.size()=%zu\n", controllers.size());
+
+    if(controllers.size())
+    {
+        fprintf(f,
+                "\n" // The word "cluster_" is needed for dot.
+                "  subgraph cluster_controllers {\n"
+                "    label=\"Controllers\";\n"
+        );
+        size_t i = 0;
+
+        for(auto controller: controllers)
+        {
+            // This controller label needs to be something the user can recognize.
+            fprintf(f, "    controller_%zu [label=\"%s %zu\"];\n",
+                    i, controller->getName(), i);
+
+            // TODO: Should we make the Controller have a list of it's
+            // CRTS filters or CRTS controls??  Then we would not need to
+            // look at all CRTS filters in all the streams here.
+            n = 0;
+            for(auto stream : streams)
+            {
+                for(auto pair : stream->map)
+                {
+                    FilterModule *filterModule = pair.second;
+
+                    for(auto fController: filterModule->filter->controllers)
+                        if(fController == controller)
+                        {
+                            fprintf(f, "    controller_%zu ->", i);
+
+                            fprintf(f, "f%" PRIu32 "_%" PRIu32 ";\n",
+                                    n, filterModule->loadIndex);
+                            break;
+                        }
+                }
+                ++n; // next stream
+            }
+            ++i; // next controller
+        }
+
+        fprintf(f,"  }\n"); // subgraph cluster_controllers
+    }
+
 
     fprintf(f, "}\n");
 

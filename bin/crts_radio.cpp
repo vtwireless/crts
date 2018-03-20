@@ -485,6 +485,7 @@ void removeCRTSCControllers(uint32_t magic)
 int LoadCRTSController(const char *name, int argc, const char **argv, uint32_t magic)
 {
     // Do not let module writers use this function.
+    DASSERT(name && name[0], "");
     ASSERT(magic == CONTROLLER_MAGIC, "This is not a module writer interface.");
 
     void *(*destroyController)(CRTSController *);
@@ -492,6 +493,11 @@ int LoadCRTSController(const char *name, int argc, const char **argv, uint32_t m
     CRTSController *crtsController =
         LoadModule<CRTSController>(name, "Controllers",
                 argc, argv, destroyController);
+
+    // TODO: note that the Super class CRTSController object will not see
+    // this name.
+    crtsController->name = strdup(name);
+    ASSERT(name, "strdup() failed");
 
     if(!crtsController || !destroyController)
         return 1; // fail
