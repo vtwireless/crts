@@ -324,8 +324,8 @@ Stream::~Stream(void)
             MUTEX_UNLOCK(&(*tt)->mutex);
         }
 
-    // Now all the thread in this stream should be heading toward
-    // return 0.
+    // Now all the threads in this stream should be heading toward
+    // return/exit.
     
     if(threads.empty())
     {
@@ -333,6 +333,7 @@ Stream::~Stream(void)
         // We have not thread objects yet so we need to
         // delete the filter modules in the streams.
         while(map.size())
+            // We let the filter module edit this map.
             delete map.rbegin()->second;
     }
     else
@@ -344,7 +345,7 @@ Stream::~Stream(void)
             tt = threads.begin())
             // The thread will delete all the filter modules
             // that in-turn destroys the CRTSFilter in the filter
-            // module.
+            // module.  This will not edit this threads list.
             delete *tt;
     }
 
