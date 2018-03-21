@@ -138,6 +138,8 @@ class FilterModule
 
     friend Stream;
 
+        // This is the guts of crts_radio!
+        //
         void runUsersActions(void *buffer, size_t len, uint32_t channelNum)
         {
             // TODO: The order of filter->write() and the
@@ -146,17 +148,24 @@ class FilterModule
             // starts getting used.
 
             // totalBytesIn is a std::atomic so we don't need the mutex
-            // lock here.  This can be read in an users' CRTS Control.
+            // lock here.  This can be read in a users' CRTS Controller
+            // via the CRTS Control that the CRTS Filter provided.
             filter->_totalBytesIn += len;
 
-            // If there are any users CRTS Contollers we call their
-            // execute() like so:
-            for(auto const &control: filter->controls)
-                for(auto const &controller: control.second->controllers)
-                    controller->execute(control.second);
+            // If there are any users CRTS Contollers that "attached" to
+            // any of the CRTSControl objects in this CRTS filter we call
+            // their CRTSContollers::execute() like so:
+            for(auto const &controlIt: filter->controls)
+                for(auto const &controller: controlIt.second->controllers)
+                    // Let the CRTSController do its' thing.  The
+                    // controller may even change the buffer and len in
+                    // the up-comming filter->write();  buffer and len are
+                    // non-constant references.
+                    controller->execute(controlIt.second, buffer, len, channelNum);
+
 
             // All the CRTSFilter::writePush() calls will add to
-            // _totalBytesOut.
+            // CRTSFilter::_totalBytesOut.
             filter->write(buffer, len, channelNum);
 
             // If the controller needs a hook to be called after the last

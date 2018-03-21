@@ -31,7 +31,7 @@ class TestTx: public CRTSController
         // We don't get direct access to the CRTSFilter, we get access to
         // the CRTSControl that the filter makes.
         //
-        void execute(CRTSControl *c);
+        void execute(CRTSControl *c, void * &buffer, size_t &len, uint32_t channelNum);
 
         // This is called by each CRTS Filter as it finishes running.  We
         // don't get direct access to the CRTSFilter, we get access to the
@@ -114,7 +114,7 @@ TestTx::TestTx(int argc, const char **argv): nextBytesOut(BYTES_PER_CHANGE)
 }
 
 
-void TestTx::execute(CRTSControl *c)
+void TestTx::execute(CRTSControl *c, void * &buffer, size_t &len, uint32_t channelNum)
 {
     // We apply an action at every so many bytes out.
     //

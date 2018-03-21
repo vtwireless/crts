@@ -32,7 +32,7 @@ class TestDual: public CRTSController
         // We don't get direct access to the CRTSFilter, we get access to
         // the CRTSControl that the filter makes.
         //
-        void execute(CRTSControl *c);
+        void execute(CRTSControl *c, void * &buffer, size_t &len, uint32_t channelNum);
 
         // This is called by each CRTS Filter as it finishes running.  We
         // don't get direct access to the CRTSFilter, we get access to the
@@ -126,7 +126,7 @@ static double fartherFrom(double val, double x, double y)
 }
 
 
-void TestDual::execute(CRTSControl *c)
+void TestDual::execute(CRTSControl *c, void * &buffer, size_t &len, uint32_t channelNum)
 {
     // We apply an action at every so many bytes out.
     //
@@ -146,7 +146,6 @@ void TestDual::execute(CRTSControl *c)
 
     // Or you could do:
     // nextBytesIn = BYTES_PER_CHANGE + tx->totalBytesIn();
-
 
     INFO("totalBytesIn=%" PRIu64
         " totalBytesOut=%" PRIu64 " freq=%lg",

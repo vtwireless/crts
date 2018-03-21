@@ -42,12 +42,13 @@ class CRTSControl
          */
         uint64_t totalBytesIn(void) const;
 
-        /** Total byte written out via CRTSFilter::writePush()
-         * since the program started.  Note: if there is more
-         * than one output channel this will include a total
-         * for all channels.  TODO: add per channel totals.
+        /** Total bytes written out via CRTSFilter::writePush() since the
+         * program started.  Note: if there is more than one output
+         * channel this will include a total for all channels.  TODO: add
+         * per channel totals.
          */
         uint64_t totalBytesOut(void) const;
+
 
     protected:
 
@@ -418,6 +419,7 @@ class CRTSFilter
         std::atomic<uint64_t> _totalBytesIn, _totalBytesOut;
 };
 
+
 class CRTSController
 {
 
@@ -426,7 +428,8 @@ class CRTSController
         CRTSController(void);
         virtual ~CRTSController(void);
 
-        virtual void execute(CRTSControl *c) = 0;
+        virtual void execute(CRTSControl *c, void * &buffer,
+                size_t &len, uint32_t channelNum) = 0;
 
         // This is called by each CRTS Filter as it finishes running.
         // We don't get access to the CRTSFilter, we get access to the
@@ -473,7 +476,7 @@ class CRTSController
 
 
         // TODO: Ya, this is ugly.  It'd be nice to not expose these
-        // things to the module writer.
+        // things to the module writer; even if they are private.
         //
         friend CRTSControl;
         friend int LoadCRTSController(const char *name,
@@ -518,8 +521,6 @@ inline uint64_t CRTSControl::totalBytesOut(void) const
     DASSERT(filter, "");
     return filter->_totalBytesOut;
 };
-
-
 
 
 
