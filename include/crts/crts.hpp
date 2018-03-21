@@ -9,8 +9,10 @@
 #include <errno.h>
 #include <string>
 #include <typeinfo>
+#include <gnu/lib-names.h>
 
 #include <crts/debug.h>
+
 
 
 #define CRTS_BASENAME(buf, len)   getModuleName(buf, len, __BASE_FILE__)

@@ -32,7 +32,7 @@ class FileIn : public CRTSFilter
 static void usage(void)
 {
     char name[64];
-    fprintf(crtsOut, "Usage: %s [ IN_FILENAME ]\n"
+    fprintf(crtsOut, "Usage: %s [ --file IN_FILENAME ]\n"
             "\n"
             "  The option IN_FILENAME is optional.\n"
             "  The default input is stdin.\n"
@@ -48,13 +48,10 @@ static void usage(void)
 
 FileIn::FileIn(int argc, const char **argv)
 {
-    const char *filename = 0;
-    if(argc > 1 || (argc == 1 && argv[0][0] == '-'))
-        usage();
-    else if(argc == 1)
-        filename = argv[0];
-
-    if(filename)
+    CRTSModuleOptions opt(argc, argv, usage);
+    const char *filename = opt.get("--file", "");
+ 
+    if(filename && filename[0])
     {
         errno = 0;
         file = fopen(filename, "r");

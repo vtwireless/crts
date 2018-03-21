@@ -46,7 +46,9 @@ srcs :=\
  sourceFeed.cpp\
  stdin.cpp\
  stdout.cpp\
- tx.cpp
+ tx.cpp\
+ joystick.cpp\
+ sink.cpp
 ifdef BUILD_QUICKSCOPE
 srcs := $(srcs) quickscope.cpp
 endif
