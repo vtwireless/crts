@@ -72,6 +72,7 @@ class CRTSControl
         friend CRTSFilter;
         friend CRTSController;
         friend FilterModule;
+        friend Stream;
 };
 
 
@@ -364,7 +365,7 @@ class CRTSFilter
         // CRTSController::execute() for.  This is is added to from
         // CRTSController::getControl<>()
         //
-        std::list<CRTSController *> controllers;
+        //std::list<CRTSController *> controllers;
 
         // Needed by the plug-in loader to make a default CRTSControl.
         CRTSControl *makeControl(const char *controlName, bool generateName)

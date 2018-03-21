@@ -232,7 +232,7 @@ FilterModule::~FilterModule(void)
 
 CRTSFilter::~CRTSFilter(void)
 {
-    controllers.clear();
+    //controllers.clear();
 
     while(controls.size())
         delete controls.rbegin()->second;

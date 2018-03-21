@@ -685,53 +685,47 @@ bool Stream::printGraph(FILE *f)
             }
         }
 
-        fprintf(f, "  }\n\n");
+        fprintf(f, "  }\n");
 
         ++n;
     }
 
     const auto &controllers = CRTSController::controllers;
 
-    fprintf(f, "// controllers.size()=%zu\n", controllers.size());
-
     if(controllers.size())
     {
+        n = 0; // filter numbering starting again.
+
         fprintf(f,
-                "\n" // The word "cluster_" is needed for dot.
+                "\n"// The word "cluster_" is needed for dot.
                 "  subgraph cluster_controllers {\n"
                 "    label=\"Controllers\";\n"
         );
-        size_t i = 0;
+        size_t controllerIndex = 0;
 
-        for(auto controller: controllers)
+        // Loop through all the filters and the Controllers in each one.
+        for(auto const stream : streams)
         {
-            // This controller label needs to be something the user can recognize.
-            fprintf(f, "    controller_%zu [label=\"%s %zu\"];\n",
-                    i, controller->getName(), i);
-
-            // TODO: Should we make the Controller have a list of it's
-            // CRTS filters or CRTS controls??  Then we would not need to
-            // look at all CRTS filters in all the streams here.
-            n = 0;
-            for(auto stream : streams)
+            for(auto const pair : stream->map)
             {
-                for(auto pair : stream->map)
-                {
-                    FilterModule *filterModule = pair.second;
+                FilterModule *filterModule = pair.second;
 
-                    for(auto fController: filterModule->filter->controllers)
-                        if(fController == controller)
-                        {
-                            fprintf(f, "    controller_%zu ->", i);
+                char filterName[64]; // writer node name
 
-                            fprintf(f, "f%" PRIu32 "_%" PRIu32 ";\n",
-                                    n, filterModule->loadIndex);
-                            break;
-                        }
-                }
-                ++n; // next stream
+                snprintf(filterName, 64, "f%" PRIu32 "_%" PRIu32,
+                        n, filterModule->loadIndex);
+
+                for(auto const &control: filterModule->filter->controls)
+                    for(auto const &controller: control.second->controllers)
+                    {
+                        fprintf(f, "    controller_%zu [label=\"%s\"];\n",
+                            controllerIndex, controller->getName());
+                        fprintf(f, "    controller_%zu -> %s [color=\"brown1\"];\n",
+                            controllerIndex, filterName);
+                        ++controllerIndex;
+                    }
             }
-            ++i; // next controller
+            ++n; // next filter number.
         }
 
         fprintf(f,"  }\n"); // subgraph cluster_controllers
