@@ -9,7 +9,7 @@ Currently developing on:
 
 
 ```
-apt-get install build-essential libuhd-dev libreadline-dev graphviz imagemagick
+apt-get install build-essential libuhd-dev libreadline-dev graphviz imagemagick joystick
 ```
 
 In addition, this may not be needed, on broken Ubuntu systems that mess up
