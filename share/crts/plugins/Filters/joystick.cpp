@@ -88,21 +88,28 @@ Joystick::~Joystick(void)
     DSPEW();
 }
 
+
+#define NUM  (10)
+
+
 ssize_t Joystick::write(void *buffer, size_t len, uint32_t channelNum)
 {
 #if 1
 
-    len = sizeof(struct js_event);
+    len = NUM*sizeof(struct js_event);
     struct js_event *js = (struct js_event *) getBuffer(len);
     buffer = (void *) js;
 
     ssize_t ret = read(fd, buffer, len);
-    if(ret < 0 || (size_t) ret != len)
+    if(ret < 0 || ((size_t) ret)%sizeof(struct js_event))
     {
         stream->isRunning = false;
         NOTICE("read() %zd", ret);
         return 0;
     }
+    len = ret;
+
+    //DSPEW("read()=%zu", len);
 
 
 #else
