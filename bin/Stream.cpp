@@ -276,9 +276,13 @@ Stream::~Stream(void)
                 // at this time.  So we'll signal it if we feel the need.
                 //
                 if(loopCount > 1)
+                {
                     // If this call fails there not much we can do about
                     // it, and it's not a big deal.
+                    DSPEW("signaling thread %" PRIu32 " with signal %d",
+                            (*tt)->threadNum, THREAD_EXIT_SIG);
                     pthread_kill((*tt)->thread, THREAD_EXIT_SIG);
+                }
 
                 threadNotWaiting = true;
             }
@@ -302,7 +306,7 @@ Stream::~Stream(void)
             struct timespec t { 0/* seconds */, 10000 /*nano seconds*/};
             // If nanosleep fails it does not matter there's nothing we 
             // could do about it anyway.  A signal could make it fail.
-            DSPEW("Waiting nanosleep() for cleanup");
+            //DSPEW("Waiting nanosleep() for cleanup");
             nanosleep(&t, 0);
         }
         else
