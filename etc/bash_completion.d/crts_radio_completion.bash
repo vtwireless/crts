@@ -57,34 +57,93 @@ function _crts_radio_complete()
 
     # COMPREPLY is the array of possible completions
 
-    if [[ ${cur_word} == --f* ]] ; then
-        # Just fill in: --filter
-        COMPREPLY=("--filter")
+    if [[ ${cur_word} == - ]] ; then
+        COMPREPLY=("-c" "-C" "-d" "-D" "-e" "-f" "-h" "-l" "-t"
+                "-p" "--connect" "--controller" "--display"
+                "--Display" "--exit" "--filter" "--help" "--load"
+                "--print" "--thread")
         return 0 # done
     fi
-    if [[ ${cur_word} == -f ]] ; then
-        COMPREPLY=("-f")
-        return 0 # done
+
+
+    if [[ ${cur_word} == --* ]] ; then
+
+        case ${cur_word} in
+
+            --)
+                COMPREPLY=("--connect" "--controller" "--display"
+                    "--Display" "--exit" "--filter" "--help" "--load"
+                    "--print" "--thread")
+                return 0 # done
+                ;;
+            --conn*)
+                COMPREPLY=("--connect")
+                return 0 # done
+                ;;
+            --cont*)
+                COMPREPLY=("--controller")
+                return 0 # done
+                ;;
+            --c*)
+                COMPREPLY=("--connect" "--controller")
+                return 0 # done
+                ;;
+            --d*)
+                COMPREPLY=("--display")
+                return 0 # done
+                ;;
+            --D*)
+                COMPREPLY=("--Display")
+                return 0 # done
+                ;;
+            --e*)
+                COMPREPLY=("--exit")
+                return 0 # done
+                ;;
+            --f*)
+                COMPREPLY=("--filter")
+                return 0 # done
+                ;;
+            --h*|-h*)
+                COMPREPLY=("--help")
+                return 0 # done
+                ;;
+            --l*)
+                COMPREPLY=("--load")
+                return 0 # done
+                ;;
+            --p*)
+                COMPREPLY=("--print")
+                return 0 # done
+                ;;
+            --t*)
+                COMPREPLY=("--thread")
+                return 0 # done
+                ;;
+        esac
     fi
-    if [[ ${cur_word} == --l* ]] ; then
-        # Just fill in: --load
-        COMPREPLY=("--load")
-        return 0 # done
-    fi
-    if [[ ${cur_word} == -l ]] ; then
-        COMPREPLY=("-l")
-        return 0 # done
-    fi
+
+
+    local i
+    for i in c C d D e f h l t p ; do
+        if [[ ${cur_word} == -$i ]] ; then
+            COMPREPLY=("-${i}")
+            return 0 # done
+        fi
+    done
 
 
     if [[ ${prev_word} != -f ]] && [[ ${prev_word} != "--filter" ]] &&\
+        [[ ${prev_word} != -C ]] && [[ ${prev_word} != "--controller" ]] &&\
         [[ ${prev_word} != -l ]] && [[ ${prev_word} != "--load" ]] ; then
-        # We currently only do the filter and load option and this is
-        # not that so:
+        # We currently only do the filter, controller, and load option
+        # and this is not that so we bail out here.
         return 1 # default completion
     fi
 
-    local mod_dir;
+
+    local mod_dir="$(dirname ${BASH_SOURCE[0]})" || return 0 # bash failed
+
 
     # TODO: For now we require that this bash file be in a special path
     # directory which is requires that filter plugins be in
@@ -95,13 +154,32 @@ function _crts_radio_complete()
     # is built in the source directory.  A major major plus for
     # developers.
 
+    local modtype;
+
     if [[ ${prev_word} == -f ]] || [[ ${prev_word} == "--filter" ]] ; then
-        mod_dir="$(dirname ${BASH_SOURCE[0]})" || return 0
-        mod_dir="$mod_dir"/../../share/crts/plugins/Filters/
+        modtype=Filters
+    elif [[ ${prev_word} != -C ]] || [[ ${prev_word} != "--controller" ]] ; then
+        modtype=Controllers
     else
         # it must be a -l | --load
-        mod_dir="$(dirname ${BASH_SOURCE[0]})" || return 0
-        mod_dir="$mod_dir"/../../share/crts/plugins/General/
+        modtype=General
+    fi
+
+    mod_dir=$mod_dir/../../share/crts/plugins/$modtype/
+
+    local mod_dirs=()
+
+    local dirs
+    local d
+
+    # Now add modules from the environment variable CRTS_MODULES_PATH
+    if [ -n "$CRTS_MODULES_PATH" ] ; then
+        IFS=':' read -r -a dirs <<< "$CRTS_MODULES_PATH"
+        for d in $dirs ; do
+            mod_dirs+=($d/$modtype/)
+        done
+        mod_dirs+=($mod_dir)
+        #echo -e "\n\n   mod_dirs=${mod_dirs[@]}\n\n"
     fi
 
 
@@ -109,13 +187,15 @@ function _crts_radio_complete()
     local mod
     local mods=()
 
-    for i in $mod_dir/*.so ; do
-        if [ ! -f "$i" ] ; then
-            continue
-        fi
-        mod="$(basename ${i%%.so})"
-        mods+=($mod)
-        #echo "mod=${mod}"
+    for mod_dir in ${mod_dirs[@]} ; do
+        for i in $mod_dir/*.so ; do
+            if [ ! -f "$i" ] ; then
+                continue
+            fi
+            mod="$(basename ${i%%.so})" || return 0
+            mods+=($mod)
+            #echo "mod=${mod}"
+        done
     done
 
     #echo "mod_dir=$mod_dir"
