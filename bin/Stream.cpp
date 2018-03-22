@@ -303,7 +303,7 @@ Stream::~Stream(void)
             // threads would have to look at in every loop when in a
             // non-transit state.  This keeps the worker thread loops
             // simpler.
-            struct timespec t { 0/* seconds */, 10000 /*nano seconds*/};
+            struct timespec t { 0/* seconds */, 1000000 /*nano seconds*/};
             // If nanosleep fails it does not matter there's nothing we 
             // could do about it anyway.  A signal could make it fail.
             //DSPEW("Waiting nanosleep() for cleanup");
@@ -715,7 +715,6 @@ bool Stream::printGraph(FILE *f)
                 "  subgraph cluster_controllers {\n"
                 "    label=\"Controllers\";\n"
         );
-        size_t controllerIndex = 0;
 
         // Loop through all the filters and the Controllers in each one.
         for(auto const stream : streams)
@@ -730,14 +729,15 @@ bool Stream::printGraph(FILE *f)
                         n, filterModule->loadIndex);
 
                 for(auto const &control: filterModule->filter->controls)
+                {
                     for(auto const &controller: control.second->controllers)
                     {
-                        fprintf(f, "    controller_%zu [label=\"%s\"];\n",
-                            controllerIndex, controller->getName());
-                        fprintf(f, "    controller_%zu -> %s [color=\"brown1\"];\n",
-                            controllerIndex, filterName);
-                        ++controllerIndex;
+                        fprintf(f, "    controller_%" PRIu32 " [label=\"%s\(%" PRIu32 ")\"];\n",
+                                controller->getId(), controller->getName(), controller->getId());
+                        fprintf(f, "    controller_%" PRIu32 " -> %s [color=\"brown1\"];\n",
+                                controller->getId(), filterName);
                     }
+                }
             }
             ++n; // next filter number.
         }

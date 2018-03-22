@@ -14,13 +14,16 @@
 // A CRTS Filter may have zero, one, or more CRTS Controls.
 
 
+static uint32_t controllerCreateCount = 0;
+
 
 // List of all controllers
 std::list<CRTSController *> CRTSController::controllers;
 
 
 
-CRTSController::CRTSController(void): name(0)
+CRTSController::CRTSController(void):
+    name(0), id(controllerCreateCount++)
 {
     DSPEW();
     controllers.push_back(this);

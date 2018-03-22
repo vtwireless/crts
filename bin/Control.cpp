@@ -11,6 +11,8 @@
 #include "FilterModule.hpp"
 
 
+static uint32_t createCount = 0;
+
 
 // Global list of all CRTSControl objects:
 std::map<std::string, CRTSControl *> CRTSControl::controls;
@@ -42,7 +44,9 @@ CRTSControl::CRTSControl(CRTSFilter *filter_in, std::string name_in):
     // Add to the list of controls for this filter.
     filter->controls[name] = this;
 
-    DSPEW("Added CRTS Control (%p) named \"%s\"", this, name);
+    id = createCount++;
+
+    DSPEW("Added CRTS Control(%" PRIu32 ") named \"%s\"", id, name);
 }
 
 CRTSControl::~CRTSControl(void)

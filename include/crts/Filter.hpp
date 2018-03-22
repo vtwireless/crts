@@ -49,6 +49,8 @@ class CRTSControl
          */
         uint64_t totalBytesOut(void) const;
 
+        uint32_t getId(void) const { return id; };
+
 
     protected:
 
@@ -69,6 +71,8 @@ class CRTSControl
 
         // The filter associated with this control.
         CRTSFilter *filter;
+
+        uint32_t id; // unique ID from all CRTSControl objects
 
         friend CRTSFilter;
         friend CRTSController;
@@ -436,7 +440,8 @@ class CRTSController
         // CRTSControl that the filter makes.
         virtual void shutdown(CRTSControl *c) = 0;
 
-        const char *getName(void) { return (const char *) name; };
+        const char *getName(void) const { return (const char *) name; };
+        uint32_t getId(void) const { return id; };
 
     protected:
 
@@ -497,7 +502,9 @@ class CRTSController
         //
         void *(*destroyController)(CRTSController *);
 
-        char *name;
+        char *name; // From module file name.
+
+        uint32_t id; // unique ID of a given CRTSController
 };
 
 

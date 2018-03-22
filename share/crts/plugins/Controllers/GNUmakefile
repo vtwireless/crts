@@ -9,7 +9,6 @@ CPPFLAGS := -I$(ROOT)include -I$(ROOT)lib
 INSTALL_DIR = $(PREFIX)/share/crts/plugins/$(notdir $(CURDIR))
 
 
-
 srcs := $(patsubst %.cpp,%,$(wildcard *.cpp))
 
 define MkSource
@@ -21,6 +20,7 @@ undefine s
 
 
 dualTx.so_LDFLAGS := -luhd
+joystickTx.so_LDFLAGS := -luhd
 
 
 include $(ROOT)quickbuild.make

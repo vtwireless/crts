@@ -165,9 +165,7 @@ function _crts_radio_complete()
         modtype=General
     fi
 
-    mod_dir=$mod_dir/../../share/crts/plugins/$modtype/
-
-    local mod_dirs=()
+    local mod_dirs=($mod_dir/../../share/crts/plugins/$modtype/)
 
     local dirs
     local d
@@ -178,9 +176,10 @@ function _crts_radio_complete()
         for d in $dirs ; do
             mod_dirs+=($d/$modtype/)
         done
-        mod_dirs+=($mod_dir)
         #echo -e "\n\n   mod_dirs=${mod_dirs[@]}\n\n"
     fi
+
+    mod_dirs+=($mod_dir)
 
 
     local i
@@ -198,7 +197,6 @@ function _crts_radio_complete()
         done
     done
 
-    #echo "mod_dir=$mod_dir"
 
     # COMPREPLY is the array of possible completions
     COMPREPLY=()

@@ -24,7 +24,7 @@ reference code:
 
     cat /dev/input/js0 | hexdump
 
-
+# now move the joystick and see the spew.
 
 
  */
@@ -54,8 +54,7 @@ class Joystick : public CRTSFilter
         Joystick(int argc, const char **argv);
         ~Joystick(void);
 
-        ssize_t write(void *buffer, size_t bufferLen,
-                uint32_t channelNum);
+        ssize_t write(void *buffer, size_t bufferLen, uint32_t channelNum);
 
     private:
 
@@ -94,8 +93,6 @@ Joystick::~Joystick(void)
 
 ssize_t Joystick::write(void *buffer, size_t len, uint32_t channelNum)
 {
-#if 1
-
     len = NUM*sizeof(struct js_event);
     struct js_event *js = (struct js_event *) getBuffer(len);
     buffer = (void *) js;
@@ -109,24 +106,6 @@ ssize_t Joystick::write(void *buffer, size_t len, uint32_t channelNum)
     }
     len = ret;
 
-    //DSPEW("read()=%zu", len);
-
-
-#else
-    len = 1024;
-    buffer = getBuffer(len);
-
-    ssize_t ret = read(fd, buffer, len);
-    
-    if(ret < 1)
-    {
-        stream->isRunning = false;
-        NOTICE("read() %zd", ret);
-        return 0;
-    }
-
-    len = ret;
-#endif
 
     writePush(buffer, len, ALL_CHANNELS);
 
