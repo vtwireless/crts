@@ -23,6 +23,12 @@ struct WriteRequest
 #endif
 
 
+// This must be a signal that is not caught by the main thread
+// in crts_radio.cpp in variable exitSignals[].
+//
+#define THREAD_EXIT_SIG  (SIGUSR2)
+
+
 // A queue of condition variables.
 //
 // You might ask why are we writing our on queue and not using

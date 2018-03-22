@@ -67,6 +67,9 @@ ssize_t Feed::write(void *buffer, size_t bufferLen,
 // atomic flags and wait for the threads to finish the last loop, if they
 // have not already.
 //
+// These signal cannot include the THREAD_EXIT_SIG defined in Thread.hpp.
+// The THREAD_EXIT_SIG is used by worker (CRTSFilter) threads.
+//
 static const int exitSignals[] =
 {
     SIGINT, // from Ctrl-C in a terminal.

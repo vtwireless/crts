@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <signal.h>
 #include <inttypes.h>
 #include <pthread.h>
 #include <atomic>
@@ -19,6 +20,19 @@
 #include "Buffer.hpp"
 
 
+static void threadExitCatcher(int sig)
+{
+    // We just need this to not kill the thread.
+    //
+    // If a thread is calling a blocking read call this catcher is called
+    // and the read() returns -1 an sets errno = EINTR.  The users
+    // CRTSFilter::write() function need to see the read() fail and return
+    // from the CRTSFilter::write() call.
+    //
+    INFO("CRTSFilter Thread Caught signal %d", sig);
+}
+
+
 // This is the pthread_create() callback function.
 //
 static void *filterThreadWrite(Thread *thread)
@@ -27,6 +41,20 @@ static void *filterThreadWrite(Thread *thread)
     // No CRTSFilter can set the isRunning yet because
     // of the barrier below.
     DASSERT(thread->stream.isRunning, "");
+
+    {
+        // Setup the exit signal catcher for this thread.
+        //
+        // This is needed so as to help the CRTSFilter::write() get out of
+        // a blocking call like read(2) or select(2).  A corresponding
+        // pthread_kill() called in Stream::~Stream(void) in Stream.cpp.
+        //
+        struct sigaction act;
+        memset(&act, 0, sizeof(act));
+        act.sa_handler = threadExitCatcher;
+        errno = 0;
+        ASSERT(sigaction(THREAD_EXIT_SIG, &act, 0) == 0, "");
+    }
 
     // Reference to stream isRunning
     std::atomic<bool> &isRunning = thread->stream.isRunning;
@@ -271,6 +299,8 @@ void Thread::launch(pthread_barrier_t *barrier_in)
     filterModule = 0;
     barrier = barrier_in;
     hasReturned = false;
+
+
     errno = 0;
     ASSERT((errno = pthread_create(&thread, 0/*pthread_attr_t* */,
                 (void *(*) (void *)) filterThreadWrite,

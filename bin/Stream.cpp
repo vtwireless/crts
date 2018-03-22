@@ -8,6 +8,7 @@
 #include <string.h>
 #include <stdio.h>
 #include <time.h>
+#include <signal.h>
 #include <pthread.h>
 #include <inttypes.h>
 #include <map>
@@ -248,6 +249,7 @@ Stream::~Stream(void)
     bool haveRunningThreads =
         (threads.begin() != threads.end() && (*(threads.begin()))->barrier);
 
+    int loopCount = 0;
 
     while(haveRunningThreads)
     {
@@ -258,7 +260,7 @@ Stream::~Stream(void)
 
         // Search all Threads in the stream.
         //
-        // First get a lock of all the threads, crazy but we must
+        // First get a lock of all the threads, crazy but we must,
         // otherwise we would could have one changing the waiting flag
         // which looking at another thread waiting flag.
         for(auto tt = threads.begin(); tt != threads.end(); ++tt)
@@ -270,8 +272,15 @@ Stream::~Stream(void)
                     ||
                     (*tt)->filterModule/*= have a request*/)
             {
+                // This thread (*tt) is not calling pthread_cond_wait()
+                // at this time.  So we'll signal it if we feel the need.
+                //
+                if(loopCount > 1)
+                    // If this call fails there not much we can do about
+                    // it, and it's not a big deal.
+                    pthread_kill((*tt)->thread, THREAD_EXIT_SIG);
+
                 threadNotWaiting = true;
-                break;
             }
 
         // If we made it through the above block than all threads are
@@ -293,6 +302,7 @@ Stream::~Stream(void)
             struct timespec t { 0/* seconds */, 10000 /*nano seconds*/};
             // If nanosleep fails it does not matter there's nothing we 
             // could do about it anyway.  A signal could make it fail.
+            DSPEW("Waiting nanosleep() for cleanup");
             nanosleep(&t, 0);
         }
         else
@@ -304,6 +314,7 @@ Stream::~Stream(void)
             DSPEW();
             break;
         }
+        ++loopCount;
     }
 
     // BUG: We never get to here.
