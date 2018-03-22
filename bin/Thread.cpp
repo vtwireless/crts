@@ -373,7 +373,7 @@ Thread::~Thread()
 
     while(filterModules.size())
         // FilterModule::~FilterModule(void) will remove it.
-        delete *(filterModules.begin());
+        delete *(filterModules.rbegin());
 
     stream.threads.remove(this);
     --totalNumThreads;

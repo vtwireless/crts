@@ -317,7 +317,6 @@ Stream::~Stream(void)
         ++loopCount;
     }
 
-    // BUG: We never get to here.
     DSPEW();
     
     // NOW: All Threads in this stream should be in pthread_cond_wait() in
@@ -351,9 +350,9 @@ Stream::~Stream(void)
     {
         // The thread destructor removes itself from the
         // threads list.
-        for(auto tt = threads.begin();
-            tt != threads.end();
-            tt = threads.begin())
+        for(auto tt = threads.rbegin();
+            tt != threads.rend();
+            tt = threads.rbegin())
             // The thread will delete all the filter modules
             // that in-turn destroys the CRTSFilter in the filter
             // module.  This will not edit this threads list.
