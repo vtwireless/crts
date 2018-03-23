@@ -19,13 +19,13 @@ reference code:
 
   https://github.com/flosse/linuxconsole/blob/master/utils/jstest.c
 
+  https://www.kernel.org/doc/Documentation/input/joystick-api.txt
 
 # Just plug in the USB joystick and run:
 
     cat /dev/input/js0 | hexdump
 
 # now move the joystick and see the spew.
-
 
  */
 
@@ -74,7 +74,6 @@ Joystick::Joystick(int argc, const char **argv): fd(-1)
         ERROR("open(\"%s\", O_RDONLY) failed", devicePath);
         throw "open() failed";
     }
-    DASSERT(fd>=0, "open(\"%s\", O_RDONLY) failed", devicePath);
 
     DSPEW("opened device \"%s\"", devicePath);
 }
@@ -88,6 +87,7 @@ Joystick::~Joystick(void)
 }
 
 
+// Read at most N joystick events at a time.
 #define NUM  (10)
 
 
@@ -106,9 +106,7 @@ ssize_t Joystick::write(void *buffer, size_t len, uint32_t channelNum)
     }
     len = ret;
 
-
     writePush(buffer, len, ALL_CHANNELS);
-
 
     return 1;
 }
