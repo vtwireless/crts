@@ -1,28 +1,28 @@
 
 # TODO: liquid-dsp is a software dependency that we download when 'make
 # download' is run, which 'make build' and 'make' depend on.  It would be
-# best to not have this built and installed with this package, and just
-# have it be an pre-installed prerequisite package.  The problem is that
-# liquid-dsp does have a (OS or other-wise) managed or automated method to
-# be installed with.  It's not a mature package at the time of writing
-# this.
+# simplest to not have this built and installed with this package, and
+# just have it be an pre-installed prerequisite package.  The problem is
+# that liquid-dsp does have a (OS or other-wise) managed or automated
+# method to be installed with.  It's not a mature package at the time of
+# writing this.
 
 # TODO: In looking at the liquid-dsp ofdmflexframegen and
 # ofdmflexframesync code we see it hammers the libc memory allocator
 # (realloc, malloc, and free) and does an lot of unnecessary memory copies
-# when it is running at steady state.  That's just poor sub-optimal
-# coding.  It is happening in the inner most loop.  Just a simple size
-# change flag check may speed it up this code 10 or 100 fold, so it checks
-# to see if it needs to reallocate memory before just reallocating memory
-# for no reason at every frame.
+# when it is running at steady state.  It is happening in the inner most
+# loop.  A simple size change flag check may speed it up this code 10 or
+# 100 fold, so it checks to see if it needs to reallocate memory before
+# just reallocating memory for no reason at every frame.
 
-# TODO: libuhd is not so good.  Ya, rewrite it...  Also get rid of the
-# libBOOST dependency in libuhd.
+include ./config.make
 
-
-
+ifdef BUILD_UHD
+SUBDIRS := uhd liquid-dsp include lib bin share etc interactiveTests
+else
 # We wish to have things accessed/built/installed in this order:
 SUBDIRS := liquid-dsp include lib bin share etc interactiveTests
+endif
 
 
 

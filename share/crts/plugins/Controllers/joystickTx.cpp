@@ -66,12 +66,12 @@ static void usage(void)
 "                      control name is \"%s\".\n"
 "\n"
 "\n"
-"   --maxFreq MAX      set the maximum carrier frequency to MAX Mega Hz.\n"
-"                      The default MAX is %g\n"
+"   --maxFreq MAX      set the maximum carrier frequency to MAX Mega Hz.  The\n"
+"                      default MAX is %g\n"
 "\n"
 "\n"
-"   --minFreq MIN    set the minimum carrier frequency to MIN Mega Hz.\n"
-"                    The default MIN is %g\n"
+"   --minFreq MIN      set the minimum carrier frequency to MIN Mega Hz. The\n"
+"                      default MIN is %g\n"
 "\n"
 "\n", name, DEFAULT_JSCONTROL_NAME, DEFAULT_TXCONTROL_NAME,
     DEFAULT_MAXFREQ, DEFAULT_MINFREQ);
