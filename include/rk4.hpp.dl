@@ -4,5 +4,11 @@
 
 # Download target url [sha512sum]
 
+# https://raw.githubusercontent.com/lanceman2/rk4/master/include/rk4.hpp
+
+# We get a particular commit so it does not change.
+
 Download rk4.hpp\
- https://raw.githubusercontent.com/lanceman2/rk4/master/include/rk4.hpp
+ https://raw.githubusercontent.com/lanceman2/rk4/master/include/rk4.hpp\
+ c40f209fb705d5b306bbd191304826fd34eab9be7ceb950e630d77e6903bf02e309\
+112d0c8a847b12b479da6769d1f3cf47363b0972992ecfa190c1fe8be8967
