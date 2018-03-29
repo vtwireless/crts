@@ -1,0 +1,14 @@
+#!/bin/bash
+
+source ../GetSrcFromGithub.bash
+
+#Usage: GetSrcFromGithub user package tag tarname [sha512]
+
+#
+
+GetSrcFromGithub EttusResearch uhd\
+ release_003_010_003_000\
+ uhd\
+ 974f0121148f41d06d709f641c98655336ae91011dec46d18\
+cb75f4290091ee975c3d9e77c6c284470efecdc6ef42250a327\
+8de0e37580193420148ffd9cc09e

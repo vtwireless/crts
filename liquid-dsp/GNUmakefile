@@ -13,8 +13,8 @@
 CLEANDIRS := src
 
 
-# After we install nothing we do this to install using the build system in
-# the liquid-dsp package.
+# After we install nothing here, we do this to install liquid-dsp using
+# the build system in the liquid-dsp package.
 POST_INSTALL_COMMAND = cd src && $(MAKE) -f makefile install
 
 

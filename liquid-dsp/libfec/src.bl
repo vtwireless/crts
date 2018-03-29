@@ -2,8 +2,15 @@
 
 set -ex
 
+topdir=$PWD
+# Do not run this if we already did.
+[ -f $topdir/src/SUCCESS ] && exit 0
 
-tar -xzf libfec.tar.gz
+rm -rf src
+
+sha512sum -c libfec.tar.gz.sha512sum
+
+tar -xzmf libfec.tar.gz
 
 mv quiet-libfec* src
 
@@ -16,3 +23,8 @@ patch -p1 < ../patch.diff
 
 CFLAGS="-fPIC -march=native -g -O2 -Wall" ./configure --prefix=${PREFIX}
 make -j $(nproc || echo '3')
+
+
+# We really need to know: Did we succeed and make it this far in this
+# script?
+echo "The script ../$0 ran SUCCESSFULLY" > $topdir/src/SUCCESS

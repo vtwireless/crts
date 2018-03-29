@@ -7,15 +7,58 @@ Currently developing on:
 
 ## Dependencies
 
+Uninstalling libuhd-dev shows:
+
+The following packages were automatically installed and are no longer required:
+  fonts-lyx gnuradio gnuradio-dev libcodec2-0.4 libcomedi0 libcppunit-1.13-0v5 libcppunit-dev libglade2-0 libgnuradio-analog3.7.10 libgnuradio-atsc3.7.10
+  libgnuradio-audio3.7.10 libgnuradio-blocks3.7.10 libgnuradio-channels3.7.10 libgnuradio-comedi3.7.10 libgnuradio-digital3.7.10 libgnuradio-dtv3.7.10
+  libgnuradio-fcd3.7.10 libgnuradio-fec3.7.10 libgnuradio-fft3.7.10 libgnuradio-filter3.7.10 libgnuradio-noaa3.7.10 libgnuradio-pager3.7.10
+  libgnuradio-pmt3.7.10 libgnuradio-qtgui3.7.10 libgnuradio-runtime3.7.10 libgnuradio-trellis3.7.10 libgnuradio-uhd3.7.10 libgnuradio-video-sdl3.7.10
+  libgnuradio-vocoder3.7.10 libgnuradio-wavelet3.7.10 libgnuradio-wxgui3.7.10 libgnuradio-zeromq3.7.10 libgsl2 libjs-jquery-ui liblog4cpp5-dev liblog4cpp5v5
+  libqt4-declarative libqt4-scripttools libqt4-test libqtassistantclient4 libqwt5-qt4 librtlsdr0 libuhd003 libvolk1-bin libvolk1-dev libvolk1.3 python-bs4
+  python-cheetah python-cycler python-dateutil python-decorator python-functools32 python-glade2 python-html5lib python-imaging python-lxml
+  python-matplotlib python-matplotlib-data python-networkx python-opengl python-pygraphviz python-pyparsing python-qt4 python-qwt5-qt4 python-scipy
+  python-sip python-subprocess32 python-tz python-webencodings python-wxgtk3.0 python-wxversion python-yaml python-zmq rtl-sdr uhd-host
+
 
 ```
 apt-get install build-essential libuhd-dev libreadline-dev graphviz imagemagick joystick
 ```
 
-In addition, this may not be needed, on broken Ubuntu systems that mess up
-the libuhd-dev installation:
+If we do not use package "libuhd-dev"
+
+In addition 
 ```
-apt-get install libboost-all-dev
+apt-get install libboost-all-dev libqt4-dev qt4-dev-tools libqwt5-qt4-dev swig libfftw3-dev texlive-full
+
+apt-get install\
+ python-bs4\
+ python-cheetah\
+ python-cycler\
+ python-dateutil\
+ python-decorator\
+ python-functools32\
+ python-glade2\
+ python-html5lib\
+ python-imaging\
+ python-lxml\
+ python-matplotlib\
+ python-matplotlib-data\
+ python-networkx\
+ python-opengl\
+ python-pygraphviz\
+ python-pyparsing\
+ python-qt4\
+ python-qwt5-qt4\
+ python-scipy\
+ python-sip\
+ python-subprocess32\
+ python-tz\
+ python-webencodings\
+ python-wxgtk3.0\
+ python-wxversion\
+ python-yaml\
+ python-zmq
 ```
 
 Maybe more...

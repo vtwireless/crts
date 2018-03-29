@@ -1,0 +1,42 @@
+#!/bin/bash
+
+set -ex
+
+topdir=$PWD
+
+# Do not run this if we already did.
+[ -f $topdir/src/SUCCESS ] && exit 0
+
+rm -rf src
+
+sha512sum -c uhd.tar.gz.sha512sum
+
+tar -xzmf uhd.tar.gz
+
+mv EttusResearch-uhd-* src
+
+cd src/host
+
+mkdir BUILD
+
+cd BUILD
+
+
+# We do not assume that the shared libraries are installed in a OS
+# location like /usr/lib so we must set the linker rpath.  You'd think
+# that by default this would be done, so that the binaries are not broken
+# by default.
+
+cmake .. -G"Unix Makefiles"\
+ -DCMAKE_VERBOSE_MAKEFILE:BOOL=TRUE\
+ -DCMAKE_INSTALL_PREFIX:PATH="${PREFIX}"\
+ -DCMAKE_INSTALL_RPATH:PATH="${PREFIX}/lib"\
+ -DCMAKE_BUILD_WITH_INSTALL_RPATH:BOOL=TRUE\
+ -DUHD_IMAGES_DIR:BOOL=TRUE
+
+make -j $(nproc || echo '3')
+
+
+# We really need to know: Did we succeed and make it this far in this
+# script?
+echo "The script ../$0 ran SUCCESSFULLY" > $topdir/src/SUCCESS

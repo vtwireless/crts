@@ -2,8 +2,16 @@
 
 set -ex
 
+topdir=$PWD
 
-tar -xzf liquid-dsp.tar.gz
+# Do not run this if we already did.
+[ -f $topdir/src/SUCCESS ] && exit 0
+
+rm -rf src
+
+sha512sum -c liquid-dsp.tar.gz.sha512sum
+
+tar -xzmf liquid-dsp.tar.gz
 
 mv jgaeddert-liquid-dsp* src
 
@@ -25,3 +33,8 @@ CFLAGS="-march=native -g -O2 -Wall"\
 make -f makefile -j $(nproc || echo '3')
 
 ln -s . include/liquid
+
+
+# We really need to know: Did we succeed and make it this far in this
+# script?
+echo "The script ../$0 ran SUCCESSFULLY" > $topdir/src/SUCCESS

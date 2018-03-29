@@ -1,0 +1,53 @@
+#!/bin/bash
+
+set -ex
+
+topdir=$PWD
+
+# Do not run this if we already did.
+[ -f $topdir/src/SUCCESS ] && exit 0
+
+rm -rf src
+
+# create gnuradio.tar.gz.sha512sum with
+# sha512sum gnuradio.tar.gz > gnuradio.tar.gz.sha512sum
+sha512sum -c gnuradio.tar.gz.sha512sum
+
+# create volk.tar.gz.sha512sum with
+# sha512sum  volk.tar.gz > volk.tar.gz.sha512sum
+sha512sum -c volk.tar.gz.sha512sum 
+
+
+tar -xzmf gnuradio.tar.gz
+
+mv gnuradio-gnuradio-* src
+
+cd src
+
+rmdir volk
+
+tar -xzf ../volk.tar.gz
+
+mv gnuradio-volk-* volk
+
+mkdir BUILD
+
+cd BUILD
+
+cmake .. -G"Unix Makefiles"\
+ -DCMAKE_INSTALL_PREFIX:PATH="${PREFIX}"\
+ -DENABLE_PYTHON=true\
+ -DENABLE_GR_FFT=true\
+ -DENABLE_GRC=true\
+ -DENABLE_GR_UTILS=true\
+ -DENABLE_GR_UHD=true\
+ -DENABLE_DEFAULT=true\
+ -DENABLE_DOXYGEN:BOOL=false
+
+
+make VERBOSE=1 -j $(nproc || echo '3')
+
+
+# We really need to know: Did we succeed and make it this far in this
+# script?
+echo "The script ../$0 ran SUCCESSFULLY" > $topdir/src/SUCCESS

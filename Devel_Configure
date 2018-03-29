@@ -1,5 +1,29 @@
 #!/bin/bash
 
+# This script sets up the software for a typical development
+# configuration.  You are not necessarily encouraged to use this, but
+# copying it and making your own local version of it is encouraged.
+
+
+# We let the make files have a prefix (or PREFIX) which is an encapsulated
+# installation directory, where all files that get installed are installed
+# to.  There will be sub-directories created in the prefix directory like
+# bin/ lib/ include/ share/ and etc/ ... (pun intended).
+#
+# This "prefix" idea has a history and many different manifestations.
+#
+#   references:
+#
+# https://www.gnu.org/prep/standards/standards.html#Directory-Variables
+# http://www.freetds.org/userguide/config.htm
+# https://askubuntu.com/questions/891835/what-does-prefix-do-exactly-when-used-in-configure
+
+# We try to limit all user configuration options to the one file
+# ./config.make which is a GNU make file that is accessed by most other
+# make files (named GNUmakefile).  If config.make is changed after files
+# are generated you want to run "make clean && make" to rebuild the
+# generated files that depend on these make configuration variables.
+
 
 if [ "$(whoami)" = lance ] ; then
     prefix=/usr/local/encap/crts-HEAD
@@ -7,10 +31,6 @@ else
     prefix=${HOME}/installed/crts
 fi
 
-
-# This script sets up the software for a typical development
-# configuration.  You are not necessarily encouraged to use this, but
-# copying it and making your own local version of it is encouraged.
 
 set -e
 
@@ -25,8 +45,28 @@ cd "$dir"
 cat > config.make << EOF
 # This is a generated file
 
-CFLAGS := -g -Wall -Werror
+# You could install liquid-dsp and uhd by another means or you can let
+# this packages build system install them for you by not setting (or
+# setting) BUILD_UHD, BUILD_GNU_RADIO, and BUILD_LIQUID_DSP
 
+
+# These two build (BUILD) options can be commented out or not:
+#
+# To build and install UHD using build directory uhd/
+BUILD_UHD := yes
+
+# These two build (BUILD) options can be commented out or not:
+#
+# To build and install GNU Radio using build directory gnuradio/
+BUILD_GNU_RADIO := yes
+
+#
+# To build and install liquid-dsp using directory liquid-dsp/
+BUILD_LIQUID_DSP := yes
+
+
+# compiler options
+CFLAGS := -g -Wall -Werror
 CXXFLAGS := \$(CFLAGS)
 
 # Comment this out to not add extra code to debug the buffering.
@@ -45,8 +85,9 @@ DEBUG := \#define DEBUG
 #SPEW_LEVEL := \#define SPEW_LEVEL_INFO
 SPEW_LEVEL  := \#define SPEW_LEVEL_DEBUG
 
-
+# CRTS installation prefix directory:
 PREFIX := ${prefix}
+
 EOF
 
 echo

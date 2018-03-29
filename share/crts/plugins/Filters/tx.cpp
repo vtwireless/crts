@@ -97,7 +97,7 @@ static void usage(void)
 
 static const char *getControlName(int argc, const char **argv)
 {
-    CRTSModuleOptions opt(argc, argv);
+    CRTSModuleOptions opt(argc, argv, usage);
 
     return opt.get("--control", DEFAULT_TXCONTROL_NAME);
 }

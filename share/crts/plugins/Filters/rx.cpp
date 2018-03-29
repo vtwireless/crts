@@ -6,8 +6,8 @@
 
 #include "crts/debug.h"
 #include "crts/Filter.hpp"
+#include "crts/crts.hpp"
 #include "crts/Control.hpp"
-#include "crts/crts.hpp" // for:  FILE *crtsOut
 #include "crts/usrp_set_parameters.hpp" // UHD usrp wrappers
 
 #include "defaultUSRP.hpp" // defaults: RX_FREQ, RX_RATE, RX_GAIN
@@ -141,40 +141,11 @@ static void usage(void)
 }
 
 
-static double getDouble(const char *str)
-{
-    char name[64];
-    double ret;
-    char *ptr = 0;
-    errno = 0;
-
-    ret = strtod(str, &ptr);
-    if(ptr == str || errno)
-    {
-        fprintf(crtsOut, "\nBad module %s arg: %s\n\n",
-                CRTS_BASENAME(name, 64), str);
-        usage();
-    }
-
-    return ret;
-}
-
-
 // Get the control name from the command line arguments.
 static const char *getControlName(int argc, const char **argv)
 {
-    const char *controlName = DEFAULT_RXCONTROL_NAME;
-    int i;
-    for(i=0; i<argc; ++i)
-    {
-        if(!strcmp(argv[i], "--control") && i<argc+1)
-        {
-            controlName = argv[++i];
-            continue;
-        }
-        continue;
-    }
-    return controlName;
+    CRTSModuleOptions opt(argc, argv, usage);
+    return opt.get("--control", DEFAULT_RXCONTROL_NAME);
 }
 
 
@@ -182,50 +153,12 @@ Rx::Rx(int argc, const char **argv):
     rxControl(this, getControlName(argc, argv), usrp, device),
     usrp(0), device(0), numComplexFloats(0)
 {
-    std::string uhd_args = "";
-    double freq = RX_FREQ, rate = RX_RATE, gain = RX_GAIN;
+    CRTSModuleOptions opt(argc, argv, usage);
 
-    WARN("&rxControl=%p", &rxControl);
-
-    int i;
-#ifdef DEBUG
-    DSPEW();
-    if(argc>0)
-        DSPEW("  GOT ARGS");
-    for(i=0; i<argc; ++i)
-        DSPEW("    ARG[%d]=\"%s\"", i, argv[i]);
-#endif
-
-    for(i=0; i<argc; ++i)
-    {
-        if(!strcmp(argv[i], "--control") && i<argc+1)
-        {
-            ++i;
-            continue;
-        }
-        if(!strcmp(argv[i], "--uhd") && i<argc+1)
-        {
-            uhd_args = argv[++i];
-            continue;
-        }
-        if(!strcmp(argv[i], "--freq") && i<argc+1)
-        {
-            freq = getDouble(argv[++i]);
-            continue;
-        }
-        if(!strcmp(argv[i], "--rate") && i<argc+1)
-        {
-            rate = getDouble(argv[++i]);
-            continue;
-        }
-        if(!strcmp(argv[i], "--gain") && i<argc+1)
-        {
-            gain = getDouble(argv[++i]);
-            continue;
-        }
-
-        usage();
-    }
+    std::string uhd_args = opt.get("--uhd", "");
+    double freq = opt.get("--freq", RX_FREQ),
+           rate = opt.get("--rate", RX_RATE),
+           gain = opt.get("--gain", RX_GAIN);
 
     // Convert the rate and freq to Hz from MHz
     freq *= 1.0e6;

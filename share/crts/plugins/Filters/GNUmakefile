@@ -2,6 +2,7 @@
 # that are at this directory level, share/crts/plugins/.
 
 ROOT := ../../../../
+include $(ROOT)/config.make
 
 QS_CPPFLAGS := $(shell pkg-config --cflags quickscope)
 #QS_CPPFLAGS := -I$(shell pkg-config --variable=includedir quickscope)
@@ -65,8 +66,14 @@ undefine s
 
 readline.so_LDFLAGS := -lreadline
 
+ifdef BUILD_UHD
+rx.so_LDFLAGS = -L$(PREFIX)/lib -luhd -Wl,-rpath,$(PREFIX)/lib
+tx.so_LDFLAGS = -L$(PREFIX)/lib -luhd -Wl,-rpath,$(PREFIX)/lib
+else
 rx.so_LDFLAGS := -luhd
 tx.so_LDFLAGS := -luhd
+endif
+
 
 quickscope.so_CPPFLAGS := $(QS_CPPFLAGS)
 quickscope.so_LDFLAGS := $(QS_LDFLAGS)
