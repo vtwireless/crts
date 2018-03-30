@@ -1,14 +1,16 @@
 #!/bin/bash
 
+##############################################################
+# configure here
+gnuradio_tag=v3.7.11
+shm512sum=d7b97c9ff738cb980ffa14bd431566de7ce0d\
+1af6c32b0563bd1a98a4e076a7eb9c90a018b5e9a9aad80\
+c0312a031a0beceb9dea982008256dcc919d714fc13e
+##############################################################
+
+
 source ../GetSrcFromGithub.bash
 
 #Usage: GetSrcFromGithub user package tag tarname [sha512]
 
-
-GetSrcFromGithub gnuradio gnuradio\
- v3.7.11\
- gnuradio\
- d7b97c9ff738cb980ffa14bd431566de7ce0d\
-1af6c32b0563bd1a98a4e076a7eb9c90a018b5\
-e9a9aad80c0312a031a0beceb9dea982008256\
-dcc919d714fc13e
+GetSrcFromGithub gnuradio gnuradio $gnuradio_tag gnuradio $shm512sum

@@ -66,13 +66,8 @@ undefine s
 
 readline.so_LDFLAGS := -lreadline
 
-ifdef BUILD_UHD
-rx.so_LDFLAGS = -L$(PREFIX)/lib -luhd -Wl,-rpath,$(PREFIX)/lib
-tx.so_LDFLAGS = -L$(PREFIX)/lib -luhd -Wl,-rpath,$(PREFIX)/lib
-else
-rx.so_LDFLAGS := -luhd
-tx.so_LDFLAGS := -luhd
-endif
+rx.so_LDFLAGS = -L$(UHD_PREFIX)/lib -luhd -Wl,-rpath,$(UHD_PREFIX)/lib
+tx.so_LDFLAGS = -L$(UHD_PREFIX)/lib -luhd -Wl,-rpath,$(UHD_PREFIX)/lib
 
 
 quickscope.so_CPPFLAGS := $(QS_CPPFLAGS)

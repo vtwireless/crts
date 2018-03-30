@@ -7,6 +7,8 @@ Currently developing on:
 
 ## Dependencies
 
+WARNING: At this point this is just developer notes.  This is all in flux.
+
 Uninstalling libuhd-dev shows:
 
 The following packages were automatically installed and are no longer required:
@@ -22,15 +24,21 @@ The following packages were automatically installed and are no longer required:
 
 
 ```
-apt-get install build-essential libuhd-dev libreadline-dev graphviz imagemagick joystick
+apt-get install build-essential libreadline-dev graphviz imagemagick joystick
 ```
 
-If we do not use package "libuhd-dev"
+If we do not use package "libuhd-dev" 
 
 In addition 
 ```
-apt-get install libboost-all-dev libqt4-dev qt4-dev-tools libqwt5-qt4-dev swig libfftw3-dev texlive-full
+apt-get install libboost-all-dev libqt4-dev qt4-dev-tools libqwt5-qt4-dev swig libfftw3-dev texlive
+```
 
+
+
+We need this to build gnuradio in /gnuradio
+
+```
 apt-get install\
  python-bs4\
  python-cheetah\

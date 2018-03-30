@@ -1,10 +1,13 @@
 #!/bin/bash
 
+##############################################################
+# configure here
+volk_tag=v1.4
+shm512sum=
+##############################################################
+
 source ../GetSrcFromGithub.bash
 
 #Usage: GetSrcFromGithub user package tag tarname [sha512]
 
-
-GetSrcFromGithub gnuradio volk\
- v1.4\
- volk
+GetSrcFromGithub gnuradio volk $volk_tag volk $sha512sum

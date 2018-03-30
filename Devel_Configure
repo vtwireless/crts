@@ -26,10 +26,17 @@
 
 
 if [ "$(whoami)" = lance ] ; then
-    prefix=/usr/local/encap/crts-HEAD
+    root=/usr/local/encap
 else
-    prefix=${HOME}/installed/crts
+    root=${HOME}/installed
 fi
+
+# Where to install UHD and GUNradio
+UHD_PREFIX=$root/uhd
+GNURADIO_PREFIX=$root/gnuradio
+
+# CRTS prefix
+PREFIX=$root/crts
 
 
 set -e
@@ -45,24 +52,6 @@ cd "$dir"
 cat > config.make << EOF
 # This is a generated file
 
-# You could install liquid-dsp and uhd by another means or you can let
-# this packages build system install them for you by not setting (or
-# setting) BUILD_UHD, BUILD_GNU_RADIO, and BUILD_LIQUID_DSP
-
-
-# These two build (BUILD) options can be commented out or not:
-#
-# To build and install UHD using build directory uhd/
-BUILD_UHD := yes
-
-# These two build (BUILD) options can be commented out or not:
-#
-# To build and install GNU Radio using build directory gnuradio/
-BUILD_GNU_RADIO := yes
-
-#
-# To build and install liquid-dsp using directory liquid-dsp/
-BUILD_LIQUID_DSP := yes
 
 
 # compiler options
@@ -86,12 +75,15 @@ DEBUG := \#define DEBUG
 SPEW_LEVEL  := \#define SPEW_LEVEL_DEBUG
 
 # CRTS installation prefix directory:
-PREFIX := ${prefix}
+PREFIX := ${PREFIX}
+
+
+UHD_PREFIX := ${UHD_PREFIX}
+GNURADIO_PREFIX := ${GNURADIO_PREFIX}
 
 EOF
 
 echo
-echo "############# config.make #############"
 echo
 
 cat config.make
