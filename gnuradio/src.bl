@@ -34,15 +34,32 @@ mkdir BUILD
 
 cd BUILD
 
+
+# The GNUradio build system builds and installs lots of broken programs if
+# you don't set CMAKE_INSTALL_RPATH and GNURADIO_RUNTIME_PYTHONPATH.  No
+# good reason why, just lazy/sloppy GNUradio coding, just to piss me off.
+#
+# For example (without setting CMAKE_INSTALL_RPATH and
+# GNURADIO_RUNTIME_PYTHONPATH) in order to run the installed program
+# "grcc" you'd need to set PYTHONPATH and LD_LIBRARY_PATH at run-time or
+# it will fail to run.  I protest, this is unacceptable lazy/sloppy coding.
+# Installed programs should be able to run no matter what the installation
+# prefix directory is.
+
 cmake .. -G"Unix Makefiles"\
  -DCMAKE_INSTALL_PREFIX:PATH="${GNURADIO_PREFIX}"\
+ -DCMAKE_INSTALL_RPATH:PATH="${GNURADIO_PREFIX}/lib"\
+ -DGNURADIO_RUNTIME_PYTHONPATH="${GNURADIO_PREFIX}/lib/python2.7/dist-packages/gnuradio/gr"\
  -DENABLE_PYTHON=true\
  -DENABLE_GR_FFT=true\
  -DENABLE_GRC=true\
  -DENABLE_GR_UTILS=true\
+ -DENABLE_GR_WXGUI=true\
+ -DENABLE_GR_QTGUI=true\
+ -DENABLE_GR_UTILS=true\
  -DENABLE_GR_UHD=true\
  -DENABLE_DEFAULT=true\
- -DENABLE_DOXYGEN:BOOL=false
+ -DENABLE_DOXYGEN:BOOL=true
 
 
 make VERBOSE=1 -j $(nproc || echo '3')

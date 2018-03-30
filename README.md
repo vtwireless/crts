@@ -24,7 +24,7 @@ The following packages were automatically installed and are no longer required:
 
 
 ```
-apt-get install build-essential libreadline-dev graphviz imagemagick joystick
+apt-get install build-essential libreadline-dev graphviz imagemagick joystick doxygen
 ```
 
 If we do not use package "libuhd-dev" 
