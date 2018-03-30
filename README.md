@@ -31,7 +31,7 @@ If we do not use package "libuhd-dev"
 
 In addition 
 ```
-apt-get install libboost-all-dev libqt4-dev qt4-dev-tools libqwt5-qt4-dev swig libfftw3-dev texlive
+apt-get install libboost-all-dev python-mako libqt4-dev qt4-dev-tools libqwt5-qt4-dev swig libfftw3-dev texlive
 ```
 
 
