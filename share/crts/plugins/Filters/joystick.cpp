@@ -13,6 +13,7 @@
 
 /* NOTES:
 
+   # prerequisite:
    apt-get install joystick
 
 reference code:
@@ -41,8 +42,8 @@ static void usage(void)
             "\n"
             , CRTS_BASENAME(name, 64));
 
-    throw ""; // This is how return an error from a C++ constructor
-    // the module loader with catch this throw.
+    throw "usage"; // This is how we return an error from a C++ constructor
+    // the module loader will catch what we throw.
 }
 
 

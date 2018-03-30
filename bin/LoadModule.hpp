@@ -29,7 +29,8 @@ ModuleLoader<Base, Create>::ModuleLoader():create(0),destroy(0)
 
 
 template <class Base, class Create>
-bool ModuleLoader<Base, Create>::loadFile(const char *dso_path, int addLD_flags)
+bool ModuleLoader<Base, Create>::loadFile(const char *dso_path,
+        int addLD_flags)
 {
     dhandle = dlopen(dso_path, RTLD_LAZY|addLD_flags);
     if(!dhandle)
@@ -199,9 +200,10 @@ static inline char *GetPluginPathFromEnv(const char *category, const char *name)
 
 #define PRE "/share/crts/plugins/"
 
-// A thread-safe path finder looks at /proc/self which is the same as
-// /proc/self.  Note this is linux specific code using the linux /proc/
-// file system.
+
+// A thread-safe path finder that looks at /proc/self which is the same as
+// /proc/<PID>, which PID is the processes id number, like 2342.  Note
+// this is linux specific code using the linux /proc/ file system.
 //
 // The returned pointer must be free()ed.
 static inline char *GetPluginPath(const char *category, const char *name)
@@ -286,7 +288,7 @@ static inline char *GetPluginPath(const char *category, const char *name)
 
     void *(*destroyIO)(CRTSRadioIO *) = 0;
     CRTSRadioIO *io =
-        LoadModule<CRTSRadioIO>("stdin", "RadioIO", argc, argv, destroyIO);
+        LoadModule<CRTSRadioIO>("stdin", "Filters", argc, argv, destroyIO);
 
    if(!io)
    {

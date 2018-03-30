@@ -169,7 +169,7 @@ class FilterModule
             filter->write(buffer, len, channelNum);
 
             // If the controller needs a hook to be called after the last
-            // filter->write() they can use the controller destructor
+            // filter->write() so they can use the controller destructor
             // which is called after the last write.
             //
             // The hook comes in all the connected CRTS Filters is called:
