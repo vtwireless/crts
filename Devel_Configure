@@ -1,5 +1,7 @@
 #!/bin/bash
 
+# Running this script generates the one file config.make
+
 # This script sets up the software for a typical development
 # configuration.  You are not necessarily encouraged to use this, but
 # copying it and making your own local version of it is encouraged.
