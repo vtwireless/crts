@@ -78,7 +78,6 @@ static void usage(void)
 }
 
 
-
 JoystickTx::JoystickTx(int argc, const char **argv)
 {
     CRTSModuleOptions opt(argc, argv, usage);

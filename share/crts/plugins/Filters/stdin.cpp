@@ -1,9 +1,41 @@
 #include <stdio.h>
+#include <errno.h>
 
+#include "crts/crts.hpp"
 #include "crts/debug.h"
 #include "crts/Filter.hpp"
 
-#define DBDELETE
+
+#define DEFAULT_BUFFERED  "LINE"
+
+
+static void usage(void)
+{
+    char nameBuf[64], *name;
+    name = CRTS_BASENAME(nameBuf, 64);
+
+    fprintf(stderr,
+"\n"
+"\n"
+"Usage: %s [ OPTIONS ]\n"
+"\n"
+"  OPTIONS are optional.\n"
+"\n"
+"\n"
+"  ---------------------------------------------------------------------------\n"
+"                           OPTIONS\n"
+"  ---------------------------------------------------------------------------\n"
+"\n"
+"\n"
+"   --buffered NO|FULL|LINE   the default is \"" DEFAULT_BUFFERED "\"\n"
+"\n"
+"\n",
+    name);
+
+    errno = 0;
+    throw "usage help"; // This is how return an error from a C++ constructor
+    // the module loader will catch this throw.
+}
 
 
 class Stdin : public CRTSFilter
@@ -11,9 +43,7 @@ class Stdin : public CRTSFilter
     public:
 
         Stdin(int argc, const char **argv);
-#ifdef DBDELETE
         ~Stdin(void);
-#endif
 
         ssize_t write(void *buffer, size_t bufferLen,
                 uint32_t channelNum);
@@ -22,23 +52,35 @@ class Stdin : public CRTSFilter
 
 Stdin::Stdin(int argc, const char **argv)
 {
-    DSPEW();
-#if 0 // TODO: remove this DEBUG SPEW
-    DSPEW("  GOT ARGS");
-    for(int i=0; i<argc; ++i)
-        DSPEW("    ARG[%d]=\"%s\"", i, argv[i]);
-    DSPEW();
-#endif
+    CRTSModuleOptions opt(argc, argv, usage);
 
-    setlinebuf(stdin);
+    const char * buffered = opt.get("--buffered", DEFAULT_BUFFERED);
+
+    if(!strcmp(buffered, "NO"))
+    {
+        setvbuf(stdin, 0, _IONBF, 0);
+        INFO("Set stdin to unbuffered");
+    }
+    else if(!strcmp(buffered, "FULL"))
+    {
+        setvbuf(stdin, 0, _IOFBF, 0);
+        INFO("Set stdin to full buffered");
+    }
+    else // default is line buffered
+    {
+        setlinebuf(stdin);
+        INFO("Set stdin to line buffered");
+    }
+
+    DSPEW();
 }
 
-#ifdef DBDELETE
+
 Stdin::~Stdin(void)
 {
     DSPEW();
 }
-#endif
+
 
 ssize_t Stdin::write(void *buffer, size_t len, uint32_t channelNum)
 {

@@ -4,16 +4,44 @@
 #include "crts/Filter.hpp"
 #include "crts/crts.hpp" // for:  FILE *crtsOut in place of stdout
 
-#define DBDELETE
+#define DEFAULT_BUFFERED  "LINE"
+
+
+static void usage(void)
+{
+    char nameBuf[64], *name;
+    name = CRTS_BASENAME(nameBuf, 64);
+
+    fprintf(stderr,
+"\n"
+"\n"
+"Usage: %s [ OPTIONS ]\n"
+"\n"
+"  OPTIONS are optional.\n"
+"\n"
+"\n"
+"  ---------------------------------------------------------------------------\n"
+"                           OPTIONS\n"
+"  ---------------------------------------------------------------------------\n"
+"\n"
+"\n"
+"   --buffered NO|FULL|LINE   the default is \"" DEFAULT_BUFFERED "\"\n"
+"\n"
+"\n",
+    name);
+
+    errno = 0;
+    throw "usage help"; // This is how return an error from a C++ constructor
+    // the module loader will catch this throw.
+}
+
 
 class Stdout : public CRTSFilter
 {
     public:
 
         Stdout(int argc, const char **argv);
-#ifdef DBDELETE
         ~Stdout(void);
-#endif
         ssize_t write(void *buffer, size_t bufferLen, uint32_t channelNum);
 
     private:
@@ -24,16 +52,34 @@ class Stdout : public CRTSFilter
 
 Stdout::Stdout(int argc, const char **argv): totalOut(0), maxOut(-1)
 {
+    CRTSModuleOptions opt(argc, argv, usage);
+
+    const char * buffered = opt.get("--buffered", DEFAULT_BUFFERED);
+
+    if(!strcmp(buffered, "NO"))
+    {
+        setvbuf(crtsOut, 0, _IONBF, 0);
+        INFO("Set crtsOut to unbuffered");
+    }
+    else if(!strcmp(buffered, "FULL"))
+    {
+        setvbuf(crtsOut, 0, _IOFBF, 0);
+        INFO("Set crtsOut to full buffered");
+    }
+    else // default is line buffered
+    {
+        setlinebuf(crtsOut);
+        INFO("Set crtsOut to line buffered");
+    }
+
     DSPEW();
 }
 
 
-#ifdef DBDELETE
 Stdout::~Stdout(void)
 {
     DSPEW();
 }
-#endif
 
 
 ssize_t Stdout::write(void *buffer, size_t len, uint32_t channelNum)
@@ -72,6 +118,7 @@ ssize_t Stdout::write(void *buffer, size_t len, uint32_t channelNum)
                 totalOut, maxOut);
         stream->isRunning = false;
     }
+
 
     fflush(crtsOut);
 
