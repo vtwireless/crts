@@ -50,7 +50,8 @@ apt-get install\
  libqwt5-qt4-dev\
  swig\
  libfftw3-dev\
- texlive
+ texlive\
+ cmake
 ```
 
 
