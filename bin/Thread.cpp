@@ -1,23 +1,19 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include <string.h>
 #include <signal.h>
 #include <inttypes.h>
-#include <pthread.h>
 #include <atomic>
 #include <map>
 #include <list>
-#include <stack>
-#include <queue>
 
 #include "crts/debug.h"
 #include "crts/crts.hpp"
 #include "crts/Filter.hpp" // CRTSFilter user module interface
 #include "pthread_wrappers.h"
+#include "Feed.hpp"
 #include "FilterModule.hpp" // opaque filter co-class
 #include "Thread.hpp"
 #include "Stream.hpp"
-#include "Buffer.hpp"
 
 
 static void threadExitCatcher(int sig)
@@ -38,9 +34,6 @@ static void threadExitCatcher(int sig)
 static void *filterThreadWrite(Thread *thread)
 {
     DASSERT(thread, "");
-    // No CRTSFilter can set the isRunning yet because
-    // of the barrier below.
-    DASSERT(thread->stream.isRunning, "");
 
     {
         // Setup the exit signal catcher for this thread.
@@ -71,9 +64,8 @@ static void *filterThreadWrite(Thread *thread)
 
     // These variables will change at every loop:
     FilterModule *filterModule = thread->filterModule;
-    void *buffer;
+    Input *input;
     size_t len;
-    uint32_t channelNum;
 
 
     // mutex limits access to all the data in Thread starting at
@@ -115,31 +107,19 @@ static void *filterThreadWrite(Thread *thread)
                 // this threads work is done.
                 break;
 
-            // The filter module and what is written may change in each loop.
-            DASSERT(thread->filterModule->filter, "");
-            filterModule = thread->filterModule;
-
-            // We are a source (no writers) or we where passed a buffer
-            DASSERT((filterModule->writers && thread->buffer) ||
-                    !filterModule->writers, "");
-            // Check that the buffer is one of ours via MAGIC.
-            DASSERT(!filterModule->writers || (thread->buffer &&
-                    BUFFER_HEADER(thread->buffer)->magic == MAGIC), "");
 
             // Receive the orders for this thread.  We need to set local
-            // stack variables with the values for this write() request.
+            // stack variables with the values for this write() request,
+            // getting the values while we have the mutex lock.
             filterModule = thread->filterModule;
-            buffer = thread->buffer;
+            input = thread->input;
             len = thread->len;
-            channelNum = thread->channelNum;
         }
 
         // If another thread wants to know, they can look at this pointer
         // to see this thread is doing its next writes, and we mark that
         // we are ready to get the next request if we continue to loop.
         thread->filterModule = 0;
-
-        DASSERT(!buffer || BUFFER_HEADER(buffer)->magic == MAGIC, "");
 
         MUTEX_UNLOCK(mutex);
 
@@ -150,7 +130,7 @@ static void *filterThreadWrite(Thread *thread)
         // This may be a time consuming call, just how much is up
         // to the CRTS filter writer.
         //
-        filterModule->runUsersActions(buffer, len, channelNum);
+        filterModule->runUsersActions(len, input);
 
 
         MUTEX_LOCK(mutex);
@@ -194,23 +174,6 @@ static void *filterThreadWrite(Thread *thread)
             MUTEX_UNLOCK(&Stream::mutex);
         }
 
-        // Remove/free any buffers that the filterModule->filter->write()
-        // created that have not been passed to another write() call, or
-        // are no longer on a thread write() stack.
-        filterModule->removeUnusedBuffers();
-
-        if(buffer)
-        {
-            // Remove buffer that the above filterModule->filter->write()
-            // did not create and this threads above
-            // filterModule->filter->write() may just happen to be the
-            // last user of this buffer.
-            struct Header *h = BUFFER_HEADER(buffer);
-
-            if(h->useCount.fetch_sub(1) == 1)
-                freeBuffer(h);
-        }
-
 
         // TODO: Add one non-blocking queued request per connected thread.
         // That's what we have now if there is just one connected thread.
@@ -228,11 +191,10 @@ static void *filterThreadWrite(Thread *thread)
             // thread that dumped it went right on running.
             //
             // Setup the next write request.
+            //
             filterModule = thread->filterModule;
-            buffer = thread->buffer;
-            DASSERT(!buffer || BUFFER_HEADER(buffer)->magic == MAGIC, "");
+            input = thread->input;
             len = thread->len;
-            channelNum = thread->channelNum;
         }
         else if((writeQueue = WriteQueue_pop(thread->writeQueue)))
         {
@@ -255,10 +217,8 @@ static void *filterThreadWrite(Thread *thread)
             // thread know that, and we also need any other threads
             // (including this one) know that via thread->filterModule.
             thread->filterModule = filterModule = writeQueue->filterModule;
-            buffer = writeQueue->buffer;
-            DASSERT(!buffer || BUFFER_HEADER(buffer)->magic == MAGIC, "");
+            input = writeQueue->input;
             len = writeQueue->len;
-            channelNum = writeQueue->channelNum;
         }
         else
         {
@@ -330,7 +290,6 @@ Thread::Thread(Stream *stream_in):
     // There dam well better be a Stream object,
     DASSERT(stream_in, "");
     // and it better be in a running mode.
-    DASSERT(stream.isRunning, "");
     stream.threads.push_back(this);
     //DSPEW("thread %" PRIu32, threadNum);
 }
@@ -377,21 +336,4 @@ Thread::~Thread()
 
     stream.threads.remove(this);
     --totalNumThreads;
-
-#ifdef BUFFER_DEBUG
-    if(totalNumThreads == 0)
-    {
-        MUTEX_LOCK(&bufferDBMutex);
-        // It's real nice to know that we do not have a memory leak
-        // with these auto cleaning buffers.
-        if(bufferDBNum == 0)
-            INFO("total remaining buffers = %" PRIu64 " very nice!!",
-                    bufferDBNum);
-        else
-            WARN("Total remaining unfreed buffers = %" PRIu64,
-                    bufferDBNum);
-
-        MUTEX_UNLOCK(&bufferDBMutex);
-    }
-#endif
 }

@@ -12,7 +12,6 @@
 
 
 
-
 // FilterModule is a opaque module thingy that the user need not worry
 // about much.  We just needed it to add stuff to the CRTSFilter that we
 // wanted to do some lifting without being seen by the user interface.
@@ -23,62 +22,9 @@
 //
 class FilterModule;
 class CRTSController;
+class CRTSControl;
 class CRTSFilter;
 class Stream;
-
-// Forward declare the whole class CRTSControl
-
-class CRTSControl
-{
-
-    public:
-
-        const char *getName(void) const;
-
-        /** Total bytes from all CRTSFilter::write() calls since the
-         * program started.  When you know the approximate input rate, you
-         * can use this to get an approximate time without making a system
-         * call.
-         */
-        uint64_t totalBytesIn(void) const;
-
-        /** Total bytes written out via CRTSFilter::writePush() since the
-         * program started.  Note: if there is more than one output
-         * channel this will include a total for all channels.  TODO: add
-         * per channel totals.
-         */
-        uint64_t totalBytesOut(void) const;
-
-        uint32_t getId(void) const { return id; };
-
-
-    protected:
-
-        CRTSControl(CRTSFilter *filter, std::string controlName);
-
-        virtual ~CRTSControl(void);
-
-    private:
-
-        char *name;
-
-        // List of loaded CRTSController plug-ins that access
-        // this CRTS Control.
-        std::list<CRTSController *> controllers;
-
-        // Global list of all CRTSControl objects:
-        static std::map<std::string, CRTSControl *> controls;
-
-        // The filter associated with this control.
-        CRTSFilter *filter;
-
-        uint32_t id; // unique ID from all CRTSControl objects
-
-        friend CRTSFilter;
-        friend CRTSController;
-        friend FilterModule;
-        friend Stream;
-};
 
 
 
@@ -195,7 +141,7 @@ class CRTSFilter
 {
     public:
 
-        static const uint32_t ALL_CHANNELS;
+        static const uint32_t ALL_CHANNELS, NULL_CHANNEL;
 
         // Function to write data to this filter.
         //
@@ -224,25 +170,67 @@ class CRTSFilter
         // channelNum may be a stream merging filter, or a general stream
         // switching filter.
         virtual
-        ssize_t write(
+        void write(
                 void *buffer,
                 size_t bufferLen,
-                uint32_t channelNum=0) = 0;
+                uint32_t inputChannelNum=0) = 0;
+
+        /** This is called before the flow starts, or restarts.  The flow
+          will stop and restart any time the stream topology changes.
+          The stream filter topology should be considered fixed until
+          stop() is called.
+
+          The CRTSFilter writer may override this to take actions that
+          dependent on what input channels and output channels are
+          present, like how buffers are shared between input channels
+          and output channels.
+
+          The flow graph structure is not known when the CRTSFilter Super
+          class constructor is called, so we must have this start
+          interface to be called when that structure is known.
+
+          This may be used to start a piece of physical hardware.
+
+          Return true for failure.
+         */
+        virtual bool start(uint32_t numInputChannels,
+                uint32_t numOutputChannels) = 0;
+
+        /** This is called after the flow stops and the stream topology has
+          not changed yet.  This may be due to the program heading toward
+          exiting, or it may be due to a restart, in which case start()
+          will be called later.
+
+          The engineer on the star ship Enterprise may write this to
+          shutdown the reactor core so the channels connections can be
+          changed without having to handle live reactor conduits
+          (channels).
+
+          This may or may not be needed for all CRTSFilter modules.  It's
+          so the Filter may stop a piece of physical hardware for a
+          restart or shutdown like events.
+
+          Return true for failure.
+         */
+        virtual bool stop(uint32_t numInputChannels,
+                uint32_t numOutputChannels) = 0;
+
 
         virtual ~CRTSFilter(void);
 
-        // The default canWriteBufferIn value is set just here.
-        // canWriteBufferIn tells the inner works of CRTSFilter that this
-        // module may be writing to the buffer that is passed to
-        // CRTSFilter::write(buffer,,).  That info is needed so that the
-        // buffer may be shared between threads without the buffer memory
-        // getting corrupted by having more than one thread access it
-        // at once.
-        CRTSFilter(bool canWriteBufferIn = true);
+
+        /** When the Super class constructor is called the filter
+         * connection topology is not yet known.  The connection topology
+         * stays the same between the call of CRTSFilter start() and
+         * stop().  After the constructor is called and after stop(), but
+         * before start() the topology may change.
+         */
+        CRTSFilter(void);
 
         CRTSStream *stream;
 
 
+        /////// --- DEPRECATED ----
         // releaseBuffer() is not required to be called in
         // CRTSFilter::write().  It is used to free up the buffer that may
         // be being accessed in another thread where by freeing up
@@ -259,7 +247,7 @@ class CRTSFilter
         //
         // TODO: This may not be needed given the source filters no longer
         // loop, and return without looping in CRTSFilter::write().
-        //void releaseBuffers(void);
+        //--- DEPRECATED ---- void releaseBuffers(void);
 
         // Releases a buffer lock if this module has a different thread
         // than the module that wrote to this module.  The module may
@@ -268,11 +256,132 @@ class CRTSFilter
         //
         // This is automatically done for after CRTSFilter::write().
         //
-        static void releaseBuffer(void *buffer);
+        // --- DEPRECATED ---- static void releaseBuffer(void *buffer);
 
     protected:
 
-        // User interface to write to the next module in the stream.
+        // A channel is just an count index (starting at 0) for calls to
+        // CRTSFilter::write() and calls from CRTSFilter::writePush().
+        // In a given CRTSFilter module the indexes are from 0 to N-1
+        // calling CRTSFilter::write() and 0 to M-1 to
+        // CRTSFilter::writePush(). The channel number is just defined in
+        // a given CRTSFilter.  So a writePush from one module
+        // at channel 2 is not necessarily received as channel 2 as
+        // seen in the write() call.
+
+        // **************************************************************
+        // ************************* NOTICE *****************************
+        // **************************************************************
+        // For buffers passing to CRTSFilter::write() the maximum length
+        // input from the feeding filter must be greater than or equal to
+        // the feed filters threshold length.
+        // **************************************************************
+        // **************************************************************
+
+
+        /** Lets a CRTSFilter know if it is the source in a stream graph
+         */
+        bool isSource(void);
+
+        // Mark len bytes as read from the input buffer for the current
+        // input channel.
+        //
+        void advanceInputBuffer(size_t len);
+
+        void advanceInputBuffer(size_t len, uint32_t inputChannelNum);
+
+
+        // Create a buffer that will have data with origin from this
+        // CRTSFilter.  This creates one buffer that may have more than
+        // one reading filter.
+        //
+        // Set the maximum length, in bytes, that this CRTSFilter will
+        // read or write.  This must be called in the super class start()
+        // function.
+        //
+        // This buffer is used with a given output channel.
+        //
+        // Any Filter that creates data for writePush() must call this.
+        //
+        // maxLength is the maximum length, in bytes, that this CRTS
+        // Filter will and can writePush().  The CRTSFilter promises not
+        // to writePush() more than this.
+        //
+        void createOutputBuffer(size_t maxLength,
+                uint32_t outputChannelNum = ALL_CHANNELS);
+
+        /** Create a buffer that will have data with origin from this
+         * CRTSFilter.  This creates one buffer that may have more than
+         * one reading filter.  In this version of this function you
+         * may set many reading output channels via \p outputCannels
+         * which is a null terminated list of output channel numbers.
+         *
+         * example:
+         *   uint32_t outputChannels[] = { 0, 2, 3, NULL_CHANNEL };
+         *
+         * There is no threshold because this filter is the source
+         * of this buffer.  This filter must not pushWrite() more than
+         * maxLength bytes for the listed output channels.
+         */
+        void createOutputBuffer(size_t maxLength,
+                const uint32_t *outputChannelNums);
+
+
+        // Instead of allocating a buffer, we reuse the input buffer from
+        // the channel associated with inputChannelNum to writePush() to.
+        //
+        // This should not be called in CRTSFilter::write().
+        //
+        // We are passing a buffer out so there is a maximum output
+        // length.
+        //
+        // We are passing a buffer in and so there is an input threshold.
+        //
+        //
+        void createPassThroughBuffer(
+                uint32_t inputChannelNum,
+                uint32_t outputChannelNum,
+                size_t maxLength,
+                size_t threshold = 1);
+
+#if 0
+        // The Filter may need to access more than just the buffer passed
+        // in through the call arguments, CRTSFilter::write(buffer, len,
+        // inChannelNum), so we have this so that the get access to other
+        // input channel buffers.
+        //
+        // Returns a pointer to the start of usable memory.
+        //
+        void *getInputBuffer(size_t &len, uint32_t inputChannelNum);
+#endif
+
+        /** Returns a pointer to the current writing position
+         * of the buffer so the filter may write to the memory.
+         *
+         * This buffer must have been created by the filter with
+         * createOutputBuffer()
+         */
+        void *getOutputBuffer(uint32_t outputChannelNum);
+
+
+#if 0
+        void shareOutputBuffer(uint32_t outputChannelNum1,
+                uint32_t outputChannelNum2);
+#endif
+
+
+        // Set the minimum length, in bytes, that this CRTSFilter must
+        // accumulate before CRTSFilter::write() can and will be called.
+        //
+        // Calling this in CRTSFilter::write() is fine.  Making this limit
+        // as large as practical will save on unnecessary
+        // CRTSFilter::write() calls.  This length may not exceed the
+        // maximum Buffer Length set with setThresholdLength().
+        //
+        // TODO: This can be called when the stream is running.
+        void setInputThreshold(size_t len,
+                uint32_t inputChannelNum = ALL_CHANNELS);
+
 
         // The CRTSFilter code know if they are pushing to more than on
         // channel.  The channel we refer to here is just an attribute of
@@ -288,36 +397,35 @@ class CRTSFilter
         // TODO: Named channels and other channel mappings that are not
         // just a simple array index thing.
         //
-        // TODO: Varying number of channels on the fly.  This may just
-        // work already.
-        //
-        // If a channel is not "connected" this does nothing or fails.
-        //
-        // writePush() may be called many times in a given write() call.
-        // writePush() manages itself keeping track of how many channels
-        // there are just from the calls to writePush(), there is no need
-        // to create channels explicitly, but we can manage channels
-        // explicitly too.
-        //
-        // channelNum handles the splitting of the stream.  We can call
-        // writePush() many times to write the same thing to many
+        // outputChannelNum handles the splitting of the stream.  We can
+        // call writePush() many times to write the same thing to many
         // channels; with the cost only being an added call on the
         // function stack.
-        void writePush(void *buffer, size_t len, uint32_t channelNum = 0);
-
-
-        // Returns a buffer if this module has a reader that may be in
-        // a different thread.  We will recycle buffers automatically,
-        // as the CRTSFilter::write() stack is popped.
-        void *getBuffer(size_t bufferLen);
-
+        //
+        // If outputChannel has an origin at this filter the data will be
+        // copied from the buffer that was passed in to write(), else this
+        // will just pass through the data by advancing pointers in the
+        // buffer.  The outputChannelNum must be a created buffer in this
+        // filter or the outputChannelNum must be connected to the buffer
+        // via passThroughBuffer().
+        // 
+        //
+        /** Write the current buffer that was passed into
+         * CRTSFilter::write() to the output channel with channel number
+         * outputChannelNum.
+         * 
+         *
+         * This also advances the input buffer len bytes and triggers
+         * a write() to output Channels.
+         */
+        void writePush(size_t len, uint32_t outputChannelNum = ALL_CHANNELS);
 
 
         // Increment the buffer useCount.  Since the buffers created by
         // CRTSFilter::getBuffer() are shared between threads, we needed a
         // buffer use count thingy.  This needs to be called before the
         // buffer is passed to another thread for use.
-        void incrementBuffer(void *buffer);
+        //--- DEPRECATED ---- void incrementBuffer(void *buffer);
 
 
         // TODO: this...
@@ -373,36 +481,8 @@ class CRTSFilter
         //std::list<CRTSController *> controllers;
 
         // Needed by the plug-in loader to make a default CRTSControl.
-        CRTSControl *makeControl(const char *controlName, bool generateName)
-        {
-            DASSERT(controlName && controlName[0], "");
+        CRTSControl *makeControl(const char *controlName, bool generateName);
 
-            auto &controls = CRTSControl::controls;
-
-            if(!generateName)
-            {
-                if(controls.find(controlName) != controls.end())
-                {
-                    ERROR("A control named \"%s\" is already loaded", controlName);
-                    return 0;
-                }
-                return new CRTSControl(this, controlName);
-            }
-
-            // We generate a unique CRTS Control name using a counter.
-            // Better than just failing.
-            std::string genName = controlName;
-            int count = 1;
-            while(controls.find(genName) != controls.end())
-            {
-                genName = controlName;
-                genName += "_";
-                genName += std::to_string(count++);
-                DASSERT(count < 10000, "");
-            }
-
-            return new CRTSControl(this, genName);
-        }
 
         // Pointer to the opaque FilterModule co-object.  The two objects
         // could be one object, except that we need to hide the data and
@@ -449,33 +529,7 @@ class CRTSController
         // list of all CRTS controls.  The particular CRTSController
         // can get pointers to any CRTSControl objects.
         template <class C>
-        C getControl(const std::string name) const
-        {
-            DASSERT(name.length(), "");
-            CRTSControl *crtsControl = 0;
-            C c = 0;
-
-            auto search = CRTSControl::controls.find(name);
-            if(search != CRTSControl::controls.end())
-            {
-                crtsControl = search->second;
-                DASSERT(crtsControl, "");
-                c = dynamic_cast<C>(crtsControl);
-                DASSERT(c, "dynamic_cast<CRTSControl super class>"
-                        " failed for control named \"%s\"", name.c_str());
-                DSPEW("got control \"%s\"=%p", name.c_str(), c);
-
-                // Add this CRTS Controller to the CRTS Filter's
-                // execute() callback list.
-                crtsControl->controllers.push_back(
-                        (CRTSController *) this);
-            }
-            else
-                WARN("Did not find CRTS control named \"%s\"", name.c_str());
-
-            return c;
-        };
-
+        C getControl(const std::string name) const;
 
     private:
 
@@ -508,28 +562,144 @@ class CRTSController
 };
 
 
+class CRTSControl
+{
 
-#define CRTSCONTROLLER_MAKE_MODULE(derived_class_name) \
-    CRTS_MAKE_MODULE(CRTSController, derived_class_name)
+    public:
 
+        const char *getName(void) const;
+
+        /** Total bytes from all CRTSFilter::write() calls since the
+         * program started.  When you know the approximate input rate, you
+         * can use this to get an approximate time without making a system
+         * call.
+         */
+        uint64_t totalBytesIn(
+                uint32_t inChannelNum = CRTSFilter::ALL_CHANNELS) const;
+
+        /** Total bytes written out via CRTSFilter::writePush() since the
+         * program started.  Note: if there is more than one output
+         * channel this will include a total for all channels.  TODO: add
+         * per channel totals.
+         */
+        uint64_t totalBytesOut(
+                uint32_t outChannelNum = CRTSFilter::ALL_CHANNELS) const;
+
+        uint32_t getId(void) const { return id; };
+
+
+    protected:
+
+        CRTSControl(CRTSFilter *filter, std::string controlName);
+
+        virtual ~CRTSControl(void);
+
+    private:
+
+        char *name;
+
+        // List of loaded CRTSController plug-ins that access
+        // this CRTS Control.
+        std::list<CRTSController *> controllers;
+
+        // Global list of all CRTSControl objects:
+        static std::map<std::string, CRTSControl *> controls;
+
+        // The filter associated with this control.
+        CRTSFilter *filter;
+
+        uint32_t id; // unique ID from all CRTSControl objects
+
+        friend CRTSFilter;
+        friend CRTSController;
+        friend FilterModule;
+        friend Stream;
+};
+
+
+
+template <class C>
+C CRTSController::getControl(const std::string name) const
+{
+    DASSERT(name.length(), "");
+    CRTSControl *crtsControl = 0;
+    C c = 0;
+
+    auto search = CRTSControl::controls.find(name);
+    if(search != CRTSControl::controls.end())
+    {
+        crtsControl = search->second;
+        DASSERT(crtsControl, "");
+        c = dynamic_cast<C>(crtsControl);
+        DASSERT(c, "dynamic_cast<CRTSControl super class>"
+                " failed for control named \"%s\"", name.c_str());
+        DSPEW("got control \"%s\"=%p", name.c_str(), c);
+
+        // Add this CRTS Controller to the CRTS Filter's
+        // execute() callback list.
+        crtsControl->controllers.push_back(
+                (CRTSController *) this);
+    }
+    else
+        WARN("Did not find CRTS control named \"%s\"", name.c_str());
+
+    return c;
+}
+
+
+inline
+CRTSControl *CRTSFilter::makeControl(const char *controlName, bool generateName)
+{
+    DASSERT(controlName && controlName[0], "");
+
+    auto &controls = CRTSControl::controls;
+
+    if(!generateName)
+    {
+        if(controls.find(controlName) != controls.end())
+        {
+            ERROR("A control named \"%s\" is already loaded", controlName);
+            return 0;
+        }
+        return new CRTSControl(this, controlName);
+    }
+
+    // We generate a unique CRTS Control name using a counter.
+    // Better than just failing.
+    std::string genName = controlName;
+    int count = 1;
+    while(controls.find(genName) != controls.end())
+    {
+        genName = controlName;
+        genName += "_";
+        genName += std::to_string(count++);
+        DASSERT(count < 10000, "");
+    }
+
+    return new CRTSControl(this, genName);
+}
 
 
 inline const char *CRTSControl::getName(void) const { return name; };
 
 
-inline uint64_t CRTSControl::totalBytesIn(void) const
+inline uint64_t CRTSControl::totalBytesIn(uint32_t inChannelNum) const
 {
     DASSERT(filter, "");
     return filter->_totalBytesIn;
 };
 
-inline uint64_t CRTSControl::totalBytesOut(void) const
+
+inline uint64_t CRTSControl::totalBytesOut(uint32_t outChannelNum) const
 {
     DASSERT(filter, "");
     return filter->_totalBytesOut;
 };
 
 
+
+#define CRTSCONTROLLER_MAKE_MODULE(derived_class_name) \
+    CRTS_MAKE_MODULE(CRTSController, derived_class_name)
 
 
 #define CRTSFILTER_MAKE_MODULE(derived_class_name) \

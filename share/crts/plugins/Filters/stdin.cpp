@@ -7,6 +7,8 @@
 
 
 #define DEFAULT_BUFFERED  "LINE"
+#define BUFLEN (1024)
+
 
 
 static void usage(void)
@@ -18,6 +20,12 @@ static void usage(void)
 "\n"
 "\n"
 "Usage: %s [ OPTIONS ]\n"
+"\n"
+"  All input channels into this filter will be terminated, therefore input\n"
+"  will only serve to trigger this filter to read stdin.\n"
+"\n"
+"  All output channels from this filter will be the full content of stdin,\n"
+"  which will be sent every time this filter is triggered.\n"
 "\n"
 "  OPTIONS are optional.\n"
 "\n"
@@ -45,23 +53,28 @@ class Stdin : public CRTSFilter
         Stdin(int argc, const char **argv);
         ~Stdin(void);
 
-        ssize_t write(void *buffer, size_t bufferLen,
-                uint32_t channelNum);
+        bool start(uint32_t numInChannels, uint32_t numOutChannels);
+        bool stop(uint32_t numInChannels, uint32_t numOutChannels);
+        void write(void *buffer, size_t bufferLen, uint32_t inChannelNum);
+
+    private:
+
+        FILE *file;
 };
 
 
-Stdin::Stdin(int argc, const char **argv)
+Stdin::Stdin(int argc, const char **argv): file(0)
 {
     CRTSModuleOptions opt(argc, argv, usage);
 
     const char * buffered = opt.get("--buffered", DEFAULT_BUFFERED);
 
-    if(!strcmp(buffered, "NO"))
+    if(!strncasecmp(buffered, "NO", 1))
     {
         setvbuf(stdin, 0, _IONBF, 0);
         INFO("Set stdin to unbuffered");
     }
-    else if(!strcmp(buffered, "FULL"))
+    else if(!strncasecmp(buffered, "FULL", 1))
     {
         setvbuf(stdin, 0, _IOFBF, 0);
         INFO("Set stdin to full buffered");
@@ -76,44 +89,140 @@ Stdin::Stdin(int argc, const char **argv)
 }
 
 
+bool Stdin::start(uint32_t numInChannels, uint32_t numOutChannels)
+{
+    if(!(numInChannels || numOutChannels))
+    {
+        WARN("We have no inputs or outputs");
+        return true; // fail
+    }
+
+    if(numOutChannels)
+    {
+        // We will read stdin.
+        file = stdin;
+
+        // We use one buffer for the source of each output Channel
+        // that all share the same ring buffer.
+        createOutputBuffer(BUFLEN, ALL_CHANNELS);
+    }
+
+    if(numInChannels)
+        setInputThreshold(0, ALL_CHANNELS);
+
+    // We will merge any input channels.
+    //
+    // If there are no inputs this Filer becomes a source filter which
+    // gets write(0,0,0) calls in a loop, which is the start of a buffer
+    // flow.
+
+    DSPEW();
+    return false; // success
+}
+
+
+bool Stdin::stop(uint32_t numInChannels, uint32_t numOutChannels)
+{
+    // In this function we could flush away all the input data to stdin,
+    // but if the input never stops that could be a problem.  We could
+    // close a file here, but that's not a good idea either.  So stop() in
+    // this filter does nothing, any input to stdin will just accumulate.
+    //
+    // We have no reactor core to shutdown in this, stdin, case.
+    //
+    // Buffers all get destroyed automatically and if a start() happens
+    // again buffers get re-created.
+
+    file = 0;
+
+    DSPEW();
+    return false; // success
+}
+
+
 Stdin::~Stdin(void)
 {
+    // Do nothing...
+
     DSPEW();
 }
 
 
-ssize_t Stdin::write(void *buffer, size_t len, uint32_t channelNum)
+void Stdin::write(void *buffer_in, size_t len, uint32_t inputChannelNum)
 {
-    // This filter is a source so there no data passed to
-    // whatever called this write().
-    //
-    DASSERT(buffer == 0, "");
+    if(len)
+        // Mark input as consumed.
+        advanceInputBuffer(len);
 
-    if(feof(stdin)) 
+    if(!file)
     {
-            // end of file
-        stream->isRunning = false;
-        NOTICE("read end of file");
-        return 0; // We are done.
+        // There are no output channels so we are done.
+        //
+        // This is a stupid use case.
+        //
+        return;
     }
- 
-    // Recycle the buffer and len argument variables.
-    len = 1024;
-    // Get a buffer from the buffer pool.
-    buffer = (uint8_t *) getBuffer(len);
 
-    // This filter is a source, it reads stdin which is not a
-    // part of this filter stream.
-    size_t ret = fread(buffer, 1, len, stdin);
 
-    if(ret != len)
-        NOTICE("fread(,1,%zu,stdin) only read %zu bytes", len, ret);
 
-    if(ret > 0)
-        // Send this buffer to the next readers write call.
-        writePush(buffer, ret, ALL_CHANNELS);
+    uint8_t *buffer = (uint8_t *) getOutputBuffer(0);
 
-    return 1;
+    if(len)
+    {
+        // We have input and not just a 0 length trigger.
+        // We append this input to our output.
+        //
+        DASSERT(buffer_in, "");
+        memcpy(buffer, buffer_in, len);
+        buffer += len;
+    }
+
+
+    if(feof(file))
+    {
+        // end of file
+
+        if(len)
+            // Send the outputs to all down-stream filters.
+            writePush(len, ALL_CHANNELS);
+        else
+        {
+            // We a have 0 trigger input.
+            // In this case we are done with stdin.
+            stream->isRunning = false;
+            file = 0;
+        }
+
+        NOTICE("read end of file");
+        return; // We are done.
+    }
+
+    size_t ret;
+
+    // This filter is a source. It reads stdin which is not a
+    // part of this CRTS filter stream.  We append stdin to
+    // the output buffer.
+    //
+    ret = fread(buffer, 1, BUFLEN, file);
+
+    if(ret != BUFLEN)
+    {
+        NOTICE("fread(,1,%zu,stdin) only read %zu bytes", BUFLEN, len);
+        if(feof(stdin))
+        {
+            // end of file
+            //
+            // This will be the last call to this write() function for
+            // this start-stop interval.  And since this is stdin, we
+            // can't start again, so this whole stream may be done.
+            stream->isRunning = false;
+            NOTICE("read end of file");
+        }
+    }
+
+    if(len + ret > 0)
+        // Send the outputs to other down-stream filters.
+        writePush(len + ret, ALL_CHANNELS);
 }
 
 

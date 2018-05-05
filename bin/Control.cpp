@@ -8,6 +8,8 @@
 #include "crts/crts.hpp"
 #include "crts/Control.hpp"
 #include "crts/Controller.hpp"
+#include "pthread_wrappers.h"
+#include "Feed.hpp"
 #include "FilterModule.hpp"
 
 

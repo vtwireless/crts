@@ -1,28 +1,4 @@
 
-
-// TODO: We may need to make a queue of write requests
-// that uses struct WriteRequest like so:
-#if 0
-struct WriteRequest
-{
-    // The Filter module that will have it's CRTSFilter::write() called
-    // next.  Set to 0 if this is none.
-    FilterModule *filterModule;
-
-    // buffer, len, channelNum are for calling 
-    // CRTSFilter::write(buffer, len, channelNum)
-    //
-    void *buffer;
-
-    // Buffer length
-    size_t len;
-
-    // Current channel to write.
-    uint32_t channelNum;
-};
-#endif
-
-
 // This must be a signal that is not caught by the main thread
 // in crts_radio.cpp in variable exitSignals[].
 //
@@ -32,31 +8,33 @@ struct WriteRequest
 // A queue of condition variables.
 //
 // You might ask why are we writing our on queue and not using
-// std:queue<>.  The simple answer is that this is much much much faster.
+// std:queue<>.  The simple answer is that this is much much faster.
 // Adding an entry to std::queue requires memory allocation from the heap,
-// we get our memory from the function call stack where we push the entry
-// on the queue, in Filter::write().  A call to the heap allocator has to
-// do a lot of work compared to pretty much none at all here, the stack
-// has to be there anyway.  Like comparing doing nothing at all to doing
-// something.  Doing nothing always wins, it's always faster to do nothing
-// than something.  Doing this is nothing compared to a heap allocation
-// (like malloc()), which would be adding a call stack and searching a
-// tree or other data structure.  This does not even add a call on the
-// stack, given these (WriteQueue_push() and WriteQueue_pop()) are inline
-// functions.
+// we get our memory from the function call stack where we push the
+// entry on the queue, in Filter::write().  A call to the heap allocator
+// has to do a lot of work compared to pretty much none at all here, the
+// stack has to be there anyway.  Like comparing doing nothing at all to
+// doing something.  Doing nothing always wins, it's always faster to do
+// nothing than something.  Doing this is nothing compared to a heap
+// allocation (like malloc()), which would be adding a call stack and
+// searching a tree or other data structure.  This does not even add a
+// call on the stack, given these (WriteQueue_push() and WriteQueue_pop())
+// are inline functions.
 //
 struct WriteQueue
 {
+    // This condition variable is paired with the
+    // Thread::mutex.
     pthread_cond_t cond;
     struct WriteQueue *next, *prev;
     // The request that is queued.
-    FilterModule *filterModule;
-    void *buffer;
+    FilterModule *filterModule; // to filter
+    Input *input;
     size_t len;
-    uint32_t channelNum;
 };
 
-static inline void WriteQueue_push(struct WriteQueue* &queue, struct WriteQueue *request)
+static inline void WriteQueue_push(struct WriteQueue* &queue,
+        struct WriteQueue *request)
 {
     DASSERT(!request->next, "");
     DASSERT(!request->prev, "");
@@ -209,8 +187,8 @@ class Thread
         //
         Stream &stream;
 
-        // At each loop we may reset the buffer, len, and channel
-        // to call filterModule->filter->write(buffer, len, channel);
+        // At each loop we may reset the input and len,
+        // to call filterModule->filter->write(len, channel);
 
         /////////////////////////////////////////////////////////////
         //       All Thread data below here is changing data.
@@ -263,18 +241,14 @@ class Thread
         // next.  Set to 0 if this is none.
         FilterModule *filterModule;
 
+        // We get buffer from reader that is part of the
+        // filter that is writing.
         // buffer, len, channelNum are for calling 
         // CRTSFilter::write(buffer, len, channelNum)
         //
-        void *buffer;
-
-        // Buffer length
+        Input *input; // input channel to get --> buffer
+        // Buffer length that can be read by filter
         size_t len;
-
-        // Current channel to write.  There is one channel per connection.
-        // Channel numbers start at 0 and go to N-1, where N is the number
-        // of channels.
-        uint32_t channelNum;
 
     private:
 

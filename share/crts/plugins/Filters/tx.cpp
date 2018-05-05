@@ -21,15 +21,22 @@ class Tx : public CRTSFilter
         Tx(int argc, const char **argv);
         ~Tx(void);
 
-        ssize_t write(void *buffer, size_t bufferLen, uint32_t channelNum);
+        bool start(uint32_t numInChannels, uint32_t numOutChannels);
+        bool stop(uint32_t numInChannels, uint32_t numOutChannels);
+        void write(void *buffer, size_t len, uint32_t inChannelNum);
 
     private:
 
         TxControl txControl;
 
+        std::string uhd_args;
+        double freq, rate, gain;
+
         uhd::usrp::multi_usrp::sptr usrp;
-        uhd::device::sptr device;
+        uhd::tx_streamer::sptr tx_stream;
+
         uhd::tx_metadata_t metadata;
+
 };
 
 
@@ -106,33 +113,20 @@ static const char *getControlName(int argc, const char **argv)
 
 Tx::Tx(int argc, const char **argv):
     txControl(this, getControlName(argc, argv), usrp),
-    usrp(0), device(0)
+    usrp(0), tx_stream(0)
 {
     CRTSModuleOptions opt(argc, argv, usage);
 
-    std::string uhd_args = opt.get("--uhd", "");
-    double freq = opt.get("--freq", TX_FREQ),
-           rate = opt.get("--rate", TX_RATE),
-           gain = opt.get("--gain", TX_GAIN);
+    uhd_args = opt.get("--uhd", "");
+    freq = opt.get("--freq", TX_FREQ);
+    rate = opt.get("--rate", TX_RATE);
+    gain = opt.get("--gain", TX_GAIN);
 
     // Convert the rate and freq to Hz from MHz
     freq *= 1.0e6;
     rate *= 1.0e6;
 
-    usrp = uhd::usrp::multi_usrp::make(uhd_args);
-
-    crts_usrp_tx_set(usrp, freq, rate, gain);
-
-    DSPEW("usrp->get_pp_string()=\n%s",
-            usrp->get_pp_string().c_str());
-
-    device = usrp->get_device();
-
-    metadata.start_of_burst = true;
-    metadata.end_of_burst = false;
-    metadata.has_time_spec = false; // set to false to send immediately
-
-    DSPEW("TX is initialized");
+    DSPEW();
 }
 
 
@@ -144,26 +138,83 @@ Tx::~Tx(void)
 }
 
 
-// len is the number of bytes not complex floats.
-ssize_t Tx::write(void *buffer, size_t len, uint32_t channelNum)
+bool Tx::start(uint32_t numInChannels, uint32_t numOutChannels)
 {
+    DSPEW();
+
+    if(numOutChannels != 0)
+    {
+        WARN("Should have no output channels got %" PRIu32,
+            numOutChannels);
+        return true; // fail
+    }
+
+    if(usrp == 0)
+    {
+        // TODO: try catch etc.
+        //
+        usrp = uhd::usrp::multi_usrp::make(uhd_args);
+
+        if(crts_usrp_tx_set(usrp, freq, rate, gain))
+        {
+            stop(0,0);
+            return true; // fail
+        }
+
+        uhd::stream_args_t stream_args("fc64", "sc16");
+        tx_stream = usrp->get_tx_stream(stream_args);
+    }
+
+    metadata.start_of_burst = true;
+    metadata.end_of_burst = false;
+    metadata.has_time_spec = false; // set to false to send immediately
+
+    DSPEW("TX is initialized usrp->get_pp_string()=\n%s",
+            usrp->get_pp_string().c_str());
+
+    return false; // success
+}
+
+
+bool Tx::stop(uint32_t numInChannels, uint32_t numOutChannels)
+{
+    if(usrp)
+    {
+        // WTF ??
+        //delete usrp;
+        usrp = 0;
+        tx_stream = 0;
+    }
+
+    return false; // success
+}
+
+
+
+
+// len is the number of bytes not complex floats.
+//
+void Tx::write(void *buffer, size_t len, uint32_t channelNum)
+{
+    // We must write integer number of std::complex<float> 
+    len -= len % sizeof(std::complex<float>);
+
     // TODO: check for error here, and retry?
-    size_t ret = device->send(buffer, len/sizeof(std::complex<float>),
-            metadata,
-            uhd::io_type_t::COMPLEX_FLOAT32,
-            uhd::device::SEND_MODE_FULL_BUFF);
+    size_t ret = tx_stream->send(buffer, len/sizeof(std::complex<float>),
+            metadata);
 
     if(ret != len/sizeof(std::complex<float>))
     {
-        WARN("wrote only %zu of complex values", ret, len/sizeof(std::complex<float>));
+        WARN("wrote only %zu of complex values not %zu", ret,
+                len/sizeof(std::complex<float>));
     }
 
+    // Mark the number of bytes to advance the input buffer.
+    advanceInputBuffer(len);
 
     if(metadata.start_of_burst)
         // In all future Tx::write() calls this is false.
         metadata.start_of_burst = false;
-
-    return 1; // TODO: what to return????
 }
 
 

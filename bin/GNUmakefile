@@ -9,7 +9,7 @@ INSTALL_DIR = $(BIN)
 
 
 
-BUILD_NO_INSTALL := test_link mkTUN udpTunnelServer testSuidMkTUN
+BUILD_NO_INSTALL := mkTUN udpTunnelServer testSuidMkTUN mapTest
 
 
 # It's very important that libcrts_radio link option be after the libuhd
@@ -22,11 +22,9 @@ COMMON_LD :=\
  -ldl -lpthread
 
 
-# Notice running 'ldd ./test_link' spew lot-o-libs and running
-# './test_link' spews UHD stuff; even though it does not use any of the
-# APIs that it links with.
-test_link_SOURCES := test_link.cpp debug.c
-test_link_LDFLAGS = $(COMMON_LD)
+mapTest_SOURCES := mapTest.cpp debug.c makeRingBuffer.cpp
+mapTest_LDFLAGS := -lrt
+
 
 crts_radio_SOURCES :=\
  crts_radio.cpp\
@@ -38,9 +36,16 @@ crts_radio_SOURCES :=\
  Filter.cpp\
  Control.cpp\
  Controller.cpp\
- debug.c
-# stdout may be needed for user pipe line or whatever.
-crts_radio_LDFLAGS := $(COMMON_LD)
+ debug.c\
+ makeRingBuffer.cpp\
+ Filter_write.cpp\
+ Filter_startStop.cpp\
+ Feed.cpp\
+ Stream_printGraph.cpp\
+ Stream_startStop.cpp\
+ crts_radio_usage.cpp
+
+crts_radio_LDFLAGS := $(COMMON_LD) -lrt
 
 
 # The program crts_mkTUN need a special installation so it can startup as

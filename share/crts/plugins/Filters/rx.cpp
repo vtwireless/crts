@@ -15,49 +15,6 @@
 #include "rxControl.hpp"
 
 
-// RANT:
-//
-// It'd be real nice if the UHD API would document what is thread-safe and
-// what is not for all the API.  We can only guess how to use this UHD API
-// by looking at example codes.  From the program crashes I've seen there
-// are clearly some things that are not thread safe.
-//
-// The structure of the UHD API implies that you should be able to use a
-// single uhd::usrp::multi_usrp::sptr to do both transmission and
-// receiving but none of the example do that, the examples imply that you
-// must make two uhd::usrp::multi_usrp::sptr objects one for (TX)
-// transmission and one for (RX) receiving.
-
-// register UHD message handler
-// Let it use stdout, or stderr by default???
-//uhd::msg::register_handler(&uhd_msg_handler);
-
-// We do not know where UHD is thread safe, so, for now, we do this
-// before we make threads.  The UHD examples do it this way too.
-// We set up the usrp (RX and TX) objects in the main thread here:
-
-
-// UHD BUG WORKAROUND:
-//
-// We must make the two multi_usrp objects before we configure them by
-// setting frequency, rate (bandWidth), and gain; otherwise the process
-// exits with status 0.  And it looks like you can use the same object for
-// both receiving (RX) and transmitting (TX).   Here we are keeping a list
-// of stupid things libuhd does, and a good API will never do:
-//
-//    - calls exit; instead of throwing an exception
-//
-//    - spawns threads and does not tell you it does in the
-//      documentation
-//
-//    - spews to stdout (we made a work-around for this)
-//
-//
-// It may be libBOOST is doing some of this.
-//
-// We sometimes get Floating point exception and the program exits.
-//
-
 
 class Rx : public CRTSFilter
 {
@@ -66,15 +23,22 @@ class Rx : public CRTSFilter
         Rx(int argc, const char **argv);
         ~Rx(void);
 
-        ssize_t write(void *buffer, size_t bufferLen, uint32_t channelNum);
+        bool start(uint32_t numInChannels, uint32_t numOutChannels);
+        bool stop(uint32_t numInChannels, uint32_t numOutChannels);
+        void write(void *buffer, size_t len, uint32_t inChannelNum);
 
     private:
 
         RxControl rxControl;
 
+        std::string uhd_args;
+        double freq, rate, gain;
+
         uhd::usrp::multi_usrp::sptr usrp;
-        uhd::device::sptr device;
-        size_t numComplexFloats;
+        uhd::rx_streamer::sptr rx_stream;
+
+        // Related to output buffer size.
+        size_t max_num_samps, numRxChannels;
 };
 
 
@@ -149,105 +113,153 @@ static const char *getControlName(int argc, const char **argv)
 }
 
 
+// The constructor gets parameters but does not initialize
+// the hardware.  It provides a way to get --help without
+// initializing stuff.
+//
 Rx::Rx(int argc, const char **argv):
-    rxControl(this, getControlName(argc, argv), usrp, device),
-    usrp(0), device(0), numComplexFloats(0)
+    rxControl(this, getControlName(argc, argv), usrp, rx_stream),
+    usrp(0), rx_stream(0), max_num_samps(0), numRxChannels(1)
 {
     CRTSModuleOptions opt(argc, argv, usage);
 
-    std::string uhd_args = opt.get("--uhd", "");
-    double freq = opt.get("--freq", RX_FREQ),
-           rate = opt.get("--rate", RX_RATE),
-           gain = opt.get("--gain", RX_GAIN);
+    uhd_args = opt.get("--uhd", "");
+    freq = opt.get("--freq", RX_FREQ);
+    rate = opt.get("--rate", RX_RATE);
+    gain = opt.get("--gain", RX_GAIN);
 
     // Convert the rate and freq to Hz from MHz
     freq *= 1.0e6;
     rate *= 1.0e6;
 
-    usrp = uhd::usrp::multi_usrp::make(uhd_args);
-
-    crts_usrp_rx_set(usrp, freq, rate, gain);
-
-    DSPEW("usrp->get_pp_string()=\n%s",
-            usrp->get_pp_string().c_str());
-    DSPEW("usrp->get_rx_num_channels()=%d",
-            usrp->get_rx_num_channels());
-
-    //setup streaming. Whatever that means.
-    uhd::stream_cmd_t stream_cmd(uhd::stream_cmd_t::STREAM_MODE_START_CONTINUOUS);
-
-    // TODO: what does this return?
-    usrp->issue_stream_cmd(stream_cmd);
-
-    device = usrp->get_device();
-
-    numComplexFloats = device->get_max_recv_samps_per_packet();
-
-    DSPEW("RX numComplexFloats = %zu", numComplexFloats);
+    DSPEW();
 }
-
+    
 
 Rx::~Rx(void)
 {
     DSPEW();
-
-    // TODO: What does this return:
-    if(usrp)
-        usrp->issue_stream_cmd(uhd::stream_cmd_t::STREAM_MODE_STOP_CONTINUOUS);
-
-    // TODO: delete usrp device ????
-
-    DSPEW();
 }
 
 
-ssize_t Rx::write(void *buffer_in, size_t len, uint32_t channelNum)
+bool Rx::start(uint32_t numInChannels, uint32_t numOutChannels)
 {
+    DSPEW();
+    if(numInChannels != 1)
+    {
+        WARN("Should have 1 input channel got %" PRIu32, numInChannels);
+        return true; // fail
+    }
+
+    if(numOutChannels < 1)
+    {
+        WARN("Should have 1 or more output channels got %" PRIu32,
+            numOutChannels);
+        return true; // fail
+    }
+
+    if(usrp == 0)
+    {
+        // TODO: try catch ??
+        //
+        usrp = uhd::usrp::multi_usrp::make(uhd_args);
+
+        if(crts_usrp_rx_set(usrp, freq, rate, gain))
+        {
+            stop(0,0);
+            return true; // fail
+        }
+
+
+        uhd::stream_args_t stream_args("fc32"); //complex floats
+        //std::vector<size_t> channels = { 0 };
+        //stream_args.channels = channels;
+        rx_stream = usrp->get_rx_stream(stream_args);
+    }
+
+    uhd::stream_cmd_t stream_cmd(
+            uhd::stream_cmd_t::STREAM_MODE_START_CONTINUOUS );
+    //stream_cmd.stream_now = false;
+    //stream_cmd.time_spec = uhd::time_spec_t(seconds_in_future);
+    // tell all channels to stream
+    rx_stream->issue_stream_cmd(stream_cmd);
+
+    max_num_samps = rx_stream->get_max_num_samps();
+
+    // We use the same ring buffer for all output channels
+    //
+    createOutputBuffer(max_num_samps *
+            numRxChannels * sizeof(std::complex<float>));
+
+    DSPEW("usrp->get_pp_string()=\n%s",
+            usrp->get_pp_string().c_str());
+    DSPEW("max_num_samps=%zu", max_num_samps);
+
+    return false; // success
+}
+
+
+// TODO: UHD has no example code that show how to clean up the usrp
+// object.
+//
+// This function should clean up all the USRP RX software resources or
+// whatever like thing.  It's up to you to define what reset means.
+//
+bool Rx::stop(uint32_t numInChannels, uint32_t numOutChannels)
+{
+    if(rx_stream)
+    {
+
+        uhd::stream_cmd_t stream_cmd(
+                uhd::stream_cmd_t::STREAM_MODE_STOP_CONTINUOUS);
+        // Tell all the channels to stop
+        rx_stream->issue_stream_cmd(stream_cmd);
+
+        // ???
+        // delete usrp
+        //
+        //usrp = 0;
+        //rx_stream = 0;
+    }
+
+    return false; // success
+}
+
+
+
+void Rx::write(void *buffer, size_t len, uint32_t channelNum)
+{
+    errno = 0;
+
     // This filter is a source so there no data passed to
     // whatever called this write()
     //
     // TODO:  or we could just ignore the input buffer??
-    DASSERT(buffer_in == 0, "");
+    DASSERT(len == 0,
+            "This is just a source filter len=%zu", len);
 
-
-    std::complex<float> *buffer = (std::complex<float> *)
-            getBuffer(sizeof(std::complex<float>)*numComplexFloats);
+    buffer = getOutputBuffer(0);
 
     uhd::rx_metadata_t metadata; // set by recv();
 
-    size_t numSamples = device->recv(
-            (unsigned char *)buffer, numComplexFloats, metadata,
-            uhd::io_type_t::COMPLEX_FLOAT32,
-            uhd::device::RECV_MODE_ONE_PACKET,
-            // TODO: fix this timeout ??
-            1.0/*timeout double seconds*/);
+    size_t numSamples = rx_stream->recv(
+            buffer, max_num_samps, metadata, 2.0);
 
-#ifdef DEBUG
-    if(numSamples != numComplexFloats)
-        DSPEW("RX recv metadata.error_code=%d numSamples = %zu",
-                metadata.error_code, numSamples);
-#endif
 
-    if(metadata.error_code && metadata.error_code !=
-            uhd::rx_metadata_t::ERROR_CODE_TIMEOUT)
+    if(numSamples != max_num_samps)
     {
-        DSPEW("RX recv metadata.error_code=%d numSamples = %zu",
+        if(uhd::rx_metadata_t::ERROR_CODE_TIMEOUT ==
+                metadata.error_code)
+            NOTICE("RX recv TIMEOUT numSamples=%zu", numSamples);
+        else
+            NOTICE("RX recv error_code=%d numSamples=%zu",
                 metadata.error_code, numSamples);
-        // For error codes see:
-        // https://files.ettus.com/manual/structuhd_1_1rx__metadata__t.html#ae3a42ad2414c4f44119157693fe27639
-        DSPEW("uhd::rx_metadata_t::ERROR_CODE_NONE=%d",
-                uhd::rx_metadata_t::ERROR_CODE_NONE);
-        DSPEW("uhd::rx_metadata_t::ERROR_CODE_TIMEOUT=%d",
-                uhd::rx_metadata_t::ERROR_CODE_TIMEOUT);
     }
 
-    DASSERT(!(metadata.error_code && numSamples), "");
-
-    if(numSamples > 0)
-        writePush(buffer, numSamples*sizeof(std::complex<float>),
+    if(numSamples)
+        writePush(numSamples*numRxChannels*
+                sizeof(std::complex<float>),
                 CRTSFilter::ALL_CHANNELS);
-
-    return 1; // TODO: what to return????
 }
 
 

@@ -16,23 +16,26 @@ class LiquidSync : public CRTSFilter
 
         LiquidSync(int argc, const char **argv);
         ~LiquidSync(void);
-        ssize_t write(void *buffer, size_t bufferLen,
-                uint32_t channelNum);
+        bool start(uint32_t numInChannels, uint32_t numOutChannels);
+        bool stop(uint32_t numInChannels, uint32_t numOutChannels);
+        void write(void *buffer, size_t len, uint32_t inChannelNum);
 
     private:
 
-        unsigned int numSubcarriers;
-        unsigned int cp_len;
-        unsigned int taper_len;
+        const unsigned int numSubcarriers;
+        const unsigned int cp_len;
+        const unsigned int taper_len;
         unsigned char *subcarrierAlloc;
         ofdmflexframesync fs;
 
-        // frameSyncCallback() needs to be able to call
-        // CRTSFilter::writePush().
-    friend int frameSyncCallback(unsigned char *header, int header_valid,
-                unsigned char *payload, unsigned int payload_len,
-                int payload_valid, framesyncstats_s stats,
-                LiquidSync *liquidSync);
+        const size_t outBufferLen;
+
+    public:
+
+        unsigned char *outputBuffer;
+ 
+        // bytes out at each write().
+        size_t len_out;
 };
 
 
@@ -42,7 +45,8 @@ class LiquidSync : public CRTSFilter
 // this module is loaded the symbols are not exported and are kept hidden
 // from the rest of the crts_radio program.
 //
-int frameSyncCallback(unsigned char *header, int header_valid,
+static int 
+frameSyncCallback(unsigned char *header, int header_valid,
                unsigned char *payload, unsigned int payload_len,
                int payload_valid, framesyncstats_s stats,
                LiquidSync *liquidSync) 
@@ -58,35 +62,57 @@ int frameSyncCallback(unsigned char *header, int header_valid,
 
         DASSERT(payload_len > 0, "");
 
-        // TODO: The interface to liquid DSP sucks.  We cannot use
-        // our own buffer for it to write to, so we must copy their
-        // buffer to our CRTSFilter buffer.  This is very very bad.
-        // If we don't use our CRTSFilter buffers then we lose a ability
-        // to have "seamless threading", which defeats the whole point
-        // of this software project.
-        //
-        // A possible fix would be to catch their malloc() (or like call)
-        // and override it with our own malloc() call.  We'd have to be
-        // careful and make sure that the passed buffer pointer is in the
-        // correct place in memory for this to work.
-        //
 
-        unsigned char *buffer = (unsigned char *)
-            liquidSync->getBuffer(payload_len);
+        // TODO: The interface to liquid DSP is lacking.  We cannot use
+        // our own buffer for it to write to, so we must copy their buffer
+        // to our CRTSFilter buffer.
+        //
 
         // TODO: This is bad coding practice. See comment above.
-        memcpy(buffer, payload, payload_len);
+        memcpy(liquidSync->outputBuffer, payload, payload_len);
 
-        liquidSync->writePush(buffer, payload_len, CRTSFilter::ALL_CHANNELS);
+        liquidSync->outputBuffer += payload_len;
+        liquidSync->len_out += payload_len;
     }
 
     return 0;
 }
 
 
+void LiquidSync::write(void *buffer, size_t len, uint32_t channelNum)
+{
+    DASSERT(buffer, "");
+    DASSERT(len, "");
+
+    DSPEW();
+
+    len_out = 0;
+
+    outputBuffer = (unsigned char *) getOutputBuffer(0);
+
+    // We will eat all the input data.
+    //
+    advanceInputBuffer(len - len % sizeof(std::complex<float>));
+    DSPEW();
+
+
+    ofdmflexframesync_execute(fs, (std::complex<float> *) buffer,
+            len/sizeof(std::complex<float>));\
+    DSPEW();
+
+
+    // TODO: figure out this length.  Not just guessing.
+    //
+    ASSERT(len_out <= outBufferLen, "");
+
+    writePush(len_out, CRTSFilter::ALL_CHANNELS);
+}
+
+
 LiquidSync::LiquidSync(int argc, const char **argv):
     numSubcarriers(32), cp_len(16), taper_len(4),
-    subcarrierAlloc(0), fs(0)
+    subcarrierAlloc(0), fs(0), outBufferLen(1024),
+    outputBuffer(0), len_out(0)
 {
     subcarrierAlloc = (unsigned char *) malloc(numSubcarriers);
     if(!subcarrierAlloc) throw "malloc() failed";
@@ -101,25 +127,54 @@ LiquidSync::LiquidSync(int argc, const char **argv):
 }
 
 
-ssize_t LiquidSync::write(void *buffer, size_t len, uint32_t channelNum)
+bool LiquidSync::start(uint32_t numInChannels, uint32_t numOutChannels)
 {
-    DASSERT(buffer, "");
-    DASSERT(len, "");
+    if(numInChannels < 1)
+    {
+        WARN("Should have 1 input channel got %" PRIu32, numInChannels);
+        return true; // fail
+    }
 
-    ofdmflexframesync_execute(fs, (std::complex<float> *) buffer,
-            len/sizeof(std::complex<float>));
+    if(numOutChannels < 1)
+    {
+        WARN("Should have 1 or more output channels got %" PRIu32,
+            numOutChannels);
+        return true; // fail
+    }
 
-    return len;
+    subcarrierAlloc = (unsigned char *) malloc(numSubcarriers);
+    if(!subcarrierAlloc) throw "malloc() failed";
+    ofdmframe_init_default_sctype(numSubcarriers, subcarrierAlloc);
+
+    fs = ofdmflexframesync_create(numSubcarriers, cp_len,
+                taper_len, subcarrierAlloc,
+                (framesync_callback) frameSyncCallback,
+                this/*callback data*/);
+
+    // We use the same ring buffer for all output channels
+    //
+    createOutputBuffer(outBufferLen);
+
+    return false; // success
 }
 
 
-LiquidSync::~LiquidSync(void)
+bool LiquidSync::stop(uint32_t numInChannels, uint32_t numOutChannels)
 {
+    DSPEW();
+
     if(fs)
         ofdmflexframesync_destroy(fs);
 
     if(subcarrierAlloc)
         free(subcarrierAlloc);
+
+    return false; // success
+}
+
+
+LiquidSync::~LiquidSync(void)
+{
     DSPEW();
 }
 

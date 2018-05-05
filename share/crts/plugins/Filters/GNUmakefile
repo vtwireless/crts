@@ -31,9 +31,9 @@ LIBFEC_LDFLAGS := -L$(LIBFEC_SRC) -lfec
 # TODO: This will not work in a build tree that is not the same as the
 # source tree.  *.cpp is in the source.  That may explain why GNU automake
 # never uses wildcards.
+#srcs := $(patsubst %.cpp,%,$(wildcard *.cpp))
 
 # from: echo *.cpp
-#srcs := $(patsubst %.cpp,%,$(wildcard *.cpp))
 srcs :=\
  fileIn.cpp\
  fileOut.cpp\
@@ -53,6 +53,25 @@ srcs :=\
 ifdef BUILD_QUICKSCOPE
 srcs := $(srcs) quickscope.cpp
 endif
+
+# TODO: add terminator.cpp which is like a source.cpp and a sink.cpp
+# for all inputs and outputs.
+
+
+# TODO: We are restructuring the CRTSFilter interface, so only these
+# filters have been rewritten so far:
+srcs :=\
+ stdin.cpp\
+ stdout.cpp\
+ passThrough.cpp\
+ copy.cpp\
+ tx.cpp\
+ rx.cpp\
+ liquidFrame.cpp\
+ liquidSync.cpp
+
+
+
 
 srcs := $(patsubst %.cpp,%,$(srcs))
 

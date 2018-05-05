@@ -4,31 +4,22 @@
 #include <dlfcn.h>
 #include <sys/wait.h>
 #include <unistd.h>
-#include <sys/types.h>
-#include <string.h>
-#include <stdio.h>
 #include <time.h>
 #include <signal.h>
-#include <pthread.h>
-#include <inttypes.h>
 #include <map>
 #include <list>
-#include <vector>
-#include <string>
-#include <stack>
-#include <atomic>
-#include <queue>
 
 #include "crts/debug.h"
 #include "crts/crts.hpp"
-
 #include "LoadModule.hpp"
-#include "pthread_wrappers.h" // some pthread_*() wrappers
+#include "pthread_wrappers.h"
 #include "crts/crts.hpp"
 #include "crts/Filter.hpp"
+#include "Feed.hpp"
 #include "FilterModule.hpp"
 #include "Thread.hpp"
 #include "Stream.hpp"
+#include "makeRingBuffer.hpp"
 
 
 
@@ -212,7 +203,7 @@ void Stream::getSources(void)
 
 
 Stream::Stream(void):
-    isRunning(true), haveConnections(false), loadCount(0)
+    isRunning(false), haveConnections(false), loadCount(0)
 { 
     // This is the main thread.
     DASSERT(pthread_equal(Thread::mainThread, pthread_self()), "");
@@ -228,8 +219,8 @@ Stream::~Stream(void)
             loadCount, threads.size());
     // This is the main thread.
     DASSERT(pthread_equal(Thread::mainThread, pthread_self()), "");
-
     DASSERT(!isRunning, "");
+
 
     // We are in shutdown mode now so being a little slow is okay.
     // We are avoiding added move thread synchronization code to
@@ -340,7 +331,13 @@ Stream::~Stream(void)
 
     // Now all the threads in this stream should be heading toward
     // return/exit.
-    
+
+
+    // TODO: This will need to get refactored when we need to be able
+    // to restart the filter stream flow.
+    stop(); // Call all the filters, in this stream, CRTSFilter::stop().
+
+
     if(threads.empty())
     {
         DSPEW("Cleaning up filter modules with no threads set up");
@@ -402,16 +399,11 @@ FilterModule* Stream::load(CRTSFilter *crtsFilter,
 }
 
 
-// Welcome to name space hell.
-//
-// Here we find a unique CRTSControl name.
-
-
-
 // Return false on success.
 //
 // Each Stream is a factory of filter modules.  stream->load()
 // is how we make them.
+//
 bool Stream::load(const char *name, int argc, const char **argv)
 {
     // This is the main thread.
@@ -440,6 +432,10 @@ bool Stream::load(const char *name, int argc, const char **argv)
 // Return false on success.
 //
 // Each stream manages the connections of filter modules.
+//
+// Connect based on filter load number, starting with the first filter
+// loaded in this stream numbered as 0, and so on.
+//
 bool Stream::connect(uint32_t from, uint32_t to)
 {
     // This is the main thread.
@@ -473,280 +469,47 @@ bool Stream::connect(uint32_t from, uint32_t to)
 }
 
 
-bool Stream::connect(FilterModule *f/*from*/,  FilterModule *t/*to*/)
+bool Stream::connect(FilterModule *from,  FilterModule *to)
 {
     ////////////////////////////////////////////////////////////
     // Connect these two filters in this direction
-    // like a doubly linked list from one filter to another.
+    // Output from "from" to Input at "to".
     ////////////////////////////////////////////////////////////
 
-    // TODO: Currently using arrays to construct a doubly linked list
+    // Currently using arrays to construct this Output and Input list
     // which will allow very fast access, but slow editing.
 
-    // In the "f" filter we need to writePush() to readers telling the "t"
-    // reader filter it's channel index is the next one,
-    // t->filter->numWriters.  Think, we write to readers.
-
-    f->readers = (FilterModule**) realloc(f->readers,
-            sizeof(FilterModule*)*(f->numReaders+1));
-    ASSERT(f->readers, "realloc() failed");
-    f->readers[f->numReaders] = t; // t is the reader from f
-
-    f->readerIndexes = (uint32_t *) realloc(f->readerIndexes,
-            sizeof(uint32_t)*(f->numReaders+1));
-    ASSERT(f->readerIndexes, "realloc() failed");
-    // We are the last channel in the "t" writer list
-    f->readerIndexes[f->numReaders] = t->numWriters;
-
-    // The "t" filter needs to point back to the "f" filter so that we can
-    // see and edit this connection from the "f" or "t" side, like it's a
-    // doubly linked list.  If not for editing this "connection list", we
-    // would not need this t->writers[].
-    t->writers = (FilterModule**) realloc(t->writers,
-            sizeof(FilterModule*)*(t->numWriters+1));
-    ASSERT(t->writers, "realloc() failed");
-    t->writers[t->numWriters] = f; // f is the writer to t
+    from->outputs = (Output **) realloc(from->outputs,
+            sizeof(Output *)*(from->numOutputs+1));
+    ASSERT(from->outputs, "realloc() failed");
+    from->outputs[from->numOutputs] = new Output(from, to);
 
 
-    ++f->numReaders;
-    ++t->numWriters;
+    to->inputs = (Input **) realloc(to->inputs,
+            sizeof(Input *)*(to->numInputs+1));
+    ASSERT(to->inputs, "realloc() failed");
+    
+    // t->numInputs is the input channel number that t will see it's
+    // write()s are from.
+    //
+    to->inputs[to->numInputs] = new
+        Input(from->outputs[from->numOutputs],
+                to->numInputs/*input Channel Number*/);
+
+    // Connect output to input.
+    from->outputs[from->numOutputs]->input = to->inputs[to->numInputs];
+
+
+    ++from->numOutputs;
+    ++to->numInputs;
 
     // Set this flag so we know there was at least one connection.
+    //
     haveConnections = true;
 
 
-    DSPEW("Connected filter %s writes to %s",
-            f->name.c_str(), t->name.c_str());
-
-    return false; // success
-}
-
-
-// ref:
-//   https://en.wikipedia.org/wiki/DOT_(graph_description_language)
-//
-// Print a DOT graph to filename or PNG image of a directed graph
-// return false on success
-bool Stream::printGraph(const char *filename, bool _wait)
-{
-    // This is the main thread.
-    DASSERT(pthread_equal(Thread::mainThread, pthread_self()), "");
-
-    DSPEW("Writing DOT graph to: \"%s\"", filename);
-
-    FILE *f;
-
-    if(!filename || !filename[0])
-    {
-        // In this case we run dot and display the images assuming
-        // the program "display" from imagemagick is installed in
-        // the users path.
-
-        errno = 0;
-        f = tmpfile();
-        if(!f)
-        {
-            ERROR("tmpfile() failed");
-            return true; // failure
-        }
-
-        bool ret = printGraph(f);
-        if(ret)
-        {
-            fclose(f);
-            return ret; // failure
-        }
-
-        fflush(f);
-        rewind(f);
-
-        pid_t pid = fork();
-        if(pid == 0)
-        {
-            // I'm the child
-            errno = 0;
-            if(0 != dup2(fileno(f), 0))
-            {
-                WARN("dup2(%d, %d) failed", fileno(f), 0);
-                exit(1);
-            }
-            DSPEW("Running dot|display");
-            // Now stdin is the DOT graph file
-            // If this fails there's nothing we need to do about it.
-            execl("/bin/bash", "bash", "-c", "dot|display", (char *) 0);
-            exit(1);
-        }
-        else if(pid >= 0)
-        {
-            // I'm the parent
-            fclose(f);
-
-            if(_wait)
-            {
-                int status = 0;
-                INFO("waiting for child display process", status);
-                errno = 0;
-                // We wait for just this child.
-                if(pid == waitpid(pid, &status, 0))
-                    INFO("child display process return status %d",
-                            status);
-                else
-                    WARN("child display process gave a wait error");
-            }
-        }
-        else
-        {
-            ERROR("fork() failed");
-        }
-
-        return false; // success, at least we tried so many thing can fail
-        // that we can't catch all failures, like X11 display was messed
-        // up.
-    }
-
-    size_t flen = strlen(filename);
-
-    if(flen > 4 && (!strcmp(&filename[flen - 4], ".png") ||
-            !strcmp(&filename[flen - 4], ".PNG")))
-    {
-        // Run dot and generate a PNG image file.
-        //
-        const char *pre = "dot -o "; // command to run without filename
-        char *command = (char *) malloc(strlen(pre) + flen + 1);
-        sprintf(command, "%s%s", pre, filename);
-        errno = 0;
-        f = popen(command, "w");
-        if(!f)
-        {
-            ERROR("popen(\"%s\", \"w\") failed", command);
-            free(command);
-            return true; // failure
-        }
-        free(command);
-        bool ret = printGraph(f);
-        pclose(f);
-        return ret;
-    }
-    
-    // else
-    // Generate a DOT graphviz file.
-    //
-    f = fopen(filename, "w");
-    if(!f)
-    {
-        ERROR("fopen(\"%s\", \"w\") failed", filename);
-        return true; // failure
-    }
-        
-    bool ret = printGraph(f);
-    fclose(f);
-    return ret;
-}
-
-
-// This just writes DOT content to the file with no other options.
-bool Stream::printGraph(FILE *f)
-{
-    DASSERT(f, "");
-
-    uint32_t n = 0; // stream number
-
-    fprintf(f,
-            "// This is a generated file\n"
-            "\n"
-            "// This is a DOT graph file.  See:\n"
-            "//  https://en.wikipedia.org/wiki/DOT_"
-            "(graph_description_language)\n"
-            "\n"
-            "// There are %zu filter streams in this graph.\n"
-            "\n", Stream::streams.size()
-    );
-
-    fprintf(f, "digraph {\n");
-
-    for(auto stream : streams)
-    {
-        fprintf(f,
-                "\n" // The word "cluster_" is needed for dot.
-                "  subgraph cluster_stream_%" PRIu32 " {\n"
-                "    label=\"Stream %" PRIu32 "\";\n"
-                , n, n);
-
-        for(auto pair : stream->map)
-        {
-            FilterModule *filterModule = pair.second;
-
-            char wNodeName[64]; // writer node name
-
-            snprintf(wNodeName, 64, "f%" PRIu32 "_%" PRIu32, n,
-                    filterModule->loadIndex);
-
-            // example f0_1 [label="stdin(0)\n1"] for thread 1
-            fprintf(f, "    %s [label=\"%s\\nthread %" PRIu32 "\"];\n",
-                    wNodeName,
-                    filterModule->name.c_str(),
-                    (filterModule->thread)?
-                        (filterModule->thread->threadNum):0
-                    );
-
-            for(uint32_t i = 0; i < filterModule->numReaders; ++i)
-            {
-                char rNodeName[64]; // reader node name
-                snprintf(rNodeName, 64, "f%" PRIu32 "_%" PRIu32, n,
-                        filterModule->readers[i]->loadIndex);
-
-                fprintf(f, "    %s -> %s;\n", wNodeName, rNodeName);
-            }
-        }
-
-        fprintf(f, "  }\n");
-
-        ++n;
-    }
-
-    const auto &controllers = CRTSController::controllers;
-
-    if(controllers.size())
-    {
-        n = 0; // filter numbering starting again.
-
-        fprintf(f,
-                "\n"// The word "cluster_" is needed for dot.
-                "  subgraph cluster_controllers {\n"
-                "    label=\"Controllers\";\n"
-        );
-
-        // Loop through all the filters and the Controllers in each one.
-        for(auto const stream : streams)
-        {
-            for(auto const pair : stream->map)
-            {
-                FilterModule *filterModule = pair.second;
-
-                char filterName[64]; // writer node name
-
-                snprintf(filterName, 64, "f%" PRIu32 "_%" PRIu32,
-                        n, filterModule->loadIndex);
-
-                for(auto const &control: filterModule->filter->controls)
-                {
-                    for(auto const &controller: control.second->controllers)
-                    {
-                        fprintf(f, "    controller_%" PRIu32 " [label=\"%s\(%" PRIu32 ")\"];\n",
-                                controller->getId(), controller->getName(), controller->getId());
-                        fprintf(f, "    controller_%" PRIu32 " -> %s [color=\"brown1\"];\n",
-                                controller->getId(), filterName);
-                    }
-                }
-            }
-            ++n; // next filter number.
-        }
-
-        fprintf(f,"  }\n"); // subgraph cluster_controllers
-    }
-
-
-    fprintf(f, "}\n");
+    DSPEW("Connected filters: %s writes to %s",
+            from->name.c_str(), to->name.c_str());
 
     return false; // success
 }
@@ -759,12 +522,12 @@ bool Stream::printGraph(FILE *f)
 //
 void Stream::finishThreads(void)
 {
-    // Unless we wish to make this a select(2), poll(2), or epoll(2)
-    // based service.  All the source filters need to have a separate
-    // thread, because their write() calls can block waiting for data.
-    // That's just how UNIX works, assuming we don't force them to be
-    // based on non-blocking I/O, which would be too hard for our level
-    // of filter module code writers.
+    // Unless we wish to make this a select(2), poll(2), or epoll(2) based
+    // service.  All the source filters need to have a separate thread,
+    // because their write() calls can block waiting for data.  That's
+    // just how UNIX works, assuming we don't force them to be based on
+    // non-blocking I/O (like in GNU radio?), which would be too hard for
+    // our level of filter module code writers.
     //
     // So we made the source filters write calls never return until they
     // have no more data, like an end of file condition.  Simple enough.
@@ -795,6 +558,8 @@ void Stream::finishThreads(void)
         //
         Thread *newThread = 0;
 
+        // Loop through all filter modules in the stream.
+        //
         for(auto it : stream->map)
         {
             // it.second is a FilterModule

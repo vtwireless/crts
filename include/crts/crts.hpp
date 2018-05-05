@@ -178,6 +178,30 @@ class CRTSModuleOptions
             return ret;
         };
 
+        // This seems to get size_t too.
+        unsigned long get(const char *optName, unsigned long defaultVal)
+        {
+            const char *arg = 0;
+            const char *opt = 0;
+            long ret = defaultVal;
+            getInit(arg, opt, optName);
+            if(!arg) return ret;
+
+            char *endptr = 0;
+            errno = 0;
+            ret = strtoul(arg, &endptr, 10);
+            if(errno || arg == endptr)
+                _crtsThrowUsage(arg, optName, usage);
+            return ret;
+        };
+
+#if 0
+        size_t get(const char *optName, size_t defaultVal)
+        {
+            return get(optName, (unsigned long) defaultVal);
+        };
+#endif
+
     private:
 
         // It could be that opt and optName are not the same if we

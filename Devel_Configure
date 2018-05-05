@@ -60,7 +60,8 @@ cat > config.make << EOF
 CFLAGS := -g -Wall -Werror
 CXXFLAGS := \$(CFLAGS)
 
-# Comment this out to not add extra code to debug the buffering.
+# Add extra debugging code to the buffering code
+# only when the below DEBUG thing is defined
 CPPFLAGS := -DBUFFER_DEBUG
 
 

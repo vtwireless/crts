@@ -1,3 +1,7 @@
+class RingBuffer;
+class Output;
+class Input;
+
 // A factory of FilterModule class objects.
 // We keep a list (map) in Stream.
 //
@@ -98,8 +102,26 @@ class Stream
 
 
         static void signalMainThreadCleanup(void);
-    
+
+
+        // calls start for all the filters in all streams
+        static bool startAll(void);
+
+        // calls stop for all the filters in all streams
+        static bool stopAll(void);
+
     private:
+
+        // Call filter start() for just this one stream.
+        //
+        // Returns true on error.
+        bool start(void);
+
+        // Call filter stop() for just this one stream.
+        //
+        // Returns true on error.
+        bool stop(void);
+
 
         static bool printGraph(FILE *f);
 

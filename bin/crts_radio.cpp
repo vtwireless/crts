@@ -15,7 +15,6 @@
 #include <string>
 #include <stack>
 #include <atomic>
-#include <queue>
 
 #include "crts/debug.h"
 #include "crts/crts.hpp"
@@ -26,40 +25,12 @@
 #include "crts/crts.hpp"
 #include "crts/Filter.hpp"
 #include "crts/Module.hpp"
+#include "Feed.hpp"
 #include "FilterModule.hpp"
 #include "Thread.hpp"
 #include "Stream.hpp"
 #include "LoadModule.hpp"
-
-
-
-
-// We make a special CRTSFilter that feeds the source CRTSFilter plugins.
-// We thought of just requiring that the source CRTSFilter plugins have a
-// while() loop like this but then we'd loose the ability to inject code
-// between CRTSFilter::write() calls for source plugins.  We run these
-// Feed Filter Modules in the same thread as the source Filter Modules
-// that they feed.
-class Feed : public CRTSFilter
-{
-    public:
-
-#ifdef DEBUG
-        Feed(void) { DSPEW(); };
-        ~Feed(void) { DSPEW(); };
-#endif
-        ssize_t write(void *buffer, size_t bufferLen,
-                uint32_t channelNum);
-};
-
-ssize_t Feed::write(void *buffer, size_t bufferLen,
-                uint32_t channelNum)
-{
-    DASSERT(!buffer,"");
-    while(stream->isRunning)
-        writePush(0, 0, ALL_CHANNELS);
-    return 0;
-}
+#include "crts_radio_usage.hpp"
 
 
 // We can add signals to this list that is 0 terminated.  Signals that we
@@ -117,120 +88,6 @@ static void badSigCatcher(int sig)
     ASSERT(0, "caught signal %d", sig);
 }
 
-
-static int usage(const char *argv0, const char *uopt=0)
-{
-    // This is the main thread.
-    DASSERT(pthread_equal(Thread::mainThread, pthread_self()), "");
-
-    // Keep this function consistent with the argument parsing:
-
-    if(uopt)
-        printf("\n Bad option: %s\n\n\n", uopt);
-
-    printf(
-        "\n"
-        "  Usage: %s OPTIONS\n",
-        argv0);
-
-    printf(
-"\n"
-"    Run the Cognitive Radio Test System (CRTS) transmitter/receiver program.\n"
-" Some -f options are required.  The filter stream is setup as the arguments are\n"
-" parsed, so stuff happens as the command line options are parsed.\n"
-"\n"
-"    For you \"system engineers\" the term \"filter\" we mean software filter\n"
-" [https://en.wikipedia.org/wiki/Filter_(software)], module component node, or the\n"
-" loaded module code that runs and passes data to other loaded module code that\n"
-" runs and so on.  Component and node were just to generic a term in a software\n"
-" sense.  If you have a hard time stomaching this terminology consider that\n"
-" sources and sinks are just filters with null inputs and outputs correspondingly.\n"
-" The real reason maybe that the word \"component\" has more letters in it than\n"
-" the word \"filter\".   Maybe we should have used the word \"node\"; no too\n"
-" generic.  The most general usage the word filter implies a point in a flow, or\n"
-" stream.  The words component and node do not imply this in the most general\n"
-" usage; they have no associated flow.\n"
-"\n"
-"\n"
-"\n"
-"                   OPTIONS\n"
-"\n"
-"\n"
-"   -c | --connect LIST              how to connect the loaded filters that are\n"
-"                                    in the current stream\n"
-"\n"
-"                                       Example:\n"
-"\n"
-"                                              -c \"0 1 1 2\"\n"
-"\n"
-"                                    connect from filter 0 to filter 1 and from\n"
-"                                    filter 1 to filter 2.  This option must\n"
-"                                    follow all the corresponding FILTER options.\n"
-"                                    Arguments follow a connection LIST will be in\n"
-"                                    a new Stream.  After this option and next\n"
-"                                    filter option with be in a new different stream\n"
-"                                    and the filter indexes will be reset back to 0.\n"
-"                                    If a connect option is not given after an\n"
-"                                    uninterrupted list of filter options than a\n"
-"                                    default connectivity will be setup that connects\n"
-"                                    all adjacent filters in a single line.\n"
-"\n"
-"\n"
-"   -C | --controller CNAME          load a CRTS Controller plugin module named CNAME.\n"
-"                                    CRTS Controller plugin module need to be loaded\n"
-"                                    after the FILTER modules.\n"
-"\n"
-"\n"
-"   -d | --display                   display a DOT graph via dot and imagemagick\n"
-"                                    display program, before continuing to the next\n"
-"                                    command line options.  This option should be\n"
-"                                    after filter options in the command line.  Maybe\n"
-"                                    make it the last option.\n"
-"\n"
-"\n"
-"   -D | --Display                   same as option -d but %s will not be\n"
-"                                    blocked waiting for the imagemagick display\n"
-"                                    program to exit.\n"
-"\n"
-"\n"
-"   -e | --exit                      exit the program.  Used if you just want to\n"
-"                                    print the DOT graph after building the graph.\n"
-"                                    Also may be useful in debugging your command\n"
-"                                    line.\n"
-"\n"
-"\n"
-"   -f | --filter FILTER [OPTS ...]  load filter module FILTER passing the OPTS ...\n"
-"                                    arguments to the CRTS Filter constructor.\n"
-"\n"
-"\n"
-"   -h | --help                      print this help and exit\n"
-"\n"
-"\n"
-"   -l | --load G_MOD [OPTS ...]     load general module file passing the OPTS ...\n"
-"                                    arguments to the objects constructor.  General\n"
-"                                    modules are loaded with symbols shared so that\n"
-"                                    you may shared variables across CRTS Filter\n"
-"                                    modules through general modules.  General\n"
-"                                    modules will only be loaded once for a given\n"
-"                                    G_MOD.\n"
-"\n"
-"                                       TODO: general module example...\n"
-"\n"
-"\n"
-"   -p | --print FILENAME            print a DOT graph to FILENAME.  This should be\n"
-"                                    after all filter options in the command line.  If\n"
-"                                    FILENAME ends with .png this will write a PNG\n"
-"                                    image file to FILENAME.\n"
-"\n"
-"\n"
-"   -t | --thread LIST              run the LIST of filters in a separate thread.\n"
-"                                   Without this argument option the program will run\n"
-"                                   all filters modules in a single thread.\n"
-"\n"
-"\n", argv0);
-
-    return 1; // return error status
-}
 
 ////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////
@@ -744,6 +601,9 @@ static int parseArgs(int argc, const char **argv)
         setDefaultStreamConnections(stream);
     }
 
+    // TODO: These last steps need to be made part of Stream::startAll(),
+    // so that we may have restart from start() and stop().
+
     // Figure out which filter modules have no writers, i.e. are sources.
     for(auto stream : Stream::streams)
         stream->getSources();
@@ -759,13 +619,13 @@ static int parseArgs(int argc, const char **argv)
             CRTSFilter *feed = new Feed;
             FilterModule *feedModule = stream->load(feed, 0, "feed");
             stream->connect(feedModule, filterModule);
-            // The feed will use the thread of the source.
+            // The feed will use the thread of the source filter
+            // it is feeding.
             filterModule->thread->addFilterModule(feedModule);
         }
 
-    // So now the old sources we had are now no longer sources.  They
-    // have a feed source.  We need to get the sources that are feeds
-    // now.
+    // So now the old sources we had are now no longer sources.  They have
+    // a feed source.  We need to get/find the sources that are feeds now.
     for(auto stream : Stream::streams)
         stream->getSources();
 
@@ -774,6 +634,11 @@ static int parseArgs(int argc, const char **argv)
 
 
     // TODO: Add checking of module connectivity, so that they make sense.
+    // For example: a directed graph that is a ring will not run, because
+    // it has no source to start it.  A ring could work if there was
+    // source filter injecting into it, but in general the buffering could
+    // end up infinitely long.  We need to find the rules that keep this
+    // stream from failing.
 
     return 0; // success
 }
@@ -890,10 +755,6 @@ int main(int argc, const char **argv)
                         filterModule->name.c_str(),
                         filterModule2->name.c_str());
 
-                    for(auto stream : Stream::streams)
-                        // Flag the streams as not running in regular mode.
-                        stream->isRunning = false;
-
                     Stream::destroyStreams();
 
                     cleanupModules();
@@ -903,6 +764,18 @@ int main(int argc, const char **argv)
                 }
     //
     ///////////////////////////////////////////////////////////////////
+
+
+    // Call the CRTSFilter::start() functions.
+    //
+    if(Stream::startAll())
+    {
+        Stream::destroyStreams();
+        cleanupModules();
+        DSPEW("EXITING due to startup error");
+        return 1; // error fail exit.
+    }
+
 
     DASSERT(Thread::createCount, "");
 
@@ -945,7 +818,7 @@ int main(int argc, const char **argv)
 
   Without threads FilterModule::write() is the start of a long repeating
   stack of write calls.  If there is a threaded filter to write to
-  FilterModule::write() will set that threads data and than signal that
+  FilterModule::write() will set that thread's data and than signal that
   thread to call CRTSFilter::write(), else if there is no different thread
   FilterModule::write() will call CRTSFilter::write() directly.
 
@@ -1011,16 +884,32 @@ int main(int argc, const char **argv)
             // filter in the thread will work.  We should make sure no two
             // sources share the same thread.
             //
-            // Source filter modules will loop until they are done.  These
-            // ModuleFilter::write() calls will trigger a call to
-            // CRTSFilter::write() in their own threads.  At this point
-            // this source filter that filterModule refers to is of
-            // class Feed.
+            // Source Feed filter modules will loop until they are done.
+            // These ModuleFilter::write() calls will trigger a call to
+            // CRTSFilter::write() in their own threads.
+            //
+            // At this point this source filter that filterModule refers
+            // to is of class Feed.
             DASSERT(dynamic_cast<Feed *>(filterModule->filter),"");
-            filterModule->write(0,0,0, true);
+            // Feed filters only have one reader,
+            DASSERT(filterModule->numOutputs == 1, "");
+            DASSERT(filterModule->outputs[0], "");
+            // and no writer filters,
+            DASSERT(filterModule->numInputs == 0, "");
+            DASSERT(filterModule->inputs == 0, "");
+            // and write no data.
+            DASSERT(filterModule->outputs[0]->ringBuffer == 0, "");
+
+            // This will start the Feed filter threads looping.
+            //
+            filterModule->launchFeed();
+
+            // Now the main thread continues looping here.
         }
 
-    while(Stream::wait()); // The wait will unlock and lock the mutex.
+    // This main thread will unlock, wait, and lock the Stream::mutex
+    // until there are no streams running any more.
+    while(Stream::wait());
 
 
     // The first cleanup thing is removing the controller modules.

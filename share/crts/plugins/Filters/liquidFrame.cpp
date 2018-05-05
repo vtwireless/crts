@@ -16,18 +16,19 @@ class LiquidFrame : public CRTSFilter
 
         LiquidFrame(int argc, const char **argv);
         ~LiquidFrame(void);
-        ssize_t write(void *buffer, size_t bufferLen,
-                uint32_t channelNum);
+        bool start(uint32_t numInChannels, uint32_t numOutChannels);
+        bool stop(uint32_t numInChannels, uint32_t numOutChannels);
+        void write(void *buffer, size_t len, uint32_t inChannelNum);
 
     private:
 
-        unsigned int numSubcarriers;
-        unsigned int cp_len;
-        unsigned int taper_len;
+        const unsigned int numSubcarriers;
+        const unsigned int cp_len;
+        const unsigned int taper_len;
         unsigned char *subcarrierAlloc;
         ofdmflexframegen fg;
         uint64_t frameCount;
-        float softGain;
+        const float softGain;
 
         size_t fgLen; // For liquid ofdmflexframegen_write()
         size_t arrayLen; // max number of complex elements per writePush()
@@ -43,6 +44,27 @@ LiquidFrame::LiquidFrame(int argc, const char **argv):
     softGain(powf(10.0F, -12.0F/20.0F)),
     padFrames(true)
 {
+
+    DSPEW();
+}
+
+bool LiquidFrame::start(uint32_t numInChannels, uint32_t numOutChannels)
+{
+    DSPEW();
+
+    if(numInChannels < 1)
+    {
+        WARN("Should have 1 input channel got %" PRIu32, numInChannels);
+        return true; // fail
+    }
+
+    if(numOutChannels < 1)
+    {
+        WARN("Should have 1 or more output channels got %" PRIu32,
+            numOutChannels);
+        return true; // fail
+    }
+
     subcarrierAlloc = (unsigned char *) malloc(numSubcarriers);
     if(!subcarrierAlloc) throw "malloc() failed";
     ofdmframe_init_default_sctype(numSubcarriers, subcarrierAlloc);
@@ -53,7 +75,6 @@ LiquidFrame::LiquidFrame(int argc, const char **argv):
     fgLen = numSubcarriers + cp_len; // per ofdmflexframegen_write()
     arrayLen = 20*fgLen; // we'll use (fgLen * arrayLen)
     outBufferLen = arrayLen*sizeof(std::complex<float>);
-    // padFrames = ???
     /////////////////////////////////////////////////////////////////
 
 
@@ -66,19 +87,47 @@ LiquidFrame::LiquidFrame(int argc, const char **argv):
 
     fg = ofdmflexframegen_create(numSubcarriers, cp_len,
                 taper_len, subcarrierAlloc, &fgprops);
-    DSPEW();
+
+    // We use the same ring buffer for all output channels
+    //
+    createOutputBuffer(outBufferLen);
+
+    return false; // success
 }
 
 
-ssize_t LiquidFrame::write(void *buffer, size_t len, uint32_t channelNum)
+bool LiquidFrame::stop(uint32_t numInChannels, uint32_t numOutChannels)
+{
+    DSPEW();
+
+    if(fg)
+    {
+        ofdmflexframegen_destroy(fg);
+        fg = 0;
+    }
+
+    if(subcarrierAlloc)
+    {
+        free(subcarrierAlloc);
+        subcarrierAlloc = 0;
+    }
+
+    return false; // success
+}
+
+
+
+void LiquidFrame::write(void *buffer, size_t len, uint32_t channelNum)
 {
     DASSERT(buffer, "");
     DASSERT(len, "");
 
+    advanceInputBuffer(len);
+
     ++frameCount;
 
     std::complex<float> *fg_buffer = (std::complex<float> *)
-        getBuffer(outBufferLen);
+        getOutputBuffer(0);
 
     // assemble frame using liquid-dsp
     // Enter the raw data that we just read:
@@ -127,7 +176,7 @@ ssize_t LiquidFrame::write(void *buffer, size_t len, uint32_t channelNum)
             needPad = false; // flag got the padding in this writePush().
         }
 
-        writePush(fg_buffer, n*sizeof(std::complex<float>),
+        writePush(n*sizeof(std::complex<float>),
                 CRTSFilter::ALL_CHANNELS);
     }
 
@@ -142,27 +191,15 @@ ssize_t LiquidFrame::write(void *buffer, size_t len, uint32_t channelNum)
         //
         memset(fg_buffer, 0, fgLen*sizeof(std::complex<float>));
 
-        writePush(fg_buffer, fgLen*sizeof(std::complex<float>),
+        writePush(fgLen*sizeof(std::complex<float>),
                 CRTSFilter::ALL_CHANNELS);
     }
 
-    return 1; // Whatever that means.
 }
 
 
 LiquidFrame::~LiquidFrame(void)
 {
-    if(fg)
-    {
-        ofdmflexframegen_destroy(fg);
-        fg = 0;
-    }
-
-    if(subcarrierAlloc)
-    {
-        free(subcarrierAlloc);
-        subcarrierAlloc = 0;
-    }
     DSPEW();
 }
 
