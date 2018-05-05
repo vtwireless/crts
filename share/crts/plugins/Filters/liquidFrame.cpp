@@ -143,58 +143,34 @@ void LiquidFrame::write(void *buffer, size_t len, uint32_t channelNum)
     //
 
     bool last_symbol = false;
-    bool needPad = padFrames;
 
-    while (!last_symbol)
+    size_t n = 0; // number of complex values in loop
+    while(n < arrayLen)
     {
-        size_t n = 0; // number of complex values in loop
-        size_t i;
-        while(n < arrayLen)
-        {
-            // generate symbol
-            last_symbol = ofdmflexframegen_write(fg,
+        // generate symbol
+        last_symbol = ofdmflexframegen_write(fg,
                     &fg_buffer[n], fgLen);
-            n += fgLen;
-            if(last_symbol) break;
-        }
-        // Now we have n complex values in fg_buffer
-
-        // Apply the gain
-        for(i=0; i<n; ++i)
-            fg_buffer[i] *= softGain;
-
-        //numValues += n; // tally number of complex values
-
-        if(needPad && last_symbol && n < arrayLen)
-        {
-            // We are able to fit the frame pad in with this writePush()
-            // call.
-            //
-            // TODO: Should this be zeros, or does it matter what it is.
-            memset(&fg_buffer[n], 0, fgLen*sizeof(std::complex<float>));
-            n += fgLen;
-            needPad = false; // flag got the padding in this writePush().
-        }
-
-        writePush(n*sizeof(std::complex<float>),
-                CRTSFilter::ALL_CHANNELS);
+        n += fgLen;
+        if(last_symbol) break;
     }
+    
+    // Now we have n complex values in fg_buffer
 
+    // Apply the gain
+    for(size_t i=0; i<n; ++i)
+        fg_buffer[i] *= softGain;
 
-    if(needPad)
+    if(padFrames && last_symbol && n < arrayLen)
     {
-        // We were not able to fit the frame pad in with the above
-        // writePush() calls, so we write it here.
+        // We are able to fit the frame pad in with this writePush()
+        // call.
         //
-        // TODO: Should this be zeros, or does it matter what it is
-        // so long as it's not NAN or Infinity
-        //
-        memset(fg_buffer, 0, fgLen*sizeof(std::complex<float>));
-
-        writePush(fgLen*sizeof(std::complex<float>),
-                CRTSFilter::ALL_CHANNELS);
+        // TODO: Should this be zeros, or does it matter what it is.
+        memset(&fg_buffer[n], 0, fgLen*sizeof(std::complex<float>));
+        n += fgLen;
     }
 
+    writePush(n*sizeof(std::complex<float>), ALL_CHANNELS);
 }
 
 
