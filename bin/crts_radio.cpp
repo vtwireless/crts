@@ -812,67 +812,6 @@ int main(int argc, const char **argv)
     // Now all the thread in all stream are running past there barriers,
     // so they are initialized and ready to loop.
 
-    
-    /* NOTE: THIS IS VERY IMPORTANT
-     *
-
-  Without threads FilterModule::write() is the start of a long repeating
-  stack of write calls.  If there is a threaded filter to write to
-  FilterModule::write() will set that thread's data and than signal that
-  thread to call CRTSFilter::write(), else if there is no different thread
-  FilterModule::write() will call CRTSFilter::write() directly.
-
-  CRTSFilter::write() will call any number of CRTSFilter::writePush()
-  calls which in turn call FilterModule::write().  The
-  CRTSFilter::writePush() function is nothing more than a wrapper of
-  FilterModule::write() calls, so one could say CRTSFilter::write() calls
-  any number of FilterModule::write() calls.  In the software
-  stack/flow/architecture we can consider the CRTSFilter::writePush()
-  calls as part of the CRTSFilter::write() calls generating
-  FilterModule::write() calls.
-
-
-  The general sequence/stack of filter "write" calls will vary based on
-  the partitioning of the threads from the command line.  For example with
-  no threads, and assuming that all the filters "get there fill of data",
-  the write call stack will traverse the directed graph that is the
-  filter stream, growing until it reaches sink filters and than popping
-  back to the branch CRTSFilter::write() to grow to the next sink filter.
-  In this way each CRTSFilter::write() may be a branch point.
-
-
-  filter           function
-  ------    --------------------------
-
-    0        FilterModule::write()
-
-    0            CRTSFilter::write()
-
-    1                FilterModule::write()
-
-    1                        CRTSFilter::write()
-
-    .                            .......
-
-
-  With threads each thread will have a stack like this which grows until
-  it hits another thread in a CRTSFilter::write() call or it hits a sink
-  filter.
-
-
-   TODO:  
-
-   Looks like all filters in thread must not have the flow interrupted
-   by another thread.  We need to add a check for that.
-
-
-     */
-
-
-        // This is the main thread and it has nothing to do except wait.
-        // Stream::wait() returns the number of streams running.
-
-
     for(auto stream : Stream::streams)
         for(auto filterModule : stream->sources)
         {
@@ -901,6 +840,8 @@ int main(int argc, const char **argv)
             DASSERT(filterModule->outputs[0]->ringBuffer == 0, "");
 
             // This will start the Feed filter threads looping.
+            // 
+            // This will signal a worker thread and return.
             //
             filterModule->launchFeed();
 

@@ -12,17 +12,17 @@
 
 
 
-// writePush() is called in the users (filter module) implementation of
-// CRTSFilter::write().  writePush() pushes the data flow to the filter
-// that is connected via output channel number outChannelNum.
+// output() is called in the users (filter module) implementation of
+// CRTSFilter::input().  output() pushes the data flow to the filter that
+// is connected via output channel number outChannelNum.
 //
 // The flows effectively start here in this function from Feed.cpp
-// Feed::write() which loops and calls writePush(0, 0).   And all the
-// filters in the stream graph do the same, and so it flows.
+// Feed::input() which loops and calls output(0, 0).   And all the filters
+// in the stream graph do the same, and so it flows.
 //
 // This is a filter module writer user interface.
 //
-void CRTSFilter::writePush(size_t len, uint32_t outChannelNum)
+void CRTSFilter::output(size_t len, uint32_t outChannelNum)
 {
     DASSERT(filterModule, "");
     DASSERT(filterModule->filter, "");
@@ -130,6 +130,10 @@ void FilterModule::write(size_t len, Output *output, bool isDifferentThread)
 {
     DASSERT(!pthread_equal(Thread::mainThread, pthread_self()), "");
     DASSERT(output, "");
+    // We will be writing from a different FilterModule output to input in
+    // this FilterModule.  In other words we called
+    // output->toFilterModule->write(len, output, ...)
+    //
     DASSERT(output->input, "");
 
 
@@ -137,7 +141,7 @@ void FilterModule::write(size_t len, Output *output, bool isDifferentThread)
     {
         // The object thread has the pthread we are writing to from the
         // current pthread which is associated with a different Thread
-        // object.
+        // object from 
         //
         // We called "to thread"->write() from a different Thread
         // object.

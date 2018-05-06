@@ -23,7 +23,7 @@ class Tx : public CRTSFilter
 
         bool start(uint32_t numInChannels, uint32_t numOutChannels);
         bool stop(uint32_t numInChannels, uint32_t numOutChannels);
-        void write(void *buffer, size_t len, uint32_t inChannelNum);
+        void input(void *buffer, size_t len, uint32_t inChannelNum);
 
     private:
 
@@ -194,7 +194,7 @@ bool Tx::stop(uint32_t numInChannels, uint32_t numOutChannels)
 
 // len is the number of bytes not complex floats.
 //
-void Tx::write(void *buffer, size_t len, uint32_t channelNum)
+void Tx::input(void *buffer, size_t len, uint32_t channelNum)
 {
     // We must write integer number of std::complex<float> 
     len -= len % sizeof(std::complex<float>);
@@ -209,8 +209,10 @@ void Tx::write(void *buffer, size_t len, uint32_t channelNum)
                 len/sizeof(std::complex<float>));
     }
 
-    // Mark the number of bytes to advance the input buffer.
-    advanceInputBuffer(len);
+    // Mark the number of bytes to advance the input buffer which is not
+    // necessarily the same as what was inputted.
+    //
+    advanceInput(len);
 
     if(metadata.start_of_burst)
         // In all future Tx::write() calls this is false.

@@ -56,7 +56,7 @@ bool Stream::start(void)
             if(it.second->filter->start(
                     it.second->numInputs, it.second->numOutputs))
             {
-                WARN("Calling filter %s start() failed",
+                ERROR("Calling filter %s start() failed",
                         it.second->name.c_str());
                 // We do not call the rest of them.
                 return true; // One filter start() failed, we are screwed.
@@ -223,7 +223,10 @@ bool Stream::stop(void)
                 DASSERT(output, "");
                 DASSERT(output->input, "");
                 DASSERT(output->input->output == outputs[i], "");
-                DASSERT(output->ringBuffer, "");
+
+                // If this failed to start then the Ring Buffer may not
+                // exist.  So we do not call DASSERT(output->ringBuffer,
+                // "");
 
                 // outputs[i]->reset() will delete the ring buffer if
                 // outputs[i]->ringBuffer->ownerOutput == outputs[i].

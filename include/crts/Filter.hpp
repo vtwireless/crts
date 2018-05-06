@@ -29,8 +29,8 @@ class Stream;
 
 
 // CRTSStream is a user interface to set and get attributes of the Stream
-// which is the related to the group of Filters that are connected (write
-// and read) to each other.  There is a pointer to a CRTSStream in the
+// which is the related to the group of Filters that are connected (input
+// and output) to each other.  There is a pointer to a CRTSStream in the
 // CRTSFilter called stream.
 //
 class CRTSStream
@@ -122,7 +122,7 @@ class CRTSStream
 // A source of a stream is a CRTSFilter with no data being written to it.
 // A sink of a stream is a CRTSFilter with no data being written from it.
 //
-// This is a stream like thing using only the exposed write() methods
+// This is a stream like thing using only the exposed input() methods
 // for each part of the software filter stream.
 //
 //
@@ -143,22 +143,22 @@ class CRTSFilter
 
         static const uint32_t ALL_CHANNELS, NULL_CHANNEL;
 
-        // Function to write data to this filter.
+        // Function to write data (input) to this filter.
         //
         // This stream gets data when this is called by the "writer" and
-        // in response may call this may call the reader->write().  This
+        // in response may call this may call the reader->input().  This
         // is how data flows in this group of connected Filter objects.
         //
-        // write() must call reader->write() when it wishes to push data
+        // input() must call reader->input() when it wishes to push data
         // along the "stream" because the particular instance is the only
         // thing that knows what data is available to be pushed along.  A
         // CRTSFilter is a software filter with it's own ideas of what it
         // is doing.
         //
-        // If this is a source (writer=0, below) this write() will be
-        // called with buffer=0.
+        // If this is a source (writer length=0, below) this input() will
+        // be called with no buffer.
         //
-        // In a sense this write() executes the stream.
+        // In a sense this input() executes the stream.
         //
         // Clearly the writer (caller of this) dictates the buffer size.
         //
@@ -170,7 +170,7 @@ class CRTSFilter
         // channelNum may be a stream merging filter, or a general stream
         // switching filter.
         virtual
-        void write(
+        void input(
                 void *buffer,
                 size_t bufferLen,
                 uint32_t inputChannelNum=0) = 0;
@@ -229,50 +229,21 @@ class CRTSFilter
 
         CRTSStream *stream;
 
-
-        /////// --- DEPRECATED ----
-        // releaseBuffer() is not required to be called in
-        // CRTSFilter::write().  It is used to free up the buffer that may
-        // be being accessed in another thread where by freeing up
-        // contention between threads that is associated with the sharing
-        // of buffers between threads.  You can call this in your modules
-        // CRTSFilter::write() when you know that CRTSFilter::write() is
-        // in a part of your code that may take a while and it will not
-        // access (read or write) to the buffer again in that call to
-        // CRTSFilter::write().
-        //
-        // What releaseBuffers() does is depends on filter module
-        // connection topology and thread grouping.  Using it may or may
-        // not make the stream run faster.  It just depends.
-        //
-        // TODO: This may not be needed given the source filters no longer
-        // loop, and return without looping in CRTSFilter::write().
-        //--- DEPRECATED ---- void releaseBuffers(void);
-
-        // Releases a buffer lock if this module has a different thread
-        // than the module that wrote to this module.  The module may
-        // hold more than one lock, so that adjacent buffers may be
-        // compared without memory copies.
-        //
-        // This is automatically done for after CRTSFilter::write().
-        //
-        // --- DEPRECATED ---- static void releaseBuffer(void *buffer);
-
     protected:
 
         // A channel is just an count index (starting at 0) for calls to
-        // CRTSFilter::write() and calls from CRTSFilter::writePush().
-        // In a given CRTSFilter module the indexes are from 0 to N-1
-        // calling CRTSFilter::write() and 0 to M-1 to
-        // CRTSFilter::writePush(). The channel number is just defined in
-        // a given CRTSFilter.  So a writePush from one module
-        // at channel 2 is not necessarily received as channel 2 as
-        // seen in the write() call.
+        // CRTSFilter::input() from calls to CRTSFilter::output().  In a
+        // given CRTSFilter module the indexes are from 0 to N-1 calling
+        // CRTSFilter::input() and 0 to M-1 to CRTSFilter::output(). The
+        // channel number is just defined in a given CRTSFilter.  So a
+        // output from one module at output channel 2 is not necessarily
+        // received as channel 2 as seen in the next filters input()
+        // call.
 
         // **************************************************************
         // ************************* NOTICE *****************************
         // **************************************************************
-        // For buffers passing to CRTSFilter::write() the maximum length
+        // For buffers passing to CRTSFilter::input() the maximum length
         // input from the feeding filter must be greater than or equal to
         // the feed filters threshold length.
         // **************************************************************
@@ -283,12 +254,15 @@ class CRTSFilter
          */
         bool isSource(void);
 
-        // Mark len bytes as read from the input buffer for the current
-        // input channel.
-        //
-        void advanceInputBuffer(size_t len);
+        /** Mark len bytes as read from the input buffer for the current
+            input channel.
 
-        void advanceInputBuffer(size_t len, uint32_t inputChannelNum);
+            It is not required to can this, but if it is not called
+            in the filter modules input() function the input buffer
+            will automatically be advanced by the total number of
+            bytes called with the input() function.
+         */
+        void advanceInput(size_t len);
 
 
         // Create a buffer that will have data with origin from this
@@ -301,11 +275,11 @@ class CRTSFilter
         //
         // This buffer is used with a given output channel.
         //
-        // Any Filter that creates data for writePush() must call this.
+        // Any Filter that creates data for output() must call this.
         //
         // maxLength is the maximum length, in bytes, that this CRTS
-        // Filter will and can writePush().  The CRTSFilter promises not
-        // to writePush() more than this.
+        // Filter will and can output().  The CRTSFilter promises not
+        // to output() more than this.
         //
         void createOutputBuffer(size_t maxLength,
                 uint32_t outputChannelNum = ALL_CHANNELS);
@@ -320,7 +294,7 @@ class CRTSFilter
          *   uint32_t outputChannels[] = { 0, 2, 3, NULL_CHANNEL };
          *
          * There is no threshold because this filter is the source
-         * of this buffer.  This filter must not pushWrite() more than
+         * of this buffer.  This filter must not output() more than
          * maxLength bytes for the listed output channels.
          */
         void createOutputBuffer(size_t maxLength,
@@ -328,9 +302,9 @@ class CRTSFilter
 
 
         // Instead of allocating a buffer, we reuse the input buffer from
-        // the channel associated with inputChannelNum to writePush() to.
+        // the channel associated with inputChannelNum to output() to.
         //
-        // This should not be called in CRTSFilter::write().
+        // This should not be called in CRTSFilter::input().
         //
         // We are passing a buffer out so there is a maximum output
         // length.
@@ -346,7 +320,7 @@ class CRTSFilter
 
 #if 0
         // The Filter may need to access more than just the buffer passed
-        // in through the call arguments, CRTSFilter::write(buffer, len,
+        // in through the call arguments, CRTSFilter::input(buffer, len,
         // inChannelNum), so we have this so that the get access to other
         // input channel buffers.
         //
@@ -371,11 +345,11 @@ class CRTSFilter
 
 
         // Set the minimum length, in bytes, that this CRTSFilter must
-        // accumulate before CRTSFilter::write() can and will be called.
+        // accumulate before CRTSFilter::input() can and will be called.
         //
-        // Calling this in CRTSFilter::write() is fine.  Making this limit
+        // Calling this in CRTSFilter::input() is fine.  Making this limit
         // as large as practical will save on unnecessary
-        // CRTSFilter::write() calls.  This length may not exceed the
+        // CRTSFilter::input() calls.  This length may not exceed the
         // maximum Buffer Length set with setThresholdLength().
         //
         // TODO: This can be called when the stream is running.
@@ -398,69 +372,23 @@ class CRTSFilter
         // just a simple array index thing.
         //
         // outputChannelNum handles the splitting of the stream.  We can
-        // call writePush() many times to write the same thing to many
+        // call () many times to write the same thing to many
         // channels; with the cost only being an added call on the
         // function stack.
         //
         // If outputChannel has an origin at this filter the data will be
-        // copied from the buffer that was passed in to write(), else this
+        // copied from the buffer that was passed in to input(), else this
         // will just pass through the data by advancing pointers in the
         // buffer.  The outputChannelNum must be a created buffer in this
         // filter or the outputChannelNum must be connected to the buffer
         // via passThroughBuffer().
-        // 
-        //
-        /** Write the current buffer that was passed into
-         * CRTSFilter::write() to the output channel with channel number
-         * outputChannelNum.
-         * 
-         *
-         * This also advances the input buffer len bytes and triggers
-         * a write() to output Channels.
+
+        /** This also advances the input buffer len bytes and triggers
+         * a connected filter input() call from the current filter.
          */
-        void writePush(size_t len, uint32_t outputChannelNum = ALL_CHANNELS);
+        void output(size_t len, uint32_t outputChannelNum = ALL_CHANNELS);
 
-
-        // Increment the buffer useCount.  Since the buffers created by
-        // CRTSFilter::getBuffer() are shared between threads, we needed a
-        // buffer use count thingy.  This needs to be called before the
-        // buffer is passed to another thread for use.
-        //--- DEPRECATED ---- void incrementBuffer(void *buffer);
-
-
-        // TODO: this...
-        //
-        // This maximum buffer queue length may be needed in the case
-        // there one of the filters in the stream is very slow compared to
-        // the others, and the feeding filters make a lot of buffers
-        // feeding this bottleneck.
-        //
-        // Think how many total packages can we handle on the conveyor
-        // belts, held at the packagers (writers), and held at the
-        // receivers (readers).  This is the buffer queue that is between
-        // all the modules that access (read or write) this buffer
-        // queue.
-        //
-        // Think: What is the maximum number of packages that will fit on
-        // the conveyor belt.
-        //void setBufferQueueLength(uint32_t n);
-        //
-        //static const uint32_t defaultBufferQueueLength;
-
-
-    // The FilterModule has to manage the CRTSFilter adding readers and
-    // writers from between separate CRTSFilter objects.  This is better
-    // than exposing methods that should not be used by CRTSFilter
-    // implementers. Because the user never knows what a FilterModule is,
-    // the API (application programming interface) and ABI (application
-    // binary interface) never changes when FilterModule changes, whereby
-    // making this interface minimal and more stable.
-    //
-    // For example, we can add new functionality to CRTSFilter by adding
-    // code to the FilterModule class, and we would not even have to
-    // recompile the users CRTSFilter code, because the users CRTSFilter
-    // ABI does not change.  The cost is one pointer deference at most
-    // CRTSFilter methods.
+ 
     friend FilterModule; // The rest of the filter code and data.
     friend CRTSControl;
     friend CRTSController;
@@ -569,7 +497,7 @@ class CRTSControl
 
         const char *getName(void) const;
 
-        /** Total bytes from all CRTSFilter::write() calls since the
+        /** TODO: Total bytes from all CRTSFilter::input() calls since the
          * program started.  When you know the approximate input rate, you
          * can use this to get an approximate time without making a system
          * call.
@@ -577,8 +505,8 @@ class CRTSControl
         uint64_t totalBytesIn(
                 uint32_t inChannelNum = CRTSFilter::ALL_CHANNELS) const;
 
-        /** Total bytes written out via CRTSFilter::writePush() since the
-         * program started.  Note: if there is more than one output
+        /** TODO: Total bytes written out via CRTSFilter::output() since
+         * the program started.  Note: if there is more than one output
          * channel this will include a total for all channels.  TODO: add
          * per channel totals.
          */

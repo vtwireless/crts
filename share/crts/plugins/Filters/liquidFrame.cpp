@@ -1,7 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-
 #include <complex>
 
 #include "liquid.h"
@@ -18,7 +17,7 @@ class LiquidFrame : public CRTSFilter
         ~LiquidFrame(void);
         bool start(uint32_t numInChannels, uint32_t numOutChannels);
         bool stop(uint32_t numInChannels, uint32_t numOutChannels);
-        void write(void *buffer, size_t len, uint32_t inChannelNum);
+        void input(void *buffer, size_t len, uint32_t inChannelNum);
 
     private:
 
@@ -31,8 +30,8 @@ class LiquidFrame : public CRTSFilter
         const float softGain;
 
         size_t fgLen; // For liquid ofdmflexframegen_write()
-        size_t arrayLen; // max number of complex elements per writePush()
-        size_t outBufferLen; // max bytes of data written per writePush()
+        size_t arrayLen; // max number of complex elements per output()
+        size_t outBufferLen; // max bytes of data written per output()
         bool padFrames; // flag to send another fgLen complex at end
 };
 
@@ -67,6 +66,7 @@ bool LiquidFrame::start(uint32_t numInChannels, uint32_t numOutChannels)
 
     subcarrierAlloc = (unsigned char *) malloc(numSubcarriers);
     if(!subcarrierAlloc) throw "malloc() failed";
+    // TODO: check for error here:
     ofdmframe_init_default_sctype(numSubcarriers, subcarrierAlloc);
 
     /////////////////////////////////////////////////////////////////
@@ -89,8 +89,9 @@ bool LiquidFrame::start(uint32_t numInChannels, uint32_t numOutChannels)
                 taper_len, subcarrierAlloc, &fgprops);
 
     // We use the same ring buffer for all output channels
+    // however many there are.
     //
-    createOutputBuffer(outBufferLen);
+    createOutputBuffer(outBufferLen, ALL_CHANNELS);
 
     return false; // success
 }
@@ -117,15 +118,17 @@ bool LiquidFrame::stop(uint32_t numInChannels, uint32_t numOutChannels)
 
 
 
-void LiquidFrame::write(void *buffer, size_t len, uint32_t channelNum)
+void
+LiquidFrame::input(void *buffer, size_t len, uint32_t inputChannelNum)
 {
     DASSERT(buffer, "");
     DASSERT(len, "");
 
-    advanceInputBuffer(len);
-
     ++frameCount;
 
+    // fg_buffer is a pointer to the Ring Buffer where we last
+    // wrote to:
+    //
     std::complex<float> *fg_buffer = (std::complex<float> *)
         getOutputBuffer(0);
 
@@ -136,10 +139,7 @@ void LiquidFrame::write(void *buffer, size_t len, uint32_t channelNum)
             (const unsigned char *) buffer, len);
 
     //
-    // TODO: count values ??
-    //
-    //size_t numValues = 0; // number of complex values total
-    // TODO: With padding or not???
+    // TODO: With padding or not??? What's the padding for?
     //
 
     bool last_symbol = false;
@@ -162,7 +162,7 @@ void LiquidFrame::write(void *buffer, size_t len, uint32_t channelNum)
 
     if(padFrames && last_symbol && n < arrayLen)
     {
-        // We are able to fit the frame pad in with this writePush()
+        // We are able to fit the frame pad in with this output()
         // call.
         //
         // TODO: Should this be zeros, or does it matter what it is.
@@ -170,7 +170,7 @@ void LiquidFrame::write(void *buffer, size_t len, uint32_t channelNum)
         n += fgLen;
     }
 
-    writePush(n*sizeof(std::complex<float>), ALL_CHANNELS);
+    output(n*sizeof(std::complex<float>), ALL_CHANNELS);
 }
 
 

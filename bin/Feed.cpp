@@ -6,7 +6,7 @@
 #include "Feed.hpp"
 
 
-void Feed::write(void *buffer, size_t bufferLen,
+void Feed::input(void *buffer, size_t bufferLen,
                 uint32_t inputChannelNum)
 {
     DASSERT(buffer == 0,"");
@@ -23,18 +23,18 @@ void Feed::write(void *buffer, size_t bufferLen,
     // this Feed filter.
     //
     // The other non-Feed filters should not loop like this.  They should
-    // do just one round of writePush()'s for a given input channel
-    // number.
+    // do just one round of output()'s for a given input channel number.
     //
     // This is the only filter that has no feed source filter.
 
     while(stream->isRunning)
-        // Trigger all output channels with 0 byte inputs.
+        //
+        // Trigger the one output channel with 0 byte inputs.
         //
         // This is the start of the stream flow.
         //
         // We only have one output channel for this special Feed source
         // filter.
         //
-        writePush(0/* length */, 0/* output channel number */);
+        output(0/* length */, 0/* output channel number */);
 }

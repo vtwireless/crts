@@ -55,7 +55,7 @@ class Stdin : public CRTSFilter
 
         bool start(uint32_t numInChannels, uint32_t numOutChannels);
         bool stop(uint32_t numInChannels, uint32_t numOutChannels);
-        void write(void *buffer, size_t bufferLen, uint32_t inChannelNum);
+        void input(void *buffer, size_t bufferLen, uint32_t inChannelNum);
 
     private:
 
@@ -91,12 +91,6 @@ Stdin::Stdin(int argc, const char **argv): file(0)
 
 bool Stdin::start(uint32_t numInChannels, uint32_t numOutChannels)
 {
-    if(!(numInChannels || numOutChannels))
-    {
-        WARN("We have no inputs or outputs");
-        return true; // fail
-    }
-
     if(numOutChannels)
     {
         // We will read stdin.
@@ -110,7 +104,7 @@ bool Stdin::start(uint32_t numInChannels, uint32_t numOutChannels)
     if(numInChannels)
         setInputThreshold(0, ALL_CHANNELS);
 
-    // We will merge any input channels.
+    // We will merge data from any input channels.
     //
     // If there are no inputs this Filer becomes a source filter which
     // gets write(0,0,0) calls in a loop, which is the start of a buffer
@@ -148,12 +142,8 @@ Stdin::~Stdin(void)
 }
 
 
-void Stdin::write(void *buffer_in, size_t len, uint32_t inputChannelNum)
+void Stdin::input(void *buffer_in, size_t len, uint32_t inputChannelNum)
 {
-    if(len)
-        // Mark input as consumed.
-        advanceInputBuffer(len);
-
     if(!file)
     {
         // There are no output channels so we are done.
@@ -162,8 +152,6 @@ void Stdin::write(void *buffer_in, size_t len, uint32_t inputChannelNum)
         //
         return;
     }
-
-
 
     uint8_t *buffer = (uint8_t *) getOutputBuffer(0);
 
@@ -184,7 +172,7 @@ void Stdin::write(void *buffer_in, size_t len, uint32_t inputChannelNum)
 
         if(len)
             // Send the outputs to all down-stream filters.
-            writePush(len, ALL_CHANNELS);
+            output(len, ALL_CHANNELS);
         else
         {
             // We a have 0 trigger input.
@@ -221,8 +209,8 @@ void Stdin::write(void *buffer_in, size_t len, uint32_t inputChannelNum)
     }
 
     if(len + ret > 0)
-        // Send the outputs to other down-stream filters.
-        writePush(len + ret, ALL_CHANNELS);
+        // Send the output to other down-stream filters.
+        output(len + ret, ALL_CHANNELS);
 }
 
 

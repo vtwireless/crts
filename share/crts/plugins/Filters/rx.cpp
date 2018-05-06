@@ -25,7 +25,7 @@ class Rx : public CRTSFilter
 
         bool start(uint32_t numInChannels, uint32_t numOutChannels);
         bool stop(uint32_t numInChannels, uint32_t numOutChannels);
-        void write(void *buffer, size_t len, uint32_t inChannelNum);
+        void input(void *buffer, size_t len, uint32_t inChannelNum);
 
     private:
 
@@ -227,7 +227,7 @@ bool Rx::stop(uint32_t numInChannels, uint32_t numOutChannels)
 
 
 
-void Rx::write(void *buffer, size_t len, uint32_t channelNum)
+void Rx::input(void *buffer, size_t len, uint32_t channelNum)
 {
     errno = 0;
 
@@ -257,7 +257,7 @@ void Rx::write(void *buffer, size_t len, uint32_t channelNum)
     }
 
     if(numSamples)
-        writePush(numSamples*numRxChannels*
+        output(numSamples*numRxChannels*
                 sizeof(std::complex<float>),
                 CRTSFilter::ALL_CHANNELS);
 }

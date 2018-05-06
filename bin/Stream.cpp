@@ -522,6 +522,9 @@ bool Stream::connect(FilterModule *from,  FilterModule *to)
 //
 void Stream::finishThreads(void)
 {
+    // This is the main thread.
+    DASSERT(pthread_equal(Thread::mainThread, pthread_self()), "");
+
     // Unless we wish to make this a select(2), poll(2), or epoll(2) based
     // service.  All the source filters need to have a separate thread,
     // because their write() calls can block waiting for data.  That's
@@ -562,28 +565,30 @@ void Stream::finishThreads(void)
         //
         for(auto it : stream->map)
         {
-            // it.second is a FilterModule
-            if(!it.second->thread)
+            FilterModule *filterModule = it.second;
+
+            if(!filterModule->thread)
             {
+                // The feed always gets added to the thread of the
+                // source filters, so they should already have
+                // a thread.
+                //
+                DASSERT(dynamic_cast<Feed *>(filterModule->filter) == 0, "");
+
                 // It's not in a thread.
                 //
                 // Source filters cannot be put in the same thread as
                 // another source filter.
                 //
-                if(!newThread || it.second->isSource())
+                if(!newThread || filterModule->isSource())
                     newThread = new Thread(stream);
 
-                DSPEW("%sfilter \"%s\" added to thread %" PRIu32,
-                            (it.second->isSource())?"source ":"",
-                            it.second->name.c_str(),
-                            newThread->threadNum);
-
                 // Add this Filtermodule to this thread
-                newThread->addFilterModule(it.second);
+                newThread->addFilterModule(filterModule);
 
                 DSPEW("%sfilter \"%s\" added to thread %" PRIu32,
-                        (it.second->isSource())?"source ":"",
-                        it.second->name.c_str(),
+                        (filterModule->isSource())?"source ":"",
+                        filterModule->name.c_str(),
                         newThread->threadNum);
             }
         }

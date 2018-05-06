@@ -55,7 +55,7 @@ class Stdout : public CRTSFilter
 
         bool start(uint32_t numInChannels, uint32_t numOutChannels);
         bool stop(uint32_t numInChannels, uint32_t numOutChannels);
-        void write(void *buffer, size_t bufferLen, uint32_t inChannelNum);
+        void input(void *buffer, size_t bufferLen, uint32_t inChannelNum);
 
     private:
 
@@ -64,8 +64,6 @@ class Stdout : public CRTSFilter
         uint32_t numOutChannels;
 };
 
-
-#define BUFLEN (1024)
 
 
 Stdout::Stdout(int argc, const char **argv)
@@ -134,7 +132,7 @@ bool Stdout::stop(uint32_t numInChannels, uint32_t numOutChannels)
 }
 
 
-void Stdout::write(void *buffer, size_t len, uint32_t inChannelNum)
+void Stdout::input(void *buffer, size_t len, uint32_t inChannelNum)
 {
     //WARN("buffer=%p buffer=\"%s\" len=%zu", buffer, (char *) buffer, len);
     // crtsOut is used like stdout because libuhd screwed up stdout.   It
@@ -143,9 +141,6 @@ void Stdout::write(void *buffer, size_t len, uint32_t inChannelNum)
     errno = 0;
 
     size_t ret = fwrite(buffer, 1, len, crtsOut);
-
-    // Mark this much input as consumed.
-    advanceInputBuffer(len);
 
 
     if(ret != len && errno == EINTR)
@@ -164,6 +159,9 @@ void Stdout::write(void *buffer, size_t len, uint32_t inChannelNum)
             // The output may be screwed at this point, given we could
             // not write what came in.
             WARN("fwrite(,1,%zu,crtsOut) only wrote %zu bytes", len, ret);
+
+        stream->isRunning = false;
+        return;
     }
 
     if(ret)
@@ -171,7 +169,7 @@ void Stdout::write(void *buffer, size_t len, uint32_t inChannelNum)
         if(numOutChannels)
         {
             buffer = getOutputBuffer(0);
-            writePush(ret, ALL_CHANNELS);
+            output(ret, ALL_CHANNELS);
         }
 
         fflush(crtsOut);

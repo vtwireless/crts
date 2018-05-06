@@ -29,6 +29,6 @@ class Feed : public CRTSFilter
             return false; // success
         };
 
-        void write(void *buffer, size_t bufferLen,
+        void input(void *buffer, size_t bufferLen,
                 uint32_t inputChannelNum);
 };

@@ -18,7 +18,7 @@ class LiquidSync : public CRTSFilter
         ~LiquidSync(void);
         bool start(uint32_t numInChannels, uint32_t numOutChannels);
         bool stop(uint32_t numInChannels, uint32_t numOutChannels);
-        void write(void *buffer, size_t len, uint32_t inChannelNum);
+        void input(void *buffer, size_t len, uint32_t inChannelNum);
 
     private:
 
@@ -79,7 +79,7 @@ frameSyncCallback(unsigned char *header, int header_valid,
 }
 
 
-void LiquidSync::write(void *buffer, size_t len, uint32_t channelNum)
+void LiquidSync::input(void *buffer, size_t len, uint32_t channelNum)
 {
     DASSERT(buffer, "");
     DASSERT(len, "");
@@ -90,9 +90,12 @@ void LiquidSync::write(void *buffer, size_t len, uint32_t channelNum)
 
     outputBuffer = (unsigned char *) getOutputBuffer(0);
 
-    // We will eat all the input data.
+    // We will eat all the input data except the remainder of
+    // sizeof(std::complex<float>).  We cannot use half of a
+    // complex<float>.  If the data is not aligned at complex<float> edges
+    // we are screwed.
     //
-    advanceInputBuffer(len - len % sizeof(std::complex<float>));
+    advanceInput(len - len % sizeof(std::complex<float>));
     DSPEW();
 
 
@@ -105,7 +108,7 @@ void LiquidSync::write(void *buffer, size_t len, uint32_t channelNum)
     //
     ASSERT(len_out <= outBufferLen, "");
 
-    writePush(len_out, CRTSFilter::ALL_CHANNELS);
+    output(len_out, CRTSFilter::ALL_CHANNELS);
 }
 
 

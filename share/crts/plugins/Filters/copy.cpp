@@ -65,7 +65,7 @@ class Copy : public CRTSFilter
 
         bool start(uint32_t numInChannels, uint32_t numOutChannels);
         bool stop(uint32_t numInChannels, uint32_t numOutChannels);
-        void write(void *buffer, size_t bufferLen, uint32_t inChannelNum);
+        void input(void *buffer, size_t bufferLen, uint32_t inChannelNum);
 
     private:
 
@@ -167,10 +167,8 @@ bool Copy::stop(uint32_t numInChannels, uint32_t numOutChannels)
 }
 
 
-void Copy::write(void *buffer, size_t len, uint32_t inChannelNum)
+void Copy::input(void *buffer, size_t len, uint32_t inChannelNum)
 {
-    advanceInputBuffer(len);
-
     if(nullOutputChannels)
     {
         // We have unpaired output channels that become source triggers.
@@ -180,7 +178,7 @@ void Copy::write(void *buffer, size_t len, uint32_t inChannelNum)
         //
         uint32_t *nullOutput = nullOutputChannels;
         while(*nullOutput != NULL_CHANNEL)
-            writePush(0, *nullOutput++);
+            output(0, *nullOutput++);
     }
 
     if(inChannelNum >= startingSinkInputChannel)
@@ -190,7 +188,6 @@ void Copy::write(void *buffer, size_t len, uint32_t inChannelNum)
         //
         return;
     }
-
 
     memcpy(getOutputBuffer(outputChannel[inChannelNum]), buffer, len);
 
@@ -203,7 +200,7 @@ void Copy::write(void *buffer, size_t len, uint32_t inChannelNum)
     // source of outputChannel[inChannelNum] via createOutputBuffer() in
     // start().
     //
-    writePush(len, outputChannel[inChannelNum]);
+    output(len, outputChannel[inChannelNum]);
 }
 
 

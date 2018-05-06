@@ -8,34 +8,14 @@ run/edit/run some of the example script programs like so:
 
 make
 
+
+export CRTS_MODULE_PATH=.
+
+
+crts_radio\
+ -f stdin\
+ -f stdout
+ < /dev/urandom | hexdump -v
+
+
 uhd_fft -f 915.0e6 -s 10.5e6 --args addr=192.168.10.3 
-
-export CRTS_MODULE_PATH=${PWD}
-
-
-crts_radio\
- -f stdin\
- -f tx [ --uhd  addr=192.168.10.2 ]\
- < /dev/urandom
-
-crts_radio\
- -f stdin\
- -f int2Float [ --scale 0.01 ]\
- -f tx [ --uhd  addr=192.168.10.2 ]\
- < /dev/urandom
-
-
-crts_radio -f rx -f liquidSync -f stdout -C testRx  | hexdump
-
-
-crts_radio -f rx [ --help ] -f liquidSync -f stdout -C testRx  | hexdump
-
-crts_radio -f rx [ --control rx11 ]  -f liquidSync -f stdout -C testRx  | hexdump
-
-crts_radio\
- -f rx [ --control rx11 ]\
- -f liquidSync\
- -f stdout\
- -C testRx [ --control rx11 ]\
- | hexdump
-

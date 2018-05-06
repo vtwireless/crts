@@ -244,6 +244,10 @@ class FilterModule
 
         uint32_t numOutputs, numInputs;
 
+        // Did we advance the input buffer pointer yet?
+        //
+        bool advancedInput;
+
 
         std::string name; // name from program crts_radio command line argv[]
 
@@ -387,29 +391,35 @@ class FilterModule
                 }
 #endif
 
-            // The filter is calling a writePush() to a particular output
-            // channel from a CRTSFilter::write() call with a particular
+            // The filter is calling a output() to a particular output
+            // channel from a CRTSFilter::input() call with a particular
             // input channel.  This input would not be know ahead of
             // now.
             //
             // What inputs go to what outputs is only known at run-time,
             // so we note what input channel is here, so we can see it
-            // in the writePush() calls that the filter makes.
+            // in the CRTSFilter::output() calls that the filter makes.
             //
             currentInput = input;
+            advancedInput = false;
 
-            // TODO: All the CRTSFilter::writePush() calls will add to
+            // TODO: All the CRTSFilter::output() calls will add to
             // CRTSFilter::_totalBytesOut and the other counters.
             //
             // We are in another filter (and maybe thread) from the
             // FilerModule::write() call that spawned this
             // runUsersActions() call.
             //
-            filter->write(buf, len, inputChannelNum);
+            filter->input(buf, len, inputChannelNum);
 
-#ifdef DEBUG
+            // Automatically advance the input buffer pointer if the
+            // filter->write() did not and ...
+            //
+            if(currentInput && !advancedInput && len)
+                filter->advanceInput(len);
+
+
             currentInput = 0;
-#endif
 
 
             // totalBytesIn is a std::atomic so we don't need the mutex
@@ -487,20 +497,19 @@ FilterModule::advanceWriteBuffer(size_t len, uint32_t outputChannelNum)
         
 
 
-// CRTSFilter::writePush() helper function.  It's called twice in
-// CRTSFilter::writePush() in Filter_write.cpp.  So we write the code once
-// here, instead of twice in CRTSFilter::writePush().
+// CRTSFilter::output() helper function.  It's called twice in
+// CRTSFilter::output() in Filter_write.cpp.  So we write the code once
+// here, instead of twice in CRTSFilter::output().
 //
 // The special Feed filter module write() function never calls this, Feed
-// gets short circuited to FilterModule::write() in
-// CRTSFilter::writePush().
+// gets short circuited to FilterModule::write() in CRTSFilter::output().
 //
 // filterModule is the filter module that this object is listed in
 // filterModule->outputs[].  Passing filterModule is as good as making it
 // part of the Output class, but uses less data in the running program.
 //
 // The Feed filter will never call Output::writePush().  It gets short
-// circuited to FilterModule::write() in CRTSFilter::writePush().
+// circuited to FilterModule::write() in CRTSFilter::output().
 //
 inline void Output::writePush(size_t len, FilterModule *filterModule)
 {

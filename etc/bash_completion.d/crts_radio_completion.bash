@@ -170,17 +170,18 @@ function _crts_radio_complete()
     local dirs
     local d
 
-    # Now add modules from the environment variable CRTS_MODULES_PATH
-    if [ -n "$CRTS_MODULES_PATH" ] ; then
-        IFS=':' read -r -a dirs <<< "$CRTS_MODULES_PATH"
+    # Now add modules from the environment variable CRTS_MODULE_PATH
+    if [ -n "$CRTS_MODULE_PATH" ] ; then
+        IFS=':' read -r -a dirs <<< "$CRTS_MODULE_PATH"
         for d in $dirs ; do
+            #echo "d=$d/$modtype"
             mod_dirs+=($d/$modtype/)
         done
         #echo -e "\n\n   mod_dirs=${mod_dirs[@]}\n\n"
     fi
 
-    mod_dirs+=($mod_dir)
-
+    #mod_dirs+=($PWD/$modtype)
+    #echo "mod_dirs[]= ${mod_dirs[@]}"
 
     local i
     local mod

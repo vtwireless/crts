@@ -67,7 +67,7 @@ class PassThrough : public CRTSFilter
 
         bool start(uint32_t numInChannels, uint32_t numOutChannels);
         bool stop(uint32_t numInChannels, uint32_t numOutChannels);
-        void write(void *buffer, size_t bufferLen, uint32_t inChannelNum);
+        void input(void *buffer, size_t bufferLen, uint32_t inChannelNum);
 
     private:
 
@@ -171,7 +171,7 @@ bool PassThrough::stop(uint32_t numInChannels, uint32_t numOutChannels)
 }
 
 
-void PassThrough::write(void *buffer, size_t len, uint32_t inChannelNum)
+void PassThrough::input(void *buffer, size_t len, uint32_t inChannelNum)
 {
     if(nullOutputChannels)
     {
@@ -184,7 +184,7 @@ void PassThrough::write(void *buffer, size_t len, uint32_t inChannelNum)
         //
         uint32_t *nullOutput = nullOutputChannels;
         while(*nullOutput != NULL_CHANNEL)
-            writePush(0, *nullOutput++);
+            output(0, *nullOutput++);
     }
 
     if(inChannelNum >= startingSinkInputChannel)
@@ -192,20 +192,15 @@ void PassThrough::write(void *buffer, size_t len, uint32_t inChannelNum)
         // Sink this input channel.  We pretend to read it by advancing to
         // the next chunk of data on this conveyor belt like buffer.
         //
-        writePush(len, NULL_CHANNEL/*no output channel, terminate it*/);
         return;
     }
-
-    if(len)
-        // Mark the input channel as consumed.
-        advanceInputBuffer(len);
 
     // Push input to output; in this case without modification, but we
     // could do something like multiply by a constant.  Then again we did
     // not type this data, so how could we change it.  Bits is bits, just
     // push them along len bytes worth.
     //
-    writePush(len, outputChannel[inChannelNum]);
+    output(len, outputChannel[inChannelNum]);
 }
 
 
