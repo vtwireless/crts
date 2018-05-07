@@ -176,6 +176,10 @@ bool Stream::printGraph(FILE *f)
         {
             FilterModule *filterModule = pair.second;
 
+            if(dynamic_cast<Feed *>(filterModule->filter))
+                // Skip displaying the Feed filters
+                continue;
+
             char wNodeName[64]; // writer node name
 
             snprintf(wNodeName, 64, "f%" PRIu32 "_%" PRIu32, n,
@@ -222,6 +226,10 @@ bool Stream::printGraph(FILE *f)
             for(auto const pair : stream->map)
             {
                 FilterModule *filterModule = pair.second;
+
+                if(dynamic_cast<Feed *>(filterModule->filter))
+                // Skip displaying the Feed filters
+                continue;
 
                 char filterName[64]; // writer node name
 
