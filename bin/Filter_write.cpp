@@ -44,8 +44,8 @@ void CRTSFilter::output(size_t len, uint32_t outChannelNum)
 
     if(filterModule->numInputs == 0)
     {
-        // This is the source Feed filter.  It has a while looping in the
-        // CRTSFilter::write() call.  All the other filters do not loop
+        // This is the source Feed filter.  It has a while loop in the
+        // CRTSFilter::input() call.  All the other filters do not loop
         // like that.
         //
         // Now feed the first "real" filter in the graph calling the, for
@@ -55,7 +55,7 @@ void CRTSFilter::output(size_t len, uint32_t outChannelNum)
         // Note: we are skipping the Output::writePush() call for the case
         // (like below) of this Feed filter module.  It always runs in the
         // same thread, and therefore eventually just calls the next
-        // CRTSFilter::write() on its' stack.
+        // CRTSFilter::input() on its' stack.
         //
         outputs[0]->toFilterModule->write(0, 
                 outputs[0], false/*is different thread*/);
@@ -106,9 +106,10 @@ void FilterModule::launchFeed(void)
                     == 0, "");
     // The thread will wake up only after we release the threads
     // mutex lock down below here then it will act on this
-    // write request.
-
-    // The write request for thread should be empty now.
+    // input request.
+    //
+    // The input() request for thread should be empty now.
+    //
     DASSERT(!thread->filterModule, "thread %" PRIu32, thread->threadNum);
 
     thread->filterModule = this;
