@@ -1,5 +1,11 @@
 
-SUBDIRS := plugins doc
+include ../../config.make
+
+SUBDIRS := plugins
+
+ifdef DOC
+SUBDIRS += doc
+endif
 
 INSTALL_DIR = $(PREFIX)/share/crts
 

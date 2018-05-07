@@ -1,0 +1,6 @@
+#!/bin/bash
+
+set -xe
+
+tar -xvzf crts_extra.tar.gz --strip-components=1
+

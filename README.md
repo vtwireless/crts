@@ -28,7 +28,8 @@ apt-get install\
  graphviz\
  imagemagick\
  joystick\
- doxygen
+ doxygen\
+ dia
 ```
 
 

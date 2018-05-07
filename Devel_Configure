@@ -54,7 +54,8 @@ cd "$dir"
 cat > config.make << EOF
 # This is a generated file
 
-
+# comment out to exclude building documentation
+DOC := doc
 
 # compiler options
 CFLAGS := -g -Wall -Werror
