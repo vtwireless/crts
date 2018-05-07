@@ -1,5 +1,5 @@
 
-SUBDIRS := plugins
+SUBDIRS := plugins doc
 
 INSTALL_DIR = $(PREFIX)/share/crts
 

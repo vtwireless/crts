@@ -1,3 +1,9 @@
+# CRTS
+
+The Cognitive Radio Test System (CRTS) provides a framework for software
+defined radios (SDRs).
+
+
 ## Ports
 
 Currently developing on: 
@@ -6,6 +12,11 @@ Currently developing on:
   - Ubuntu 16.04
 
 ## Dependencies
+
+Included in CRTS are scripts that build and install the libuhd and
+GNUradio from the latest tagged GitHub source files.  To change the
+repository release tags you can edit uhd/uhd.tar.gz.dl and
+gnuradio/gnuradio.tar.gz.dl.
 
 
 Building and installing CRTS requires: 
@@ -20,11 +31,6 @@ apt-get install\
  doxygen
 ```
 
-Included in CRTS are scripts that build and install the libuhd and
-GNUradio from the latest tagged GitHub source files.  To change the
-repository release tags you can edit uhd/uhd.tar.gz.dl and
-gnuradio/gnuradio.tar.gz.dl.
-
 
 If you are not building and installing libuhd and GNUradio from the CRTS
 scripts and you wish to use the versions installed by the Debian system
@@ -35,7 +41,6 @@ apt-get install\
  libuhd-dev\
  gnuradio-dev
 ```
-
 
 If we do not use package deb package "libuhd-dev" and you want to build
 libuhd from the GitHub source using scripts included in this CRTS package
@@ -172,8 +177,7 @@ is not serving a downloaded file.
 ## Up grading Firmware and FPGA Images with Pre-built Images
 
 With a browser go to relative to your UHD installation prefix
-installation
-directory, UHD_PREFIX
+installation directory, UHD_PREFIX
 
 ```
 UHD_PREFIX/share/doc/uhd/doxygen/html/page_images.html
