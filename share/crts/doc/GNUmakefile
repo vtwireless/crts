@@ -5,7 +5,7 @@ BUILD := html
 
 CLEANDIRS := latex html
 
-html:
+html: Doxyfile
 	doxygen
 
 include ../../../quickbuild.make
