@@ -67,7 +67,7 @@ void CRTSFilter::output(size_t len, uint32_t outChannelNum)
 
     if(outChannelNum == ALL_CHANNELS && filterModule->numOutputs == 1)
         // We only have one channel any way.
-        // No reason to loop if we don't have to.
+        // No reason to loop if we don't have too.
         outChannelNum = 0;
 
     if(len)
@@ -118,6 +118,116 @@ void FilterModule::launchFeed(void)
 
     MUTEX_UNLOCK(&thread->mutex);
 }
+
+
+// input is a pointer to an Input in this filter that is part of this
+// filter.
+//
+void FilterModule::runUsersActions(size_t len, Input *input)
+{
+    void *buf = 0;
+    uint32_t inputChannelNum = CRTSFilter::NULL_CHANNEL;
+
+#ifdef DEBUG
+    if(input == 0)
+    {
+        DASSERT(dynamic_cast<Feed *>(filter), "");
+        DASSERT(numOutputs == 1, "");
+        DASSERT(numInputs == 0, "");
+        DASSERT(outputs[0], "");
+        DASSERT(len == 0, "");
+    }
+    else
+    {
+        DASSERT(input, "");
+        DASSERT(input->output, "");
+    }
+#endif
+
+    if(input)
+        inputChannelNum = input->inputChannelNum;
+
+    currentInput = input;
+#if 0
+    // If there are any users CRTS Controllers that "attached" to any of
+    // the CRTSControl objects in this CRTS filter we call their
+    // CRTSContollers::execute() like so:
+    for(auto const &controlIt: filter->controls)
+        for(auto const &controller: controlIt.second->controllers)
+        {
+            // Let the CRTSController do its' thing.
+            //
+            // TODO: CHECK THIS CODE:  The controller may even
+            // change the buffer and len in the up-comming
+            // filter->write();  buffer and len are non-constant
+            // references.
+            //
+            controller->execute(controlIt.second,
+                    ptr, len, inChannelNum);
+        }
+#endif
+
+
+
+    if(!len)
+    {
+        filter->input(buf, len, inputChannelNum);
+        currentInput = 0;
+        return;
+    }
+
+            
+    // input is owned by this filter so we can change it here.
+
+    input->unreadLength += len;
+
+    // Add unread/accumulated data to the len that we
+    // will pass to the CRTSFilter::input().
+    len = input->unreadLength;
+    buf = (void *) input->readPoint;
+
+
+    while(len)
+    {
+        // If the filter has a choke length set we may call the
+        // filter->write() many times, so that we do not write more than
+        // the choke length and any one call.
+
+        if(stream->isRunning && len < input->thresholdLength)
+            // We do not bother the filter if we are not
+            // at the threshold.
+            return;
+
+        size_t lenIn = len;
+        if(input->chokeLength && lenIn > input->chokeLength)
+            lenIn = input->chokeLength;
+
+        // Unset the advance input flag.
+        advancedInput = false;
+
+        filter->input(buf, lenIn, inputChannelNum);
+
+        // Automatically advance the input buffer pointer if the
+        // filter->input() did not.
+        //
+        if(currentInput && !advancedInput)
+            filter->advanceInput(lenIn);
+
+        filter->_totalBytesIn += lenIn;
+        input->totalBytesIn += lenIn;
+
+        len -= lenIn;
+    }
+
+    // If the controller needs a hook to be called after the last
+    // filter->write() so they can use the controller destructor which is
+    // called after the last write.
+    //
+    // The hook comes in all the connected CRTS Filters is called:
+    // CRTSController::shutdown(CRTSControl *c)
+
+    currentInput = 0;
+};
 
 
 

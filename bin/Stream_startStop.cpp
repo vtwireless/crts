@@ -37,7 +37,6 @@ bool Stream::start(void)
     // of feed filters here.  For now that is done in crts_radio.cpp at
     // the end of parseArgs() and so restart is not possible yet.
 
-    
 
     ///////////////////////////////////////////////////////////////////////
     // 1: First call the filter start() functions.  The
@@ -186,6 +185,16 @@ bool Stream::stop(void)
     // add a filter reconnecting mechanism and interface to such a thing.
     // That's a large request, and may require a bit of refactoring.
 
+#ifdef DEBUG
+
+    // 0:  Filter Input/Output Report
+    //
+    for(auto it : map)
+        if(dynamic_cast<Feed *>(it.second->filter) == 0)
+            // it.second is a FilterModule
+            it.second->InputOutputReport();
+#endif
+
 
     bool ret = false;
 
@@ -250,21 +259,25 @@ bool Stream::stop(void)
             filterModule->outputs[0]->reset();
         }
 #endif
+        // Reset these counters.
+        filterModule->filter->_totalBytesIn = 0;
+        filterModule->filter->_totalBytesOut = 0;
     }
 
     return ret;
 }
 
 
-// Calls the all the CRTSFilter::start() functions
-// and allocates buffers, getting ready to run.
+// Calls the all the CRTSFilter::start() functions and allocates buffers,
+// getting ready to run.
 //
 bool Stream::startAll(void)
 {
 
     // 1.  Check that we have no cycles in the filter streams directed
-    //     graph.  We do this now so if this fails we it will kill the
-    //     whole program.
+    //     graph. CRTS_radio cannot run if there are cycles in the flow.
+    //     We do this now so if this fails we it will kill the whole
+    //     program.
     //
     for(auto stream : streams)
         for(auto filterModule : stream->sources)

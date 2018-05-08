@@ -7,6 +7,30 @@
 
 #include "crts/debug.h"
 #include "crts/Filter.hpp"
+#include "crts/crts.hpp"
+
+#define URL "http://liquidsdr.org/doc/ofdmflexframe/"
+
+static void usage(void)
+{
+    char nameBuf[64], *name;
+    name = CRTS_BASENAME(nameBuf, 64);
+
+    fprintf(stderr,
+"\n"
+"\n"
+"  Usage: %s\n"
+"\n"
+"      Read 1 channel in and write 1 channel out.  The output with be from the\n"
+"   Liquid DSP frame generator, ofdmflexframegen, " URL "\n"
+"\n"
+"\n",
+    name);
+
+    errno = 0;
+    throw "usage help"; // This is how return an error from a C++ constructor
+    // the module loader will catch this throw.
+}
 
 
 class LiquidFrame : public CRTSFilter
@@ -21,28 +45,31 @@ class LiquidFrame : public CRTSFilter
 
     private:
 
+        ofdmflexframegen fg;
         const unsigned int numSubcarriers;
         const unsigned int cp_len;
         const unsigned int taper_len;
         unsigned char *subcarrierAlloc;
-        ofdmflexframegen fg;
+
+        size_t numPadComplexFloat;
+
         uint64_t frameCount;
         const float softGain;
 
-        size_t fgLen; // For liquid ofdmflexframegen_write()
-        size_t arrayLen; // max number of complex elements per output()
-        size_t outBufferLen; // max bytes of data written per output()
-        bool padFrames; // flag to send another fgLen complex at end
+        size_t complexArrayLen; // number of complex elements per output()
+        bool padFrames;
 };
 
 
 
 LiquidFrame::LiquidFrame(int argc, const char **argv):
-    numSubcarriers(32), cp_len(16), taper_len(4),
-    subcarrierAlloc(0), fg(0), frameCount(0),
-    softGain(powf(10.0F, -12.0F/20.0F)),
+    fg(0),
+    numSubcarriers(32), cp_len(16), taper_len(4), subcarrierAlloc(0),
+    numPadComplexFloat(4),
+    frameCount(0), softGain(powf(10.0F, -12.0F/20.0F)),
     padFrames(true)
 {
+    CRTSModuleOptions opt(argc, argv, usage);
 
     DSPEW();
 }
@@ -51,15 +78,20 @@ bool LiquidFrame::start(uint32_t numInChannels, uint32_t numOutChannels)
 {
     DSPEW();
 
-    if(numInChannels < 1)
+    if(isSource())
     {
-        WARN("Should have 1 input channel got %" PRIu32, numInChannels);
+        WARN("This filter cannot be a source filter.");
         return true; // fail
     }
-
-    if(numOutChannels < 1)
+    if(numInChannels != 1)
     {
-        WARN("Should have 1 or more output channels got %" PRIu32,
+        WARN("Should have 1 input channel, got %" PRIu32,
+                numInChannels);
+        return true; // fail
+    }
+    if(numOutChannels != 1)
+    {
+        WARN("Should have 1 output channel, got %" PRIu32,
             numOutChannels);
         return true; // fail
     }
@@ -72,9 +104,7 @@ bool LiquidFrame::start(uint32_t numInChannels, uint32_t numOutChannels)
     /////////////////////////////////////////////////////////////////
     // TODO: maybe these values can be tuned for better performance.
     /////////////////////////////////////////////////////////////////
-    fgLen = numSubcarriers + cp_len; // per ofdmflexframegen_write()
-    arrayLen = 20*fgLen; // we'll use (fgLen * arrayLen)
-    outBufferLen = arrayLen*sizeof(std::complex<float>);
+    complexArrayLen = numSubcarriers + cp_len + numPadComplexFloat;
     /////////////////////////////////////////////////////////////////
 
 
@@ -91,7 +121,8 @@ bool LiquidFrame::start(uint32_t numInChannels, uint32_t numOutChannels)
     // We use the same ring buffer for all output channels
     // however many there are.
     //
-    createOutputBuffer(outBufferLen, ALL_CHANNELS);
+    createOutputBuffer(complexArrayLen*sizeof(std::complex<float>),
+            (uint32_t) 0);
 
     return false; // success
 }
@@ -126,11 +157,12 @@ LiquidFrame::input(void *buffer, size_t len, uint32_t inputChannelNum)
 
     ++frameCount;
 
-    // fg_buffer is a pointer to the Ring Buffer where we last
+#if 0
+    // outBuffer is a pointer to the Ring Buffer where we last
     // wrote to:
     //
-    std::complex<float> *fg_buffer = (std::complex<float> *)
-        getOutputBuffer(0);
+    std::complex<float> *outBuffer =
+        (std::complex<float> *) getOutputBuffer(0);
 
     // assemble frame using liquid-dsp
     // Enter the raw data that we just read:
@@ -138,39 +170,36 @@ LiquidFrame::input(void *buffer, size_t len, uint32_t inputChannelNum)
             fg, (unsigned char *) &frameCount,
             (const unsigned char *) buffer, len);
 
-    //
-    // TODO: With padding or not??? What's the padding for?
-    //
-
     bool last_symbol = false;
 
     size_t n = 0; // number of complex values in loop
-    while(n < arrayLen)
+    while(n < complexArrayLen)
     {
         // generate symbol
         last_symbol = ofdmflexframegen_write(fg,
-                    &fg_buffer[n], fgLen);
+                    &outBuffer[n], fgLen);
         n += fgLen;
         if(last_symbol) break;
     }
     
-    // Now we have n complex values in fg_buffer
+    // Now we have n complex values in outBuffer
 
     // Apply the gain
     for(size_t i=0; i<n; ++i)
-        fg_buffer[i] *= softGain;
+        outBuffer[i] *= softGain;
 
-    if(padFrames && last_symbol && n < arrayLen)
+    if(padFrames && last_symbol && n < complexArrayLen)
     {
         // We are able to fit the frame pad in with this output()
         // call.
         //
         // TODO: Should this be zeros, or does it matter what it is.
-        memset(&fg_buffer[n], 0, fgLen*sizeof(std::complex<float>));
+        memset(&outBuffer[n], 0, fgLen*sizeof(std::complex<float>));
         n += fgLen;
     }
 
     output(n*sizeof(std::complex<float>), ALL_CHANNELS);
+#endif
 }
 
 

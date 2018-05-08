@@ -265,128 +265,178 @@ class CRTSFilter
         void advanceInput(size_t len);
 
 
-        // Create a buffer that will have data with origin from this
-        // CRTSFilter.  This creates one buffer that may have more than
-        // one reading filter.
-        //
-        // Set the maximum length, in bytes, that this CRTSFilter will
-        // read or write.  This must be called in the super class start()
-        // function.
-        //
-        // This buffer is used with a given output channel.
-        //
-        // Any Filter that creates data for output() must call this.
-        //
-        // maxLength is the maximum length, in bytes, that this CRTS
-        // Filter will and can output().  The CRTSFilter promises not
-        // to output() more than this.
-        //
+        /** Create a buffer that will have data with origin from this
+         * CRTSFilter.  
+         *
+         * \param maxLength is the largest amount of data that will be
+         * written to this buffer.  This filter must not output() more
+         * than \c maxLength bytes for the listed output channels.
+         *
+         * \param outputChannelNum is an output channel number.
+         * outputChannelNum must be less than numOutputChannels
+         * that was passed into the filters \c CRTSFilter::start()
+         * function.
+         */
         void createOutputBuffer(size_t maxLength,
                 uint32_t outputChannelNum = ALL_CHANNELS);
 
         /** Create a buffer that will have data with origin from this
          * CRTSFilter.  This creates one buffer that may have more than
-         * one reading filter.  In this version of this function you
-         * may set many reading output channels via \p outputCannels
-         * which is a null terminated list of output channel numbers.
+         * one output channel.  The buffer will be shared between the
+         * channels.
          *
-         * example:
-         *   uint32_t outputChannels[] = { 0, 2, 3, NULL_CHANNEL };
+         * This function should only be called in the filters' start()
+         * function.
          *
-         * There is no threshold because this filter is the source
-         * of this buffer.  This filter must not output() more than
-         * maxLength bytes for the listed output channels.
+         * \param maxLength is the largest amount of data that will be
+         * written to this buffer.  This filter must not output() more
+         * than \c maxLength bytes for the listed output channels.
+         *
+         * \param outputChannelNums a \c NULL_CHANNEL terminated array of
+         * channels. For example:
+         * \code
+         * uint32_t outputChannels[] = { 0, 2, 3, NULL_CHANNEL };
+         * \endcode
          */
         void createOutputBuffer(size_t maxLength,
                 const uint32_t *outputChannelNums);
 
 
-        // Instead of allocating a buffer, we reuse the input buffer from
-        // the channel associated with inputChannelNum to output() to.
-        //
-        // This should not be called in CRTSFilter::input().
-        //
-        // We are passing a buffer out so there is a maximum output
-        // length.
-        //
-        // We are passing a buffer in and so there is an input threshold.
-        //
-        //
+        /** Instead of allocating a buffer, we reuse the buffer from
+         * the channel associated with \c inputChannelNum to the
+         * output channel with channel number \c outputChannelNum.
+         *
+         * This function should only be called in the filters' start()
+         * function.
+         *
+         * \param inputChannelNum an input channel number that we will
+         * get the buffer from.
+         *
+         * \param outputChannelNum an output channel number that we will
+         * use to output() with.
+         *
+         * \param maxLength the maximum number of bytes that we will leave
+         * unconsumed by the filter.  Not consuming the input data on
+         * an input channel may lead to buffer overrun.  You are promising
+         * to clean plate to this amount.
+         *
+         * \param thresholdLength is the input threshold that is needed to
+         * be archived before the filters input() is called.  During
+         * stream shutdown this threshold may not be archived before the
+         * filters input() is called, otherwise the input would be lost.
+         */
         void createPassThroughBuffer(
                 uint32_t inputChannelNum,
                 uint32_t outputChannelNum,
                 size_t maxLength,
-                size_t threshold = 1);
+                size_t thresholdLength = 0);
 
-#if 0
-        // The Filter may need to access more than just the buffer passed
-        // in through the call arguments, CRTSFilter::input(buffer, len,
-        // inChannelNum), so we have this so that the get access to other
-        // input channel buffers.
-        //
-        // Returns a pointer to the start of usable memory.
-        //
-        void *getInputBuffer(size_t &len, uint32_t inputChannelNum);
-#endif
 
         /** Returns a pointer to the current writing position
          * of the buffer so the filter may write to the memory.
          *
          * This buffer must have been created by the filter with
-         * createOutputBuffer()
+         * createOutputBuffer() in the start() function.
+         *
+         * \param outputChannelNum the output channel number.
          */
         void *getOutputBuffer(uint32_t outputChannelNum);
 
 
-#if 0
-        void shareOutputBuffer(uint32_t outputChannelNum1,
-                uint32_t outputChannelNum2);
-#endif
-
-
-        // Set the minimum length, in bytes, that this CRTSFilter must
-        // accumulate before CRTSFilter::input() can and will be called.
-        //
-        // Calling this in CRTSFilter::input() is fine.  Making this limit
-        // as large as practical will save on unnecessary
-        // CRTSFilter::input() calls.  This length may not exceed the
-        // maximum Buffer Length set with setThresholdLength().
-        //
-        // TODO: This can be called when the stream is running.
+        /** Set the minimum length, in bytes, that this CRTSFilter must
+         * accumulate before input() can and will be called, for the given
+         * channel.  This can not be called when the stream is running,
+         * that is outside the start() function.
+         *
+         * \param len the threshold length in bytes.
+         *
+         * \param inputChannelNum is the input channel number.  Set \c
+         * inputChannelNum to \c ALL_CHANNELS to apply this to all channels in
+         * the filter.
+         */
         void setInputThreshold(size_t len,
                 uint32_t inputChannelNum = ALL_CHANNELS);
 
 
-        // The CRTSFilter code know if they are pushing to more than on
-        // channel.  The channel we refer to here is just an attribute of
-        // this filter point (node) in this stream.  ChannelNum goes from
-        // 0 to N-1 where N is the total CRTSFilters that are connected
-        // to push this data to.  It's up to the writer of the CRTSFilter
-        // to define how to push to each channel, and what channel M (0 <=
-        // M < N) means.  Do not confuse this with other channel
-        // abstractions like a frequency sub band or other software
-        // signal channel.  Use channelNum=0 unless this CRTSFilter is
-        // splitting the stream.
-        //
-        // TODO: Named channels and other channel mappings that are not
-        // just a simple array index thing.
-        //
-        // outputChannelNum handles the splitting of the stream.  We can
-        // call () many times to write the same thing to many
-        // channels; with the cost only being an added call on the
-        // function stack.
-        //
-        // If outputChannel has an origin at this filter the data will be
-        // copied from the buffer that was passed in to input(), else this
-        // will just pass through the data by advancing pointers in the
-        // buffer.  The outputChannelNum must be a created buffer in this
-        // filter or the outputChannelNum must be connected to the buffer
-        // via passThroughBuffer().
+        /** Set the maximum length, in bytes, beyond which this
+         * filter promises to not leave unconsumed.
+         *
+         * There may be input lengths to input() larger than this due to
+         * adjcent filters having higher limits.  This is just so the
+         * needed ring buffer size may be computed.
+         *
+         * This can not be called when the stream is running, that is
+         * outside the start() function.
+         *
+         * \param len the maximum length in bytes.
+         *
+         * \param inputChannelNum is the input channel number.
+         * Set \c inputChannelNum to \c ALL_CHANNELS to apply this to all
+         * channels in the filter.
+         */
+        void setMaxUnreadLength(size_t len,
+                uint32_t inputChannelNum = ALL_CHANNELS);
 
-        /** This also advances the input buffer len bytes and triggers
-         * a connected filter input() call from the current filter.
+        /** Set the maximum length, in bytes, which this
+         * filter will accept in its' input() call on the given channel.
+         *
+         * This can not be called when the stream is running, that is
+         * outside the start() function.
+         *
+         * \param len the maximum length in bytes.
+         *
+         * \param inputChannelNum is the input channel number.
+         * Set \c inputChannelNum to \c ALL_CHANNELS to apply this to all
+         * channels in the filter.
+         */
+        void setChokeLength(size_t len,
+                uint32_t inputChannelNum = ALL_CHANNELS);
+
+        /** Write output to a given output channel. 
+         *
+         * Trigger a connected filter input() call from the current
+         * filter, whereby writing \c len bytes to the filter connected to
+         * output channel \c outputChannelNum and advancing the write
+         * pointer in the ring buffer.
+         *
+         * The amount of data consumed by the connected receiving filter
+         * can be different than, \c len, the length requested, because
+         * the consuming filter has the option of letting data accumulate
+         * before acting on it.
+         *
+         * \param len length in bytes.
+         *
+         * \param inputChannelNum is the input channel number.
+         * Set \c inputChannelNum to \c ALL_CHANNELS to apply this to all
+         * channels in the filter.
          */
         void output(size_t len, uint32_t outputChannelNum = ALL_CHANNELS);
+
+        /**
+         * \param inputChannelNum is the input channel number. If \c
+         * inputChannelNum is to \c ALL_CHANNELS get the total for all
+         * input channels to this filter.
+         *
+         * \return the total number of bytes that the filters
+         * corresponding input channel has consumed.  This does
+         * not include any concurrently running input() calls, only
+         * calls to input() that have returned.
+         */
+        uint64_t totalBytesIn(
+                uint32_t inputChannelNum = CRTSFilter::ALL_CHANNELS) const;
+
+        /**
+         * \param outputChannelNum is the output channel number.  If \c
+         * outputChannelNum is to \c ALL_CHANNELS get the total for all
+         * output channels for this filter.
+         *
+         * \return the total number of bytes that has been written to the
+         * corresponding output channel for this filter.
+         */
+        uint64_t totalBytesOut(
+                uint32_t outputChannelNum = CRTSFilter::ALL_CHANNELS) const;
+
+
 
  
     friend FilterModule; // The rest of the filter code and data.
@@ -428,7 +478,8 @@ class CRTSFilter
         // a circular counter, whatever that is, or just add an additional
         // counter to count the number of 16 exabytes chucks, like the
         // time structures do.
-        std::atomic<uint64_t> _totalBytesIn, _totalBytesOut;
+        //
+        uint64_t _totalBytesIn, _totalBytesOut;
 };
 
 
@@ -495,23 +546,24 @@ class CRTSControl
 
     public:
 
+
+        uint64_t totalBytesIn(uint32_t inChannelNum =
+                CRTSFilter::ALL_CHANNELS) const
+        {
+            DASSERT(filter, "");
+            return filter->totalBytesIn(inChannelNum);
+        };
+
+
+        uint64_t totalBytesOut(uint32_t outChannelNum =
+                CRTSFilter::ALL_CHANNELS) const
+        {
+            DASSERT(filter, "");
+            return filter->totalBytesOut(outChannelNum);
+        };
+
+
         const char *getName(void) const;
-
-        /** TODO: Total bytes from all CRTSFilter::input() calls since the
-         * program started.  When you know the approximate input rate, you
-         * can use this to get an approximate time without making a system
-         * call.
-         */
-        uint64_t totalBytesIn(
-                uint32_t inChannelNum = CRTSFilter::ALL_CHANNELS) const;
-
-        /** TODO: Total bytes written out via CRTSFilter::output() since
-         * the program started.  Note: if there is more than one output
-         * channel this will include a total for all channels.  TODO: add
-         * per channel totals.
-         */
-        uint64_t totalBytesOut(
-                uint32_t outChannelNum = CRTSFilter::ALL_CHANNELS) const;
 
         uint32_t getId(void) const { return id; };
 
@@ -609,21 +661,6 @@ CRTSControl *CRTSFilter::makeControl(const char *controlName, bool generateName)
 
 
 inline const char *CRTSControl::getName(void) const { return name; };
-
-
-inline uint64_t CRTSControl::totalBytesIn(uint32_t inChannelNum) const
-{
-    DASSERT(filter, "");
-    return filter->_totalBytesIn;
-};
-
-
-inline uint64_t CRTSControl::totalBytesOut(uint32_t outChannelNum) const
-{
-    DASSERT(filter, "");
-    return filter->_totalBytesOut;
-};
-
 
 
 #define CRTSCONTROLLER_MAKE_MODULE(derived_class_name) \

@@ -172,6 +172,25 @@ CRTSFilter::CRTSFilter(void):
     DSPEW();
 }
 
+uint64_t CRTSFilter::totalBytesIn(uint32_t inChannelNum) const
+{
+    DASSERT(filterModule, "");
+    if(inChannelNum == ALL_CHANNELS)
+        return _totalBytesIn;
+    DASSERT(filterModule->numInputs > inChannelNum, "");
+    DASSERT(filterModule->inputs[inChannelNum], "");
+    return filterModule->inputs[inChannelNum]->totalBytesIn;
+}
+
+uint64_t CRTSFilter::totalBytesOut(uint32_t outChannelNum) const
+{
+    DASSERT(filterModule, "");
+    if(outChannelNum == ALL_CHANNELS)
+        return _totalBytesOut;
+    DASSERT(filterModule->numOutputs > outChannelNum, "");
+    DASSERT(filterModule->outputs[outChannelNum], "");
+    return filterModule->outputs[outChannelNum]->totalBytesOut;
+}
 
 
 Output::Output(FilterModule *fM, FilterModule *toFM):
@@ -363,7 +382,7 @@ AdvanceInput(size_t len, Input *input, FilterModule *fm)
     DASSERT(input, "");
     DASSERT(input->output, "");
     DASSERT(input->output->ringBuffer, "");
-
+    // Do not, under any circumstances, overrun the buffer.
     ASSERT(len <= input->unreadLength, "");
 
     if(len)
@@ -395,6 +414,63 @@ void CRTSFilter::advanceInput(size_t len)
     DASSERT(filterModule->numInputs, "");
 
     AdvanceInput(len, filterModule->currentInput, filterModule);
+}
+
+
+void CRTSFilter::setMaxUnreadLength(size_t len, uint32_t inputChannelNum)
+{
+    DASSERT(pthread_equal(Thread::mainThread, pthread_self()),
+            "You can only call this in start() and stop().");
+    DASSERT(filterModule, "");
+    DASSERT(filterModule->inputs, "");
+    DASSERT(filterModule->numInputs > inputChannelNum ||
+            inputChannelNum == ALL_CHANNELS, "");
+
+    if(inputChannelNum == ALL_CHANNELS)
+    {
+        for(uint32_t i=filterModule->numInputs-1; i<(uint32_t)-1; --i)
+        {
+            DASSERT(filterModule->inputs[i], "");
+            DASSERT(filterModule->inputs[i]->thresholdLength <= len, "");
+            filterModule->inputs[i]->maxUnreadLength = len;
+        }
+    }
+    else
+    {
+        DASSERT(filterModule->inputs[inputChannelNum], "");
+        DASSERT(filterModule->inputs[inputChannelNum]->thresholdLength
+                <= len, "");
+        filterModule->inputs[inputChannelNum]->maxUnreadLength = len;
+    }
+}
+
+
+void CRTSFilter::setChokeLength(size_t len, uint32_t inputChannelNum)
+{
+    DASSERT(pthread_equal(Thread::mainThread, pthread_self()),
+            "You can only call this in start() and stop().");
+    DASSERT(filterModule, "");
+    DASSERT(filterModule->inputs, "");
+    DASSERT(filterModule->numInputs > inputChannelNum ||
+            inputChannelNum == ALL_CHANNELS, "");
+
+    if(inputChannelNum == ALL_CHANNELS)
+    {
+        for(uint32_t i=filterModule->numInputs-1; i<(uint32_t)-1; --i)
+        {
+            DASSERT(filterModule->inputs[i], "");
+            DASSERT(filterModule->inputs[i]->thresholdLength <= len, "");
+            filterModule->inputs[i]->chokeLength = len;
+        }
+    }
+    else
+    {
+        DASSERT(filterModule->inputs[inputChannelNum], "");
+        DASSERT(filterModule->inputs[inputChannelNum]->thresholdLength
+                <= len, "");
+        filterModule->inputs[inputChannelNum]->chokeLength = len;
+    }
+
 }
 
 
@@ -449,4 +525,30 @@ void *CRTSFilter::getOutputBuffer(uint32_t outputChannelNum)
             output->ringBuffer->start + output->ringBuffer->length, "");
 
     return (void *) output->ringBuffer->writePoint;
+}
+
+
+void FilterModule::InputOutputReport(FILE *file)
+{
+    fprintf(file,
+        "=============================================\n"
+        "===== Filter \"%s\" =======\n"
+        "=============================================\n",
+        name.c_str());
+
+    fprintf(file, "All Input Channels <== %zu bytes\n",
+            filter->totalBytesIn());
+
+    for(uint32_t i=0; i<numInputs; ++i)
+        fprintf(file, "  Input Channel %" PRIu32 " <== %zu bytes\n",
+                i, filter->totalBytesIn(i));
+
+    fprintf(file, "\nAll Output Channels ==> %zu bytes\n",
+            filter->totalBytesOut());
+
+    for(uint32_t i=0; i<numOutputs; ++i)
+        fprintf(file, " Output Channel %" PRIu32 " ==> %zu bytes\n",
+                i, filter->totalBytesOut(i));
+
+    fprintf(file, "=============================================\n\n");
 }

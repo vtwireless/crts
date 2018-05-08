@@ -112,6 +112,7 @@ class Output
             ringBuffer = 0;
             maxLength = 0;
             isPassThrough = false;
+            totalBytesOut = 0;
         }; 
 
         // See comments about writePush() below.
@@ -144,6 +145,8 @@ class Output
         //
         size_t maxLength;
 
+        uint64_t totalBytesOut;
+
         // isPassThrough if this is a pass through buffer that uses a ring
         // buffer from another filter.
         //
@@ -163,19 +166,19 @@ class Input
 
         Input(Output *o, uint32_t inChannelNum):
             output(o),
-            readPoint(0),
-            unreadLength(0),
-            thresholdLength(0),
-            maxLength(0),
-            inputChannelNum(inChannelNum) {};
-
+            inputChannelNum(inChannelNum)
+        { 
+            reset();
+        };
 
         void reset(void)
         {
             readPoint = 0;
             unreadLength = 0;
             thresholdLength = 0;
-            maxLength = 0;
+            maxUnreadLength = 0;
+            chokeLength = (size_t) -1; // largest value
+            totalBytesIn = 0;
         };
 
         // output is the Output that is feeding this input from
@@ -197,8 +200,13 @@ class Input
         //
         size_t thresholdLength, 
                // The filter that reads this input channel promises to not
-               // let the amount of unread to exceed maxLength bytes.
-               maxLength;
+               // let the amount of unread to exceed maxUnreadLength bytes.
+               maxUnreadLength,
+               // The most that the filter will get on a given input()
+               // call.
+               chokeLength;
+
+        uint64_t totalBytesIn;
 
         // The input channel number that we call
         // CRTSFilter::write(,,inputChannelNum) with.  It's the input
@@ -332,115 +340,7 @@ class FilterModule
         // input is a pointer to an Input in this filter
         // that is part of this filter.
         //
-        void runUsersActions(size_t len, Input *input)
-        {
-            void *buf = 0;
-            uint32_t inputChannelNum = CRTSFilter::NULL_CHANNEL;
-
-#ifdef DEBUG
-            if(input == 0)
-            {
-                DASSERT(dynamic_cast<Feed *>(filter), "");
-                DASSERT(numOutputs == 1, "");
-                DASSERT(numInputs == 0, "");
-                DASSERT(outputs[0], "");
-                DASSERT(len == 0, "");
-            }
-            else
-            {
-                DASSERT(input, "");
-                DASSERT(input->output, "");
-            }
-#endif
-
-            if(input)
-                inputChannelNum = input->inputChannelNum;
-
-
-            // input is owned by this filter so we can change it here.
-
-            if(len)
-            {
-                // We do not send a pointer to data if len is 0.  This 0
-                // is not just for the Feed filters.  Sometimes we have 0
-                // input to trigger filters without data input.
-                buf = (void *) input->readPoint;
-
-                input->unreadLength += len;
-                // Add unread/accumulated data to the len that we
-                // will pass to the CRTSFilter::write().
-                len = input->unreadLength;
-            }
-
-#if 0
-            // If there are any users CRTS Controllers that "attached" to
-            // any of the CRTSControl objects in this CRTS filter we call
-            // their CRTSContollers::execute() like so:
-            for(auto const &controlIt: filter->controls)
-                for(auto const &controller: controlIt.second->controllers)
-                {
-                    // Let the CRTSController do its' thing.
-                    //
-                    // TODO: CHECK THIS CODE:  The controller may even
-                    // change the buffer and len in the up-comming
-                    // filter->write();  buffer and len are non-constant
-                    // references.
-                    //
-                    controller->execute(controlIt.second,
-                            ptr, len, inChannelNum);
-                }
-#endif
-
-            // The filter is calling a output() to a particular output
-            // channel from a CRTSFilter::input() call with a particular
-            // input channel.  This input would not be know ahead of
-            // now.
-            //
-            // What inputs go to what outputs is only known at run-time,
-            // so we note what input channel is here, so we can see it
-            // in the CRTSFilter::output() calls that the filter makes.
-            //
-            currentInput = input;
-            advancedInput = false;
-
-            // TODO: All the CRTSFilter::output() calls will add to
-            // CRTSFilter::_totalBytesOut and the other counters.
-            //
-            // We are in another filter (and maybe thread) from the
-            // FilerModule::write() call that spawned this
-            // runUsersActions() call.
-            //
-            filter->input(buf, len, inputChannelNum);
-
-            // Automatically advance the input buffer pointer if the
-            // filter->write() did not and ...
-            //
-            if(currentInput && !advancedInput && len)
-                filter->advanceInput(len);
-
-
-            currentInput = 0;
-
-
-            // totalBytesIn is a std::atomic so we don't need the mutex
-            // lock here.  This can be read in a users' CRTS Controller
-            // via the CRTS Control that the CRTS Filter provided.
-            //
-            // TODO: NEED to FIX this.  The bytes consumed is not the
-            // same as len.
-            filter->_totalBytesIn += len;
-
-       // if(input && len)
-       //     WARN("filter \"%s\" len = %zu", name.c_str(), len);
-
-            // If the controller needs a hook to be called after the last
-            // filter->write() so they can use the controller destructor
-            // which is called after the last write.
-            //
-            // The hook comes in all the connected CRTS Filters is called:
-            // CRTSController::shutdown(CRTSControl *c)
-        };
-
+        void runUsersActions(size_t len, Input *input);
 
         // So we may access the map (list) of controls for this filter
         // internally.  Since CRTSFilter::controls must be private, so
@@ -473,6 +373,8 @@ class FilterModule
 
         inline void advanceWriteBuffer(size_t len, uint32_t outputChannelNum);
 
+
+        void InputOutputReport(FILE *file = stderr);
 };
 
 
@@ -482,17 +384,25 @@ FilterModule::advanceWriteBuffer(size_t len, uint32_t outputChannelNum)
     if(outputChannelNum == CRTSFilter::ALL_CHANNELS)
     {
         for(uint32_t i=0; i<numOutputs; ++i)
+        {
             if(outputs[i]->ringBuffer->ownerOutput == outputs[i]
                     && outputs[i]->isPassThrough == false)
                 outputs[i]->ringBuffer->advancePointer(
                         outputs[i]->ringBuffer->writePoint, len);
+            outputs[i]->totalBytesOut += len;
+            filter->_totalBytesOut += len;
+
+        }
         return;
     }
 
-    if(outputs[outputChannelNum]->isPassThrough == false)
+    if(outputs[outputChannelNum]->ringBuffer->ownerOutput ==
+            outputs[outputChannelNum]
+            && outputs[outputChannelNum]->isPassThrough == false)
         outputs[outputChannelNum]->ringBuffer->advancePointer(
-                    outputs[outputChannelNum]->
-                    ringBuffer->writePoint, len);
+                outputs[outputChannelNum]->ringBuffer->writePoint, len);
+    outputs[outputChannelNum]->totalBytesOut += len;
+    filter->_totalBytesOut += len;
 }
         
 

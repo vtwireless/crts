@@ -13,14 +13,16 @@
 
 
 
-// We need a larger ring buffer if we have any other threads accessing it.
-// We only need to know if there are any different threads not how many
-// threads there are, for they share the same ring buffer and just read
-// it in an asynchronous fashion.
+// We need a larger ring buffer if we have different threads accessing it
+// between adjacent filters.  We only need to count the given set of
+// outputs once if it has a different thread from the filter feeding it.
 //
-static bool RingBufferCheckThreads(const FilterModule *fm,
+static size_t RingBufferCountThreads(const FilterModule *fm,
         const RingBuffer *ringBuffer)
 {
+    bool gotOne = false;
+    size_t count = 0;
+
     for(uint32_t i=fm->numOutputs-1; i<(uint32_t)-1; --i)
     {
         Output *output = fm->outputs[i];
@@ -28,19 +30,22 @@ static bool RingBufferCheckThreads(const FilterModule *fm,
         DASSERT(output, "");
         DASSERT(fm != output->toFilterModule, "");
 
-        if(output->ringBuffer == ringBuffer && 
-                fm->thread != output->toFilterModule->thread)
-            return true;
+        if(output->ringBuffer == ringBuffer)
+        {
+            if(fm->thread != output->toFilterModule->thread)
+            {
+                // We only add one at a given filter (fm).
+                if(!gotOne)
+                {
+                    ++count;
+                    gotOne = true;
+                }
+            }
+            count += RingBufferCountThreads(fm->outputs[i]->toFilterModule,
+                    ringBuffer);
+        }
     }
-
-    for(uint32_t i=fm->numOutputs-1; i<(uint32_t)-1; --i)
-    {
-        if(RingBufferCheckThreads(fm->outputs[i]->toFilterModule,
-                    ringBuffer))
-            return true;
-    }
-
-    return false;
+    return count;
 }
 
 
@@ -61,8 +66,8 @@ static void GetRingBufferMaxLength(const FilterModule *fm,
         {
             if(output->maxLength > maxLength)
                 maxLength = output->maxLength;
-            if(output->input->maxLength > maxLength)
-                maxLength = output->input->maxLength;
+            if(output->input->maxUnreadLength > maxLength)
+                maxLength = output->input->maxUnreadLength;
         }
 
         GetRingBufferMaxLength(output->toFilterModule,
@@ -104,7 +109,7 @@ static void SetupRingBuffer(const FilterModule *fm,
 void FilterModule::initRingBuffer(RingBuffer *ringBuffer)
 {
     size_t maxLength = 1;
-    size_t threadFactor = 0;
+    size_t threadCount = RingBufferCountThreads(this, ringBuffer);
 
     DASSERT(ringBuffer, "");
     DASSERT(ringBuffer->start == 0, "");
@@ -117,21 +122,11 @@ void FilterModule::initRingBuffer(RingBuffer *ringBuffer)
 
     GetRingBufferMaxLength(this, ringBuffer, maxLength);
 
-    if(RingBufferCheckThreads(this, ringBuffer))
-    {
-        // TODO: What should this be?
-
-        threadFactor = 3;
-    }
-
     // If there are any different threads accessing the ring buffer we
     // must make it larger for queuing at the filters in the other
-    // threads, plus one in the running thread; giving a total factor of 2
-    // more than just the maxLength.  Only one filter/thread is writing
-    // and extending the available data in the buffer.  The reader filters
-    // do not extend the available data in the buffer.
+    // threads.
     //
-    ringBuffer->length = (threadFactor + 2) * maxLength;
+    ringBuffer->length = (threadCount * 3 + 2) * maxLength;
     ringBuffer->overhang = maxLength;
 
     ringBuffer->maxLength = maxLength;

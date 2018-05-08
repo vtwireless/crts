@@ -70,8 +70,7 @@ static inline void _crtsThrowUsage(const char *arg, const char *opt,
     if(arg)
         fprintf(stderr,
 "\n"
-"\n"
-"    Got exceptional CRTS plug-in module option: %s%s%s\n"
+"    Got exceptional CRTS plug-in module option: %s%s%s"
 "\n",
     arg?arg:"", opt?" ":"", opt?opt:"");
 
@@ -116,9 +115,16 @@ class CRTSModuleOptions
 
         CRTSModuleOptions(int argc_in, const char **argv_in,
                 void (*usage_in)(void) = _crtsDefaultUsage):
-            argc(argc_in), argv(argv_in), usage(usage_in),
-            parsedHelp(false)
-        { };
+            argc(argc_in), argv(argv_in), usage(usage_in)
+        {
+            // We start by checking for --help|-h
+            //
+            // argv is not necessarily Null terminated, so
+            // we use an "i" counter.
+            for(int i=0; i<argc; ++i)
+                if(!strcmp(argv[i], "-h") || !strcmp(argv[i], "--help"))
+                    _crtsThrowUsage(argv[i], 0, usage);
+        };
 
         virtual ~CRTSModuleOptions(void) { };
 
@@ -212,31 +218,20 @@ class CRTSModuleOptions
             DASSERT(optName && optName[0], "");
             DASSERT(usage, "");
 
-            int i;
             // argv is not necessarily Null terminated, so
             // we use an "i" counter.
-            for(i=0; i<argc; ++i)
-            {
-                if(!parsedHelp &&
-                        (!strcmp(argv[i], "-h") ||
-                        !strcmp(argv[i], "--help")))
-                    _crtsThrowUsage(argv[i], 0, usage);
-
+            for(int i=0; i<argc; ++i)
                 if(!strcmp(argv[i], optName) && i<argc+1)
                 {
                     opt = argv[i];
                     arg = argv[++i];
                     continue;
                 }
-            }
-            // We don't need to check for --help or -h again,
-            parsedHelp = true;
         }
 
         int argc;
         const char **argv;
         void (*usage)(void);
-        bool parsedHelp;
 };
 
 
