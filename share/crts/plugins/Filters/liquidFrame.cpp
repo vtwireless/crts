@@ -52,12 +52,12 @@ class LiquidFrame : public CRTSFilter
         unsigned char *subcarrierAlloc;
 
         size_t numPadComplexFloat;
+        size_t payloadLength;
+        size_t complexArrayLen; // number of complex elements per output()
 
         uint64_t frameCount;
         const float softGain;
-
-        size_t complexArrayLen; // number of complex elements per output()
-        bool padFrames;
+        const size_t outChunk;
 };
 
 
@@ -65,11 +65,12 @@ class LiquidFrame : public CRTSFilter
 LiquidFrame::LiquidFrame(int argc, const char **argv):
     fg(0),
     numSubcarriers(32), cp_len(16), taper_len(4), subcarrierAlloc(0),
-    numPadComplexFloat(4),
+    numPadComplexFloat(2), payloadLength(1024),
     frameCount(0), softGain(powf(10.0F, -12.0F/20.0F)),
-    padFrames(true)
+    outChunk(512)
 {
     CRTSModuleOptions opt(argc, argv, usage);
+
 
     DSPEW();
 }
@@ -101,28 +102,61 @@ bool LiquidFrame::start(uint32_t numInChannels, uint32_t numOutChannels)
     // TODO: check for error here:
     ofdmframe_init_default_sctype(numSubcarriers, subcarrierAlloc);
 
-    /////////////////////////////////////////////////////////////////
-    // TODO: maybe these values can be tuned for better performance.
-    /////////////////////////////////////////////////////////////////
-    complexArrayLen = numSubcarriers + cp_len + numPadComplexFloat;
+    // We wish to take an encode all the data that we receive in a given
+    // input call, but we can't know ahead of time how large the output
+    // will be, even when we know how large the input is.
+
+    // The size of one liquid DSP symbol that is outputted is:
+    // (numSubcarriers + cp_len) * sizeof(std::complex<float>)
+
+    // PACK_FACTOR is just a guess.  The average packing factor should be
+    // a little less, so that we send all the data in one output() for all
+    // input() calls.
+
+#define PACK_FACTOR  (5.0)
+
+    size_t numSymbols = (PACK_FACTOR * payloadLength) /
+        ((double) ((numSubcarriers + cp_len)*sizeof(std::complex<float>)))
+        + 1;
+
+    complexArrayLen = numSymbols * (numSubcarriers + cp_len) +
+        numPadComplexFloat;
+
+    DASSERT(complexArrayLen >= numPadComplexFloat, "");
+    DASSERT(complexArrayLen >= outChunk,
+            "complexArrayLen=%zu < %zu=outChunk",
+            complexArrayLen, outChunk);
+
+
     /////////////////////////////////////////////////////////////////
 
 
     ofdmflexframegenprops_s fgprops; // frame generator properties
     ofdmflexframegenprops_init_default(&fgprops);
     fgprops.check = LIQUID_CRC_32;
-    fgprops.fec0 = LIQUID_FEC_HAMMING128;
-    fgprops.fec1 = LIQUID_FEC_NONE;
-    fgprops.mod_scheme = LIQUID_MODEM_QAM4;
+    fgprops.fec1 = LIQUID_FEC_HAMMING128;
+    fgprops.fec0 = LIQUID_FEC_NONE;
+    fgprops.mod_scheme = LIQUID_MODEM_QPSK;
 
     fg = ofdmflexframegen_create(numSubcarriers, cp_len,
                 taper_len, subcarrierAlloc, &fgprops);
 
-    // We use the same ring buffer for all output channels
-    // however many there are.
+    // Setup the things associated with CRTS and this filter and
+    // how it gets data from the CRTS filter stream.
     //
     createOutputBuffer(complexArrayLen*sizeof(std::complex<float>),
             (uint32_t) 0);
+
+    // We make it so that unless the stream is shutting down there will be
+    // a fixed input() size in of payloadLength bytes.  But at shutdown
+    // there may be less input.
+    //
+    setInputThreshold(payloadLength, 0/*output channel*/);
+    setMaxUnreadLength(payloadLength, 0/*output channel*/);
+    setChokeLength(payloadLength, 0/*output channel*/);
+
+    DSPEW("per output numSymbols=%zu  complexArrayLen=%zu outChunk=%zu",
+            numSymbols, complexArrayLen, outChunk);
 
     return false; // success
 }
@@ -148,58 +182,114 @@ bool LiquidFrame::stop(uint32_t numInChannels, uint32_t numOutChannels)
 }
 
 
-
 void
-LiquidFrame::input(void *buffer, size_t len, uint32_t inputChannelNum)
+LiquidFrame::input(void *inBuffer, size_t inLen, uint32_t inputChannelNum)
 {
-    DASSERT(buffer, "");
-    DASSERT(len, "");
+    DASSERT(inBuffer, "");
+    DASSERT(inLen, "");
+
+#ifdef DEBUG
+    // If the CRTS code works as documented this is what should happen:
+    //
+    if(stream->isRunning)
+        // When it is running in a regular fashion this is
+        // what we requested in start().
+        DASSERT(inLen == payloadLength, "");
+    else
+        // In shutdown mode we could get less than the requested data and
+        // maybe even more than once, depending on how other filters feed
+        // this filter.
+        DASSERT(inLen <= payloadLength, "");
+#endif
 
     ++frameCount;
 
-#if 0
-    // outBuffer is a pointer to the Ring Buffer where we last
-    // wrote to:
+
+    // Get a pointer to memory in the ring buffer which we will
+    // write to using the liquid DSP API (Application Programming
+    // Interface).
     //
     std::complex<float> *outBuffer =
         (std::complex<float> *) getOutputBuffer(0);
 
-    // assemble frame using liquid-dsp
+
+    // Assemble frames using liquid-dsp.
     // Enter the raw data that we just read:
-    ofdmflexframegen_assemble( // in buffer with len in bytes.
+    ofdmflexframegen_assemble(
             fg, (unsigned char *) &frameCount,
-            (const unsigned char *) buffer, len);
+            (const unsigned char *) inBuffer, inLen);
 
     bool last_symbol = false;
+    size_t numComplexOut = 0;
 
-    size_t n = 0; // number of complex values in loop
-    while(n < complexArrayLen)
+    DASSERT(complexArrayLen >= numComplexOut + outChunk, "");
+
+    // In the below, we call output() as many times as we need to in order
+    // to frame all the input data and send it with output() and
+    // optionally we send some 0 padding after the framed data.
+
+    while(!last_symbol)
     {
-        // generate symbol
-        last_symbol = ofdmflexframegen_write(fg,
-                    &outBuffer[n], fgLen);
-        n += fgLen;
-        if(last_symbol) break;
+        if(complexArrayLen >= numComplexOut + outChunk)
+        {
+            // Generate symbols for output.  I do not know why, but it must
+            // be done in chunks and the chunk size seems arbitrary too.
+            // Ya WTF.
+            //
+            last_symbol = ofdmflexframegen_write(fg,
+                    &outBuffer[numComplexOut], outChunk);
+            numComplexOut += outChunk;
+        }
+        else
+        {
+            DASSERT(numComplexOut, "output Buffer is not large enough");
+
+            // Output what we have so far.  output() will do what it needs
+            // to call other filter input() functions.
+            //
+            output(numComplexOut*sizeof(std::complex<float>), 0);
+
+            // reset.
+            outBuffer = 0;
+            numComplexOut = 0;
+
+            if(!last_symbol || numPadComplexFloat)
+            {
+                // We have more to write out. So
+                //
+                // go to the next chunk in the ring buffer
+                outBuffer = (std::complex<float> *) getOutputBuffer(0);
+            }
+        }
     }
-    
-    // Now we have n complex values in outBuffer
 
-    // Apply the gain
-    for(size_t i=0; i<n; ++i)
-        outBuffer[i] *= softGain;
-
-    if(padFrames && last_symbol && n < complexArrayLen)
+    if(numPadComplexFloat)
     {
-        // We are able to fit the frame pad in with this output()
-        // call.
-        //
-        // TODO: Should this be zeros, or does it matter what it is.
-        memset(&outBuffer[n], 0, fgLen*sizeof(std::complex<float>));
-        n += fgLen;
+        // This block is to send the optional padding.
+
+        DASSERT(outBuffer, "");
+
+        if(complexArrayLen < numComplexOut + numPadComplexFloat)
+        {
+            // We cannot fix this padding in the current out buffer.
+            // So we'll flush it and send a new batch.
+            //
+            DASSERT(numComplexOut, "");
+                
+            // Output what we have so far.  output() will do what it
+            // needs to to call other filter input() functions.
+            //
+            output(numComplexOut*sizeof(std::complex<float>), 0);
+            numComplexOut = 0;
+        }
+
+        memset(&outBuffer[numComplexOut], 0,
+                numPadComplexFloat * sizeof(std::complex<float>));
+        numComplexOut += numPadComplexFloat;
     }
 
-    output(n*sizeof(std::complex<float>), ALL_CHANNELS);
-#endif
+    if(numComplexOut)
+        output(numComplexOut*sizeof(std::complex<float>), 0);
 }
 
 
