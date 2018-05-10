@@ -109,9 +109,6 @@ bool LiquidFrame::start(uint32_t numInChannels, uint32_t numOutChannels)
     // The size of one liquid DSP symbol that is outputted is:
     // (numSubcarriers + cp_len) * sizeof(std::complex<float>)
 
-    // PACK_FACTOR is just a guess.  The average packing factor should be
-    // a little less, so that we send all the data in one output() for all
-    // input() calls.
 
 #define PACK_FACTOR  (5.0)
 

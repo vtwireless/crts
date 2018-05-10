@@ -28,12 +28,14 @@ class LiquidSync : public CRTSFilter
         unsigned char *subcarrierAlloc;
         ofdmflexframesync fs;
 
-        const size_t outBufferLen;
 
     public:
 
+        // We need to access these in frameSyncCallback()
+        //
         unsigned char *outputBuffer;
- 
+        const size_t outBufferLen;
+        
         // bytes out at each write().
         size_t len_out;
 };
@@ -58,7 +60,7 @@ frameSyncCallback(unsigned char *header, int header_valid,
     if(header_valid)
     {
         // TODO: remove this print and add an error checker!!!!!!!!
-        DSPEW("recieved header sequence=%" PRIu64 , *((uint64_t *) header));
+        //DSPEW("recieved header sequence=%" PRIu64 " %zu bytes" , *((uint64_t *) header), payload_len);
 
         DASSERT(payload_len > 0, "");
 
@@ -71,8 +73,12 @@ frameSyncCallback(unsigned char *header, int header_valid,
         // TODO: This is bad coding practice. See comment above.
         memcpy(liquidSync->outputBuffer, payload, payload_len);
 
+        // Go to forward in the output buffer.
         liquidSync->outputBuffer += payload_len;
         liquidSync->len_out += payload_len;
+
+        // Do not overrun the output buffer.
+        ASSERT(liquidSync->len_out <= liquidSync->outBufferLen, "");
     }
 
     return 0;
@@ -84,8 +90,6 @@ void LiquidSync::input(void *buffer, size_t len, uint32_t channelNum)
     DASSERT(buffer, "");
     DASSERT(len, "");
 
-    DSPEW();
-
     len_out = 0;
 
     outputBuffer = (unsigned char *) getOutputBuffer(0);
@@ -96,12 +100,13 @@ void LiquidSync::input(void *buffer, size_t len, uint32_t channelNum)
     // we are screwed.
     //
     advanceInput(len - len % sizeof(std::complex<float>));
-    DSPEW();
 
 
     ofdmflexframesync_execute(fs, (std::complex<float> *) buffer,
-            len/sizeof(std::complex<float>));\
-    DSPEW();
+            len/sizeof(std::complex<float>));
+
+
+    if(len_out == 0) return; // nothing to output.
 
 
     // TODO: figure out this length.  Not just guessing.
@@ -114,8 +119,8 @@ void LiquidSync::input(void *buffer, size_t len, uint32_t channelNum)
 
 LiquidSync::LiquidSync(int argc, const char **argv):
     numSubcarriers(32), cp_len(16), taper_len(4),
-    subcarrierAlloc(0), fs(0), outBufferLen(1024),
-    outputBuffer(0), len_out(0)
+    subcarrierAlloc(0), fs(0),
+    outputBuffer(0), outBufferLen(1024), len_out(0)
 {
     subcarrierAlloc = (unsigned char *) malloc(numSubcarriers);
     if(!subcarrierAlloc) throw "malloc() failed";
@@ -132,7 +137,7 @@ LiquidSync::LiquidSync(int argc, const char **argv):
 
 bool LiquidSync::start(uint32_t numInChannels, uint32_t numOutChannels)
 {
-    if(numInChannels < 1)
+    if(numInChannels != 1)
     {
         WARN("Should have 1 input channel got %" PRIu32, numInChannels);
         return true; // fail

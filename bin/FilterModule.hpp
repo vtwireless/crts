@@ -371,6 +371,8 @@ class FilterModule
                 uint32_t outputChannelNum, Output * &ownerOutput,
                 bool isPassThrough = false);
 
+        void AdvanceWriteBuffer(size_t len, Output *o, CRTSFilter *f);
+
         inline void advanceWriteBuffer(size_t len, uint32_t outputChannelNum);
 
 
@@ -378,31 +380,31 @@ class FilterModule
 };
 
 
+inline void FilterModule::AdvanceWriteBuffer(size_t len, Output *o, CRTSFilter *f)
+{
+    if(o->ringBuffer->ownerOutput == o && o->isPassThrough == false)
+        o->ringBuffer->advancePointer(o->ringBuffer->writePoint, len);
+
+    // For this output channel
+    o->totalBytesOut += len;
+
+    // For all output channels in the filter
+    f->_totalBytesOut += len;
+}
+
+
 inline void
 FilterModule::advanceWriteBuffer(size_t len, uint32_t outputChannelNum)
 {
-    if(outputChannelNum == CRTSFilter::ALL_CHANNELS)
+    if(outputChannelNum != CRTSFilter::ALL_CHANNELS)
+        AdvanceWriteBuffer(len, outputs[outputChannelNum], filter);
+    else
     {
+        // outputChannelNum == CRTSFilter::ALL_CHANNELS
+        //
         for(uint32_t i=0; i<numOutputs; ++i)
-        {
-            if(outputs[i]->ringBuffer->ownerOutput == outputs[i]
-                    && outputs[i]->isPassThrough == false)
-                outputs[i]->ringBuffer->advancePointer(
-                        outputs[i]->ringBuffer->writePoint, len);
-            outputs[i]->totalBytesOut += len;
-            filter->_totalBytesOut += len;
-
-        }
-        return;
+            AdvanceWriteBuffer(len, outputs[i], filter);
     }
-
-    if(outputs[outputChannelNum]->ringBuffer->ownerOutput ==
-            outputs[outputChannelNum]
-            && outputs[outputChannelNum]->isPassThrough == false)
-        outputs[outputChannelNum]->ringBuffer->advancePointer(
-                outputs[outputChannelNum]->ringBuffer->writePoint, len);
-    outputs[outputChannelNum]->totalBytesOut += len;
-    filter->_totalBytesOut += len;
 }
         
 
@@ -430,7 +432,6 @@ inline void Output::writePush(size_t len, FilterModule *filterModule)
     DASSERT(toFilterModule != filterModule, "");
     DASSERT(ringBuffer, "");
     DASSERT(filterModule->currentInput, "");
-    DASSERT(input, "");
 
 
     // If len == 0 we still need to call this for triggering filters.
@@ -442,7 +443,4 @@ inline void Output::writePush(size_t len, FilterModule *filterModule)
     toFilterModule->write(len, this,
             /*is different thread*/
             filterModule->thread != toFilterModule->thread);
-
-    // TODO: FIX THIS DAM THING:
-    //filterModule->filter->_totalBytesOut += len;
 }

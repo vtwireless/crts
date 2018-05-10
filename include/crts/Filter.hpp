@@ -141,76 +141,104 @@ class CRTSFilter
 {
     public:
 
-        static const uint32_t ALL_CHANNELS, NULL_CHANNEL;
+        static const uint32_t 
+            
+        /** A channel number used to refer to all channels by they input
+         * or output.
+         *
+         * It may be used as the channel parameter to the functions:
+         * input(), output(), createOutputBuffer(),
+         * createPassThroughBuffer(), setInputThreshold(),
+         * setMaxUnreadLength(), setChokeLength(), getOutputBuffer(),
+         * totalBytesIn(), and totalBytesOut().
+         */
+            ALL_CHANNELS,
+                     
+         /** A special channel number used to refer to no channel at all.
+          *
+          * The value of \c NULL_CHANNEL is not 0, since 0 is a valid
+          * channel number.
+          */
+            NULL_CHANNEL;
 
-        // Function to write data (input) to this filter.
-        //
-        // This stream gets data when this is called by the "writer" and
-        // in response may call this may call the reader->input().  This
-        // is how data flows in this group of connected Filter objects.
-        //
-        // input() must call reader->input() when it wishes to push data
-        // along the "stream" because the particular instance is the only
-        // thing that knows what data is available to be pushed along.  A
-        // CRTSFilter is a software filter with it's own ideas of what it
-        // is doing.
-        //
-        // If this is a source (writer length=0, below) this input() will
-        // be called with no buffer.
-        //
-        // In a sense this input() executes the stream.
-        //
-        // Clearly the writer (caller of this) dictates the buffer size.
-        //
-        // channelNum is set to non-zero values in order to merge filter
-        // streams.  Most CRTSFilters will not care about channelNum.
-        //
-        // 0 <= channelNum < N   It's up to the CRTSFilter to decide what
-        // to do with channelNum.  A CRTSFilter code that looks at
-        // channelNum may be a stream merging filter, or a general stream
-        // switching filter.
+        /** The function for receiving input into your filter.
+         *
+         * The CRTSFilter super class (filter) must provide this function
+         * to receive input.  This function will be called by the running
+         * crts_radio program as input data becomes available from the
+         * calling of output() in the filters that connect to this
+         * filter.
+         *
+         * When this input() function is called the stream may be running
+         * in one of two modes:
+         *
+         *      1. Normal running when stream->isRunning is true.
+         *
+         *      2. Shutdown mode when stream->isRunning is false.  In
+         *      shutdown mode all the source filters will no longer get
+         *      their input() functions called and all the other
+         *      non-source filters will get their input() called until all
+         *      the flowing data runs out.  There may be one of more
+         *      filter input() calls with the amount of input data that is
+         *      less than the requested threshold amount.
+         *
+         * \param buffer is a pointer to the start of the input data or 0
+         * if \c len is 0.
+         *
+         * \param bufferLen is the number of bytes available to access in
+         * \c buffer.
+         *
+         * \param inputChannelNum is the designated input channel number
+         * for the the given input.  This channel number is valid for this
+         * receiving filter.  Both input and output channel numbers start
+         * at 0 and increase by one based on the order of when they are
+         * connected (kind of like file descriptors).  There are never
+         * gaps in the channel number sequences.
+         */
         virtual
         void input(
                 void *buffer,
                 size_t bufferLen,
-                uint32_t inputChannelNum=0) = 0;
+                uint32_t inputChannelNum) = 0;
 
         /** This is called before the flow starts, or restarts.  The flow
-          will stop and restart any time the stream topology changes.
-          The stream filter topology should be considered fixed until
-          stop() is called.
-
-          The CRTSFilter writer may override this to take actions that
-          dependent on what input channels and output channels are
-          present, like how buffers are shared between input channels
-          and output channels.
-
-          The flow graph structure is not known when the CRTSFilter Super
-          class constructor is called, so we must have this start
-          interface to be called when that structure is known.
-
-          This may be used to start a piece of physical hardware.
-
-          Return true for failure.
+         * will stop and restart any time the stream topology changes.
+         * The stream filter topology should be considered fixed until
+         * stop() is called.
+         *
+         * The CRTSFilter writer may override this to take actions that
+         * dependent on what input channels and output channels are
+         * present, like how buffers are shared between input channels
+         * and output channels.
+         *
+         * The flow graph structure is not known when the CRTSFilter Super
+         * class constructor is called, so we must have this start
+         * interface to be called when that structure is known.
+         *
+         * This may be used to start a piece of physical hardware.
+         *
+         * \param 
+         *
+         * \return true for failure.
          */
         virtual bool start(uint32_t numInputChannels,
                 uint32_t numOutputChannels) = 0;
 
         /** This is called after the flow stops and the stream topology has
-          not changed yet.  This may be due to the program heading toward
-          exiting, or it may be due to a restart, in which case start()
-          will be called later.
-
-          The engineer on the star ship Enterprise may write this to
-          shutdown the reactor core so the channels connections can be
-          changed without having to handle live reactor conduits
-          (channels).
-
-          This may or may not be needed for all CRTSFilter modules.  It's
-          so the Filter may stop a piece of physical hardware for a
-          restart or shutdown like events.
-
-          Return true for failure.
+         * not changed yet.  This may be due to the program heading toward
+         * exiting, or it may be due to a restart, in which case start()
+         * will be called later.
+         *
+         * The engineer on the star ship Enterprise may write this to
+         * shutdown the reactor core so the channels connections can be
+         * changed without having to handle live reactor conduits
+         * (channels).
+         *
+         * This may or may not be needed for all CRTSFilter modules.  It's
+         * so the Filter may stop a piece of physical hardware for a
+         * restart or shutdown like events.
+         *
+         * \return true for failure.
          */
         virtual bool stop(uint32_t numInputChannels,
                 uint32_t numOutputChannels) = 0;
@@ -250,7 +278,12 @@ class CRTSFilter
         // **************************************************************
 
 
-        /** Lets a CRTSFilter know if it is the source in a stream graph
+        /** Lets a CRTSFilter know if it is the source in a stream graph.
+         * 
+         * A source filter will continuously have its' input() called
+         * with zero bytes of input until stream->isRunning is not true.
+         *
+         * \return true if the filter is a source or false otherwise
          */
         bool isSource(void);
 
@@ -280,6 +313,7 @@ class CRTSFilter
         void createOutputBuffer(size_t maxLength,
                 uint32_t outputChannelNum = ALL_CHANNELS);
 
+
         /** Create a buffer that will have data with origin from this
          * CRTSFilter.  This creates one buffer that may have more than
          * one output channel.  The buffer will be shared between the
@@ -290,20 +324,22 @@ class CRTSFilter
          *
          * \param maxLength is the largest amount of data that will be
          * written to this buffer.  This filter must not output() more
-         * than \c maxLength bytes for the listed output channels.
+         * than \c maxLength bytes for the listed output channels, in a
+         * single input() call; otherwise the ring buffer may be
+         * overrun.
          *
          * \param outputChannelNums a \c NULL_CHANNEL terminated array of
          * channels. For example:
          * \code
-         * uint32_t outputChannels[] = { 0, 2, 3, NULL_CHANNEL };
+         * uint32_t outputChannelsNums[] = { 0, 2, 3, NULL_CHANNEL };
          * \endcode
          */
         void createOutputBuffer(size_t maxLength,
                 const uint32_t *outputChannelNums);
 
 
-        /** Instead of allocating a buffer, we reuse the buffer from
-         * the channel associated with \c inputChannelNum to the
+        /** Instead of allocating a ring buffer, we reuse the ring buffer
+         * from the channel associated with \c inputChannelNum to the
          * output channel with channel number \c outputChannelNum.
          *
          * This function should only be called in the filters' start()
@@ -345,8 +381,7 @@ class CRTSFilter
 
         /** Set the minimum length, in bytes, that this CRTSFilter must
          * accumulate before input() can and will be called, for the given
-         * channel.  This can not be called when the stream is running,
-         * that is outside the start() function.
+         * channel.  This can only be called in the start() function.
          *
          * \param len the threshold length in bytes.
          *
@@ -377,6 +412,7 @@ class CRTSFilter
         void setMaxUnreadLength(size_t len,
                 uint32_t inputChannelNum = ALL_CHANNELS);
 
+
         /** Set the maximum length, in bytes, which this
          * filter will accept in its' input() call on the given channel.
          *
@@ -391,6 +427,7 @@ class CRTSFilter
          */
         void setChokeLength(size_t len,
                 uint32_t inputChannelNum = ALL_CHANNELS);
+
 
         /** Write output to a given output channel. 
          *
