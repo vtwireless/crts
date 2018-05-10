@@ -151,7 +151,9 @@ bool Tx::start(uint32_t numInChannels, uint32_t numOutChannels)
 
     if(usrp == 0)
     {
-        // TODO: try catch etc.
+        // TODO: try catch etc.  The crts_radio code will catch any thrown
+        // exceptions, but will not know what to do but fail which I
+        // guess is fine.
         //
         usrp = uhd::usrp::multi_usrp::make(uhd_args);
 

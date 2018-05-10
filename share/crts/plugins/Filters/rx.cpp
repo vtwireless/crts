@@ -153,7 +153,7 @@ bool Rx::start(uint32_t numInChannels, uint32_t numOutChannels)
 
     if(numOutChannels < 1)
     {
-        WARN("Should have 1 or more output channels got %" PRIu32,
+        WARN("Should have 1 or more output channels, got %" PRIu32,
             numOutChannels);
         return true; // fail
     }
@@ -162,15 +162,20 @@ bool Rx::start(uint32_t numInChannels, uint32_t numOutChannels)
     {
         // TODO: try catch ??
         //
-        usrp = uhd::usrp::multi_usrp::make(uhd_args);
+        // TODO: Maybe we could just make the usrp in the constructor.
+        //
+        if(usrp == 0)
+            usrp = uhd::usrp::multi_usrp::make(uhd_args);
 
         if(crts_usrp_rx_set(usrp, freq, rate, gain))
         {
             stop(0,0);
             return true; // fail
         }
+    }
 
-
+    if(rx_stream == 0)
+    {
         uhd::stream_args_t stream_args("fc32"); //complex floats
         //std::vector<size_t> channels = { 0 };
         //stream_args.channels = channels;
@@ -189,7 +194,7 @@ bool Rx::start(uint32_t numInChannels, uint32_t numOutChannels)
     // We use the same ring buffer for all output channels
     //
     createOutputBuffer(max_num_samps *
-            numRxChannels * sizeof(std::complex<float>));
+            numRxChannels * sizeof(std::complex<float>), ALL_CHANNELS);
 
     DSPEW("usrp->get_pp_string()=\n%s",
             usrp->get_pp_string().c_str());
@@ -207,9 +212,13 @@ bool Rx::start(uint32_t numInChannels, uint32_t numOutChannels)
 //
 bool Rx::stop(uint32_t numInChannels, uint32_t numOutChannels)
 {
+    if(usrp == 0)
+    {
+        WARN("usrp == 0");
+    }
+        
     if(rx_stream)
     {
-
         uhd::stream_cmd_t stream_cmd(
                 uhd::stream_cmd_t::STREAM_MODE_STOP_CONTINUOUS);
         // Tell all the channels to stop
