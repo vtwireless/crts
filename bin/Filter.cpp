@@ -532,7 +532,7 @@ void FilterModule::InputOutputReport(FILE *file)
 "=======================================================================\n"
 "                         Filter \"%s\"\n"
 "\n"
-"    All Channels:  Input %" PRIu64 " bytes  Output: %" PRIu64 " bytes\n"
+"    All Channels:  Input: %" PRIu64 " bytes  Output: %" PRIu64 " bytes\n"
 "   -----------------------------------------------------------------\n",
         name.c_str(), filter->totalBytesIn(), filter->totalBytesOut());
 
