@@ -183,7 +183,7 @@ bool Rx::start(uint32_t numInChannels, uint32_t numOutChannels)
     }
 
     uhd::stream_cmd_t stream_cmd(
-            uhd::stream_cmd_t::STREAM_MODE_START_CONTINUOUS );
+            uhd::stream_cmd_t::STREAM_MODE_START_CONTINUOUS);
     //stream_cmd.stream_now = false;
     //stream_cmd.time_spec = uhd::time_spec_t(seconds_in_future);
     // tell all channels to stream
