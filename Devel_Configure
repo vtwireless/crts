@@ -55,6 +55,8 @@ DOC := doc
 #
 UHD_TAG=v3.12.0.0-rc1
 GNURADIO_TAG=v3.7.12.0
+# volk is a git submodule that is needed by GNUradio
+VOLK_TAG=v1.4
 
 
 UHD_PREFIX=$root/uhd_\$(UHD_TAG)
