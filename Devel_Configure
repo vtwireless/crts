@@ -27,28 +27,7 @@
 # generated files that depend on these make configuration variables.
 
 
-if [ "$(whoami)" = lance ] ; then
-    root=/usr/local/encap
-else
-    root=${HOME}/installed
-fi
-
-# Where and what version of UHD and GUNradio to install
-
-# These git TAGS are optional:
-# If not set then the tags will be gotten from those set
-# in uhd/ and gnuradio/
-#
-UHD_TAG=v3.12.0.0-rc1
-GNURADIO_TAG=v3.7.12.0
-
-
-UHD_PREFIX=$root/uhd_$(UHD_TAG)
-GNURADIO_PREFIX=$root/gnuradio_$(GNURADIO_TAG)
-
-
-# CRTS prefix
-PREFIX=$root/crts
+root=/usr/local/encap
 
 
 set -e
@@ -66,6 +45,25 @@ cat > config.make << EOF
 
 # comment out to exclude building documentation
 DOC := doc
+
+
+# Where and what version of UHD and GUNradio to install
+
+# These git TAGS are optional:
+# If not set then the tags will be gotten from those set
+# in uhd/ and gnuradio/
+#
+UHD_TAG=v3.12.0.0-rc1
+GNURADIO_TAG=v3.7.12.0
+
+
+UHD_PREFIX=$root/uhd_\$(UHD_TAG)
+GNURADIO_PREFIX=$root/gnuradio_\$(GNURADIO_TAG)
+
+
+# CRTS prefix
+PREFIX=$root/crts
+
 
 # compiler options
 CFLAGS := -g -Wall -Werror
@@ -88,12 +86,6 @@ DEBUG := \#define DEBUG
 #SPEW_LEVEL := \#define SPEW_LEVEL_INFO
 SPEW_LEVEL  := \#define SPEW_LEVEL_DEBUG
 
-# CRTS installation prefix directory:
-PREFIX := ${PREFIX}
-
-
-UHD_PREFIX := ${UHD_PREFIX}
-GNURADIO_PREFIX := ${GNURADIO_PREFIX}
 
 EOF
 
