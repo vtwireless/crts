@@ -163,7 +163,7 @@ bool Tx::start(uint32_t numInChannels, uint32_t numOutChannels)
             return true; // fail
         }
 
-        uhd::stream_args_t stream_args("fc64", "sc16");
+        uhd::stream_args_t stream_args("fc32", "sc16");
         tx_stream = usrp->get_tx_stream(stream_args);
     }
 

@@ -57,7 +57,7 @@ frameSyncCallback(unsigned char *header, int header_valid,
     DSPEW("payload_valid=%d  header[0]=%d  len=%u", payload_valid,
             header[0], payload_len);
 #endif
-    if(header_valid)
+    if(payload_valid)
     {
         // TODO: remove this print and add an error checker!!!!!!!!
         //DSPEW("recieved header sequence=%" PRIu64 " %zu bytes" , *((uint64_t *) header), payload_len);
@@ -120,7 +120,7 @@ void LiquidSync::input(void *buffer, size_t len, uint32_t channelNum)
 LiquidSync::LiquidSync(int argc, const char **argv):
     numSubcarriers(32), cp_len(16), taper_len(4),
     subcarrierAlloc(0), fs(0),
-    outputBuffer(0), outBufferLen(1024), len_out(0)
+    outputBuffer(0), outBufferLen(2*1024), len_out(0)
 {
     subcarrierAlloc = (unsigned char *) malloc(numSubcarriers);
     if(!subcarrierAlloc) throw "malloc() failed";

@@ -9,7 +9,7 @@ topdir=$PWD
 
 rm -rf src
 
-sha512sum -c uhd.tar.gz.sha512sum
+#sha512sum -c uhd.tar.gz.sha512sum
 
 tar -xzmf uhd.tar.gz
 

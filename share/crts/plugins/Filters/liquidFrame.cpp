@@ -13,7 +13,7 @@
 
 // In this case gain is 10
 //
-#define SOFT_GAIN_FACTOR  (powf(10.0F, -6.0F/20.0F)) //powf(10.0F, -12.0F/20.0F))
+#define SOFT_GAIN_FACTOR  (powf(10.0F, -12.0F/20.0F))
 
 
 
@@ -73,7 +73,7 @@ class LiquidFrame : public CRTSFilter
 LiquidFrame::LiquidFrame(int argc, const char **argv):
     fg(0),
     numSubcarriers(32), cp_len(16), taper_len(4), subcarrierAlloc(0),
-    numPadComplexFloat(2), payloadLength(1024),
+    numPadComplexFloat(0), payloadLength(1024),
     frameCount(0), softGain(SOFT_GAIN_FACTOR),
     outChunk(512)
 {
@@ -141,7 +141,7 @@ bool LiquidFrame::start(uint32_t numInChannels, uint32_t numOutChannels)
     fgprops.check = LIQUID_CRC_32;
     fgprops.fec1 = LIQUID_FEC_HAMMING128;
     fgprops.fec0 = LIQUID_FEC_NONE;
-    fgprops.mod_scheme = LIQUID_MODEM_QPSK;
+    fgprops.mod_scheme = LIQUID_MODEM_QAM4;
 
     fg = ofdmflexframegen_create(numSubcarriers, cp_len,
                 taper_len, subcarrierAlloc, &fgprops);
@@ -186,15 +186,13 @@ bool LiquidFrame::stop(uint32_t numInChannels, uint32_t numOutChannels)
     return false; // success
 }
 
+
 void LiquidFrame::_output(size_t numComplex, std::complex<float> *x)
 {
-#if 1
+    DASSERT(numComplex, "");
+
     for(size_t i=0; i<numComplex; ++i)
         x[i] *= softGain;
-#endif
-
-
-    DASSERT(numComplex, "");
 
     output(numComplex*sizeof(std::complex<float>), 0);
 }
