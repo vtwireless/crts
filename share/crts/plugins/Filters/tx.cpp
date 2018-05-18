@@ -182,7 +182,7 @@ bool Tx::stop(uint32_t numInChannels, uint32_t numOutChannels)
 {
     if(usrp)
     {
-        // WTF ??
+        // TODO: WTF ??
         //delete usrp;
         usrp = 0;
         tx_stream = 0;
@@ -212,7 +212,7 @@ void Tx::input(void *buffer, size_t len, uint32_t channelNum)
     }
 
     // Mark the number of bytes to advance the input buffer which is not
-    // necessarily the same as what was inputted.
+    // necessarily the same as "len" that was inputted.
     //
     advanceInput(len);
 

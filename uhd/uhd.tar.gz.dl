@@ -4,14 +4,19 @@
 # configure here
 
 # The git repository tag
-uhd_tag=v3.11.0.1
+uhd_tag=${UHD_TAG:-v3.11.0.1}
+
 
 # The shm512sum is optional.  Get its value by running:
 #    shm512sum uhd.tar.gz
 
-shm512sum=cd54135ea2edc1dc25ad7d4998793c9c0990020aa\
+if [ -z "$UHD_TAG" ] ; then
+    shm512sum=cd54135ea2edc1dc25ad7d4998793c9c0990020aa\
 fd367f9c0cd9b3d2f06b90e9cb7f909ce08c3ea701ceb58bf4a\
 617695b03a55f142e46d3a2e438f583fdfe4
+else
+    shm512sum=
+fi
 ##############################################################
 
 

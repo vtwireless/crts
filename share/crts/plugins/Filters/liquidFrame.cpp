@@ -11,6 +11,12 @@
 
 #define URL "http://liquidsdr.org/doc/ofdmflexframe/"
 
+// In this case gain is 10
+//
+#define SOFT_GAIN_FACTOR  (powf(10.0F, -6.0F/20.0F)) //powf(10.0F, -12.0F/20.0F))
+
+
+
 static void usage(void)
 {
     char nameBuf[64], *name;
@@ -58,6 +64,8 @@ class LiquidFrame : public CRTSFilter
         uint64_t frameCount;
         const float softGain;
         const size_t outChunk;
+
+        void _output(size_t numComplex, std::complex<float> *x);
 };
 
 
@@ -66,7 +74,7 @@ LiquidFrame::LiquidFrame(int argc, const char **argv):
     fg(0),
     numSubcarriers(32), cp_len(16), taper_len(4), subcarrierAlloc(0),
     numPadComplexFloat(2), payloadLength(1024),
-    frameCount(0), softGain(powf(10.0F, -12.0F/20.0F)),
+    frameCount(0), softGain(SOFT_GAIN_FACTOR),
     outChunk(512)
 {
     CRTSModuleOptions opt(argc, argv, usage);
@@ -178,6 +186,19 @@ bool LiquidFrame::stop(uint32_t numInChannels, uint32_t numOutChannels)
     return false; // success
 }
 
+void LiquidFrame::_output(size_t numComplex, std::complex<float> *x)
+{
+#if 1
+    for(size_t i=0; i<numComplex; ++i)
+        x[i] *= softGain;
+#endif
+
+
+    DASSERT(numComplex, "");
+
+    output(numComplex*sizeof(std::complex<float>), 0);
+}
+
 
 void
 LiquidFrame::input(void *inBuffer, size_t inLen, uint32_t inputChannelNum)
@@ -244,7 +265,7 @@ LiquidFrame::input(void *inBuffer, size_t inLen, uint32_t inputChannelNum)
             // Output what we have so far.  output() will do what it needs
             // to call other filter input() functions.
             //
-            output(numComplexOut*sizeof(std::complex<float>), 0);
+            _output(numComplexOut, outBuffer);
 
             // reset.
             outBuffer = 0;
@@ -276,7 +297,7 @@ LiquidFrame::input(void *inBuffer, size_t inLen, uint32_t inputChannelNum)
             // Output what we have so far.  output() will do what it
             // needs to to call other filter input() functions.
             //
-            output(numComplexOut*sizeof(std::complex<float>), 0);
+            _output(numComplexOut, outBuffer);
             numComplexOut = 0;
         }
 
@@ -286,7 +307,7 @@ LiquidFrame::input(void *inBuffer, size_t inLen, uint32_t inputChannelNum)
     }
 
     if(numComplexOut)
-        output(numComplexOut*sizeof(std::complex<float>), 0);
+        _output(numComplexOut, outBuffer);
 }
 
 

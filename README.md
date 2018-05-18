@@ -214,6 +214,11 @@ FPGA image: /usr/local/encap/uhd/share/uhd/images/usrp_n210_r4_fpga.bin
 -- Verifying FPGA image...successful.
 ```
 
+For the X310
+
+/usr/local/encap/uhd/lib/uhd/utils/uhd_images_downloader.py
+
+/usr/local/encap/uhd/bin/uhd_image_loader" --args="type=x300,addr=192.168.12.2
 
 
 ## Tests

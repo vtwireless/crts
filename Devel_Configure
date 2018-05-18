@@ -33,9 +33,19 @@ else
     root=${HOME}/installed
 fi
 
-# Where to install UHD and GUNradio
-UHD_PREFIX=$root/uhd
-GNURADIO_PREFIX=$root/gnuradio
+# Where and what version of UHD and GUNradio to install
+
+# These git TAGS are optional:
+# If not set then the tags will be gotten from those set
+# in uhd/ and gnuradio/
+#
+UHD_TAG=v3.12.0.0-rc1
+GNURADIO_TAG=v3.7.12.0
+
+
+UHD_PREFIX=$root/uhd_$(UHD_TAG)
+GNURADIO_PREFIX=$root/gnuradio_$(GNURADIO_TAG)
+
 
 # CRTS prefix
 PREFIX=$root/crts
