@@ -7,21 +7,31 @@
 uhd_tag=${UHD_TAG:-v3.11.0.1}
 
 
-# The shm512sum is optional.  Get its value by running:
-#    shm512sum uhd.tar.gz
+# The sha512sum is optional.  Get its value by running:
+#    sha512sum uhd.tar.gz
 
-if [ "$UHD_TAG" = "v3.11.0.1" ] ; then
-    shm512sum=cd54135ea2edc1dc25ad7d4998793c9c0990020aa\
+sha512sum=
+
+case "$uhd_tag" in
+
+    "v3.11.0.1")
+        sha512sum=cd54135ea2edc1dc25ad7d4998793c9c0990020aa\
 fd367f9c0cd9b3d2f06b90e9cb7f909ce08c3ea701ceb58bf4a\
 617695b03a55f142e46d3a2e438f583fdfe4
-else
-    shm512sum=
-fi
+        ;;
+    "v3.12.0.0-rc1")
+        sha512sum=1ef331a7f19d05bf60824f06dac5f62a7a393c\
+aa96cd9dd39c4209e64ea382b85d0960881009269a91c296876be4fc5\
+4c880be3646f7b4eb7fd6171c0948c273
+        ;;
+esac
+
+
 ##############################################################
 
 
 source ../GetSrcFromGithub.bash
 
-#Usage: GetSrcFromGithub user package tag tarname [sha512]
+#Usage: GetSrcFromGithub user package tag tarname [sha512sum]
 
-GetSrcFromGithub EttusResearch uhd $uhd_tag uhd $shm512sum
+GetSrcFromGithub EttusResearch uhd $uhd_tag uhd $sha512sum

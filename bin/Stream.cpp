@@ -213,6 +213,94 @@ Stream::Stream(void):
 }
 
 
+// This returns when all the threads in this stream are in the
+// pthread_cond_wait() call in filterThreadWrite() in Thread.cpp.
+// So we can know that the main thread is the only "running"
+// thread when this returns.
+//
+void Stream::waitForCondWaitThreads(void)
+{
+    // We must have some threads in this stream.
+    DASSERT(threads.begin() != threads.end(), "");
+
+    bool threadNotWaiting = true;
+    int loopCount = 0;
+
+    while(threadNotWaiting)
+    {
+        threadNotWaiting = false;
+
+        // TODO: In general it is usually found that using sleep is the
+        // sign of a design flaw.
+
+        // Search all Threads in the stream.
+        //
+        // 1. First get a lock of all the threads, crazy but we must,
+        // otherwise we would could have one changing the waiting flag
+        // while looking at another thread waiting flag.
+        for(auto tt = threads.begin(); tt != threads.end(); ++tt)
+            MUTEX_LOCK(&(*tt)->mutex);
+
+        // 2. Second check if threads are not waiting or have a request.
+        for(auto tt = threads.begin(); tt != threads.end(); ++tt)
+            if(!(*tt)->threadWaiting
+                    ||
+                    (*tt)->filterModule/*= have a request*/)
+            {
+                // This thread (*tt) is not calling pthread_cond_wait() at
+                // this time.  So we'll signal it depending on how long
+                // we've been waiting so far.
+                //
+                if(loopCount > 1)
+                {
+                    // This is in case the thread is stuck in to something
+                    // like a blocking read(2) call; otherwise this could
+                    // wait forever.
+                    //
+                    // If this call fails there not much we can do about
+                    // it, and it's not a big deal.
+                    DSPEW("signaling thread %" PRIu32 " with signal %d",
+                            (*tt)->threadNum, THREAD_EXIT_SIG);
+                    pthread_kill((*tt)->thread, THREAD_EXIT_SIG);
+                }
+
+                threadNotWaiting = true;
+            }
+
+        // If we made it through the above block than all threads are
+        // waiting in pthread_cond_wait() and none of them have a
+        // request queued.
+
+        // 3. Third unlock all the thread mutexes.
+        for(auto tt = threads.begin(); tt != threads.end(); ++tt)
+            MUTEX_UNLOCK(&(*tt)->mutex);
+
+
+        if(!threadNotWaiting) break;
+
+        // We thought this sleeping when in this transit flush mode
+        // was better than adding another stupid flag that all the
+        // threads would have to look at in every loop when in a
+        // non-transit state.  This keeps the worker thread loops
+        // simpler.
+        struct timespec t { 0/* seconds */, 4000000 /*nano seconds*/};
+        // If nanosleep fails it does not matter there's nothing we 
+        // could do about it anyway.  A signal could make it fail.
+        //
+        //DSPEW("Waiting nanosleep() for cleanup");
+        nanosleep(&t, 0);
+
+        ++loopCount;
+    }
+
+    // All threads are calling pthread_cond_wait() in filterThreadWrite()
+    // no other thread is coded to signal and wake them, so we can assume
+    // that they are all under this main threads control now.
+
+    DSPEW();
+}
+
+
 Stream::~Stream(void)
 {
     DSPEW("cleaning up stream with %" PRIu32 " filters with %zu threads",
@@ -237,100 +325,8 @@ Stream::~Stream(void)
     // pthread_cond_wait() calls in the filterThreadWrite() call.
     //
 
-    bool haveRunningThreads =
-        (threads.begin() != threads.end() && (*(threads.begin()))->barrier);
-
-    int loopCount = 0;
-
-    while(haveRunningThreads)
-    {
-        bool threadNotWaiting = false;
-
-        // TODO: In general it is usually found that using sleep is the
-        // sign of a design flaw.
-
-        // Search all Threads in the stream.
-        //
-        // First get a lock of all the threads, crazy but we must,
-        // otherwise we would could have one changing the waiting flag
-        // which looking at another thread waiting flag.
-        for(auto tt = threads.begin(); tt != threads.end(); ++tt)
-            MUTEX_LOCK(&(*tt)->mutex);
-
-        // Second check if threads are not waiting or have a request.
-        for(auto tt = threads.begin(); tt != threads.end(); ++tt)
-            if(!(*tt)->threadWaiting
-                    ||
-                    (*tt)->filterModule/*= have a request*/)
-            {
-                // This thread (*tt) is not calling pthread_cond_wait()
-                // at this time.  So we'll signal it if we feel the need.
-                //
-                if(loopCount > 1)
-                {
-                    // If this call fails there not much we can do about
-                    // it, and it's not a big deal.
-                    DSPEW("signaling thread %" PRIu32 " with signal %d",
-                            (*tt)->threadNum, THREAD_EXIT_SIG);
-                    pthread_kill((*tt)->thread, THREAD_EXIT_SIG);
-                }
-
-                threadNotWaiting = true;
-            }
-
-        // If we made it through the above block than all threads are
-        // waiting in pthread_cond_wait() and none of them have a
-        // request queued.
-
-
-        // Third unlock all the thread mutexes
-        for(auto tt = threads.begin(); tt != threads.end(); ++tt)
-            MUTEX_UNLOCK(&(*tt)->mutex);
-
-        if(threadNotWaiting)
-        {
-            // We thought this sleeping when in this transit flush mode
-            // was better than adding another stupid flag that all the
-            // threads would have to look at in every loop when in a
-            // non-transit state.  This keeps the worker thread loops
-            // simpler.
-            struct timespec t { 0/* seconds */, 1000000 /*nano seconds*/};
-            // If nanosleep fails it does not matter there's nothing we 
-            // could do about it anyway.  A signal could make it fail.
-            //DSPEW("Waiting nanosleep() for cleanup");
-            nanosleep(&t, 0);
-        }
-        else
-        {
-            // All threads are calling pthread_cond_wait() in
-            // filterThreadWrite() no other thread is coded to
-            // signal and wake them, so we can assume that they
-            // are all under this main threads control now.
-            DSPEW();
-            break;
-        }
-        ++loopCount;
-    }
-
-    DSPEW();
-    
-    // NOW: All Threads in this stream should be in pthread_cond_wait() in
-    // filterThreadWrite().
-
-    if(haveRunningThreads)
-        for(auto tt = threads.begin(); tt != threads.end(); ++tt)
-        {
-            MUTEX_LOCK(&(*tt)->mutex);
-            // The thread should not have any requests.
-            DASSERT(!(*tt)->filterModule, "thread %" PRIu32 " has a "
-                    "write request queued", (*tt)->threadNum);
-
-            ASSERT((errno = pthread_cond_signal(&(*tt)->cond)) == 0, "");
-            MUTEX_UNLOCK(&(*tt)->mutex);
-        }
-
-    // Now all the threads in this stream should be heading toward
-    // return/exit.
+    // Clearly the main thread is the only thread that has access to the
+    // thread list while we are doing this:
 
 
     // TODO: This will need to get refactored when we need to be able

@@ -98,7 +98,7 @@ bool Stream::start(void)
         class FilterModule *filterModule = it.second;
         class Output **outputs = filterModule->outputs;
 
-        // Skip any Feed filters.
+        // Skip any Feed filters which have filterModule->numInputs == 0.
         //
         if(filterModule->numInputs)
         {
@@ -124,7 +124,8 @@ bool Stream::start(void)
                 DASSERT(output->ringBuffer->start == 0, "");
             }
         }
-#ifdef DEBUG
+
+#if 0 // debugging.
         else
         {
             // This is a Feed filter so:
@@ -177,17 +178,96 @@ bool Stream::start(void)
 // Call filter stop() for just this one stream.
 bool Stream::stop(void)
 {
+    // This is the main thread.
+    DASSERT(pthread_equal(Thread::mainThread, pthread_self()), "");
+
     // TODO: we need to add the finding of stream sources and the
     // destruction of feed filters here. See crts_radio.cpp at the end of
     // parseArgs().
+
+    bool ret = false;
+
 
     // TODO: For this "start" and "stop" thing to be useful: We need to
     // add a filter reconnecting mechanism and interface to such a thing.
     // That's a large request, and may require a bit of refactoring.
 
+
+    // Do we have thread running?
+    //
+    bool haveThreads = threads.begin() != threads.end() &&
+            // If the pthread ever ran barrier is set.
+            (*(threads.begin()))->barrier;
+
+
+    if(haveThreads)
+    {
+        ///////////////////////////////////////////////////////////////////
+        // 1. First we wait for the worker/filter threads in this stream
+        //    to be in the pthread_cond_wait() call in filterThreadWrite()
+        //    in Thread.cpp.
+        //
+        waitForCondWaitThreads();
+
+        ///////////////////////////////////////////////////////////////////
+        // 2. Now signal the pthread cond to return from the thread.
+        //
+        for(auto tt = threads.begin(); tt != threads.end(); ++tt)
+        {
+            MUTEX_LOCK(&(*tt)->mutex);
+            // The thread should not have any requests.
+            DASSERT(!(*tt)->filterModule, "thread %" PRIu32 " has a "
+                    "write request queued", (*tt)->threadNum);
+
+            ASSERT((errno = pthread_cond_signal(&(*tt)->cond)) == 0, "");
+            MUTEX_UNLOCK(&(*tt)->mutex);
+        }
+
+        ///////////////////////////////////////////////////////////////////
+        // 3. Now join the pthreads.  Joining the thread now keeps the
+        //    stderr output from getting mixed with the main thread stderr
+        //    spew.
+        //
+        for(auto tt = threads.begin(); tt != threads.end(); ++tt)
+            (*tt)->join();
+    }
+
+
+    //
+    // Now there are no worker pthreads running.
+    //
+
+
+    ///////////////////////////////////////////////////////////////////////
+    // 4. Reset the stopped flags for all filters, so that we may call
+    //    stop() only once for each filter.
+    //
+    for(auto it : map)
+        // it.second is a FilterModule
+        it.second->stopped = false;
+
+
+    ///////////////////////////////////////////////////////////////////////
+    // 5. Now we can call the stop() functions for the rest of the
+    //    filters; the filters that are not being feed.
+    //
+    for(auto filterModule : sources)
+    {
+        // filterModule must be a Feed.
+        DASSERT(dynamic_cast<CRTSFilter *>(filterModule->filter), "");
+
+        // The users loaded source filter that Feed is feeding.
+        // callStopForEachOutput() will recure.
+        if(filterModule->outputs[0]->toFilterModule->
+                callStopForEachOutput())
+            ret = true;
+    }
+
+
 #ifdef DEBUG
 
-    // 0:  Filter Input/Output Report
+    ///////////////////////////////////////////////////////////////////////
+    // 6: Filter Input/Output Report
     //
     for(auto it : map)
         if(dynamic_cast<Feed *>(it.second->filter) == 0)
@@ -196,23 +276,8 @@ bool Stream::stop(void)
 #endif
 
 
-    bool ret = false;
-
-    // 1: We must stop the filters in reverse order because some filters
-    //    may refer to other filters resources.
-    //
-    for(auto it = map.rbegin(); it != map.rend(); ++it)
-        // it.second is a FilterModule pointer
-        if(it->second->filter->stop(
-                it->second->numInputs, it->second->numOutputs))
-        {
-            WARN("Calling filter %s stop() failed",
-                    it->second->name.c_str());
-            ret = true; // fail but keep going.
-        }
-
-
-    // 2: Now we un-map the buffers. In what order does not matter
+    ///////////////////////////////////////////////////////////////////////
+    // 7: Now we un-map the buffers. In what order does not matter
     // because the stream is not running.
     //
     for(auto it : map)
@@ -222,7 +287,8 @@ bool Stream::stop(void)
 
         DASSERT(outputs || filterModule->numOutputs == 0,"");
 
-        // Skip any Feed filters.
+        // Skip any Feed filters which are the only filters that
+        // have an output without a ring buffer.
         //
         if(filterModule->numInputs)
         {
@@ -247,18 +313,7 @@ bool Stream::stop(void)
                 // the next start.
             }
         }
-#ifdef DEBUG
-        else
-        {
-            // This is a Feed filter so:
-            //
-            DASSERT(dynamic_cast<Feed *>(filterModule->filter), "");
-            DASSERT(filterModule->numOutputs == 1, "");
-            DASSERT(filterModule->outputs[0], "");
-            DASSERT(filterModule->outputs[0]->ringBuffer == 0, "");
-            filterModule->outputs[0]->reset();
-        }
-#endif
+
         // Reset these counters.
         filterModule->filter->_totalBytesIn = 0;
         filterModule->filter->_totalBytesOut = 0;

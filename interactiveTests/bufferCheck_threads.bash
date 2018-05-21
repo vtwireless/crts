@@ -103,7 +103,7 @@ rm $tmp $out_tmp
 set +x
 
 if [ $ret = 0 ] ; then
-    echo -e "\nSUCCESS\n\n Wrote file size"
+    echo -e "\nSUCCESS\n"
 else
     echo -e "\nSomething failed\n"
 fi

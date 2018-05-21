@@ -86,22 +86,8 @@ FilterModule::~FilterModule(void)
 
     DASSERT(numOutputs || !outputs, "");
 
-    if(numInputs)
-    {
-        for(uint32_t i=0; i<numOutputs; ++i)
-            delete outputs[i];
-    }
-    else
-    {
-        // All filters have an input except Feed.
-        //
-        DASSERT(dynamic_cast<Feed *>(filter), "");
-        DASSERT(numOutputs == 1, "");
-        DASSERT(inputs == 0, "");
-        DASSERT(outputs[0], "");
-        delete outputs[0];
-    }
-
+    for(uint32_t i=0; i<numOutputs; ++i)
+        delete outputs[i];
 
     if(outputs)
         free(outputs);
@@ -121,8 +107,6 @@ FilterModule::~FilterModule(void)
 
     if(inputs)
         free(inputs);
-
-
 
     if(thread)
     {
@@ -551,4 +535,27 @@ void FilterModule::InputOutputReport(FILE *file)
     fprintf(file,
 "=======================================================================\n\n"
             );
+}
+
+
+bool FilterModule::callStopForEachOutput(void)
+{
+    if(stopped)
+        // We have been here before, so we do not call stop() again.
+        return false;
+
+    // If any stop() call fails (returns true) we have it all return true
+    // (fail).
+
+    bool ret = filter->stop(numInputs, numOutputs);
+    stopped = true; // Mark flag, we called stop().
+
+    // Recure.  Stop() the children, but only once per filter, hence the
+    // stopped flag above.
+    //
+    for(uint32_t i=0; i<numOutputs; ++i)
+        if(outputs[i]->toFilterModule->callStopForEachOutput())
+            ret = true;
+    
+    return ret; // error state = true if any filter failed.
 }

@@ -11,7 +11,7 @@ tmp=$(mktemp --suffix=CRTS_test)
 out_tmp=$(mktemp --suffix=CRTS_test)
 
 
-dd if=/dev/urandom count=100K of=$tmp 
+dd if=/dev/urandom count=10K of=$tmp 
 
 
 function waitForStart()
@@ -81,7 +81,7 @@ rm $tmp $out_tmp
 set +x
 
 if [ $ret = 0 ] ; then
-    echo -e "\nSUCCESS\n\n Wrote file size"
+    echo -e "\nSUCCESS\n"
 else
     echo -e "\nSomething failed\n"
 fi

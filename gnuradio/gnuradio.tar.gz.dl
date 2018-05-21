@@ -4,18 +4,26 @@
 # configure here
 gnuradio_tag=${GNURADIO_TAG:-v3.7.11}
 
-if [ "$GNURADIO_TAG" = "v3.7.11" ] ; then
-    shm512sum=d7b97c9ff738cb980ffa14bd431566de7ce0d\
+# sha512sum is optional
+sha512sum=
+
+case "$gnuradio_tag" in
+
+    "v3.7.11")
+        sha512sum=d7b97c9ff738cb980ffa14bd431566de7ce0d\
 1af6c32b0563bd1a98a4e076a7eb9c90a018b5e9a9aad80\
 c0312a031a0beceb9dea982008256dcc919d714fc13e
-else
-    shm512sum=
-fi
-##############################################################
+        ;;
+    "v3.7.12.0")
+        sha512sum=2a1833e3caeeea50b799b5e47c62fe036afc57\
+23047e4134b90f0773035578f3ea0325f66e7a9588b7739eccc553a0\
+7c78bcbd94f19969599eeee59f67d3a28c
+        ;;
+esac
 
 
 source ../GetSrcFromGithub.bash
 
-#Usage: GetSrcFromGithub user package tag tarname [sha512]
+#Usage: GetSrcFromGithub user package tag tarname [sha512sum]
 
-GetSrcFromGithub gnuradio gnuradio $gnuradio_tag gnuradio $shm512sum
+GetSrcFromGithub gnuradio gnuradio $gnuradio_tag gnuradio $sha512sum

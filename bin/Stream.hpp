@@ -81,11 +81,6 @@ class Stream
         // at all.
 
 
-        // TODO: Check this out ...
-        // A lock for editing the this stream.
-        //pthread_rwlock_t rwlock;
-
-
         // A list of threads that run a list of filter modules.
         std::list<Thread *> threads;
 
@@ -111,6 +106,15 @@ class Stream
         static bool stopAll(void);
 
     private:
+
+        // Called when the stream->isRunning is false.
+        //
+        // This returns when all the threads in this stream are in the
+        // pthread_cond_wait() call in filterThreadWrite() in Thread.cpp.
+        // So we can know that the main thread is the only "running"
+        // thread when this returns.
+        //
+        void waitForCondWaitThreads(void);
 
         // Call filter start() for just this one stream.
         //

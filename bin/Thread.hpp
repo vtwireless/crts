@@ -156,6 +156,9 @@ class Thread
         }
 
 
+        void join(void);
+
+
         Thread(Stream *stream);
 
         // This will pthread_join() after setting a running flag.

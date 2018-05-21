@@ -9,15 +9,6 @@ topdir=$PWD
 
 rm -rf src
 
-# create gnuradio.tar.gz.sha512sum with
-# sha512sum gnuradio.tar.gz > gnuradio.tar.gz.sha512sum
-#sha512sum -c gnuradio.tar.gz.sha512sum
-
-# create volk.tar.gz.sha512sum with
-# sha512sum  volk.tar.gz > volk.tar.gz.sha512sum
-#sha512sum -c volk.tar.gz.sha512sum 
-
-
 tar -xzmf gnuradio.tar.gz
 
 mv gnuradio-gnuradio-* src

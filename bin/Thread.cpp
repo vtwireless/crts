@@ -135,7 +135,7 @@ static void *filterThreadWrite(Thread *thread)
 
         MUTEX_LOCK(mutex);
 
-        // Hi, we're back from a users CRTSFilter::write() call
+        // Hi, we're back from a users CRTSFilter::input() call
         // and now we have the mutex lock again.
 
         if(!isRunning)
@@ -295,18 +295,10 @@ Thread::Thread(Stream *stream_in):
 }
 
 
-// We should have a write lock on the stream to call this.
-// TODO: or add a lock and unlock call to this.
-Thread::~Thread()
+void Thread::join(void)
 {
-    DASSERT(pthread_equal(mainThread, pthread_self()), "");
-    // We better be in stream shutdown mode.
-    // TODO: until we make threads more dynamic.
-    DASSERT(!stream.isRunning, "");
-
-    DASSERT(!filterModule, "");
-
     // If there is not barrier set than there never was a thread.
+    //
     if(barrier)
     {
         MUTEX_LOCK(&mutex);
@@ -321,14 +313,27 @@ Thread::~Thread()
 
         ASSERT((errno = pthread_join(thread, 0/*void **retval */) == 0), "");
 
+        // We use barrier as a flag too.
+        barrier = 0;
+
         // remove this object from the list.
         DSPEW("Thread %" PRIu32 " joined", threadNum);
     }
-#ifdef DEBUG
-    else
-        DSPEW("Thread %" PRIu32 " never ran", threadNum);
-#endif
+}
 
+
+// We should have a write lock on the stream to call this.
+// TODO: or add a lock and unlock call to this.
+Thread::~Thread()
+{
+    DASSERT(pthread_equal(mainThread, pthread_self()), "");
+    // We better be in stream shutdown mode.
+    // TODO: until we make threads more dynamic.
+    DASSERT(!stream.isRunning, "");
+
+    DASSERT(!filterModule, "");
+
+    join();
 
     while(filterModules.size())
         // FilterModule::~FilterModule(void) will remove it.

@@ -278,6 +278,15 @@ class FilterModule
 
         void launchFeed(void);
 
+
+        bool callStopForEachOutput(void);
+
+        // Stinking flag so that we know that stop() was called for this
+        // filter.  We need this because we call the stop() functions with
+        // a graph traversal which can hit a filter more than once,
+        // because they can have more than one input.
+        bool stopped;
+
     // TODO: could this friend mess be cleaned up?  Not easily, it would
     // require quite a bit of refactoring.  Note: this interface is not
     // exposed to the (user interface) CRTSFilter objects, so users will
