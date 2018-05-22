@@ -6,6 +6,8 @@ SHELL := /bin/bash
 
 CXXFLAGS := -g -Wall -Werror
 
+CPPFLAGS := -DDEBUG
+
 INC := $(shell pkg-config --cflags crts)
 
 

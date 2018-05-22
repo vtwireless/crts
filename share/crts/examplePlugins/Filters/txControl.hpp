@@ -4,9 +4,9 @@
 #include <string>
 #include <uhd/usrp/multi_usrp.hpp>
 
-#include "crts/debug.h"
-#include "crts/Control.hpp"
-#include "crts/crts.hpp"
+#include <crts/debug.h>
+#include <crts/Control.hpp>
+#include <crts/crts.hpp>
 
 
 class Tx;
@@ -22,15 +22,13 @@ class TxControl: public CRTSControl
         // control/controller connectivity.
 
         uhd::usrp::multi_usrp::sptr &usrp;
-        uhd::device::sptr &device;
 
     private:
 
         TxControl(CRTSFilter *rxFilter, std::string controlName,
-                uhd::usrp::multi_usrp::sptr &usrp_in,
-                uhd::device::sptr &device_in):
+                uhd::usrp::multi_usrp::sptr &usrp_in):
             CRTSControl(rxFilter, controlName),
-            usrp(usrp_in), device(device_in)
+            usrp(usrp_in)
         {
             DSPEW();
         };
@@ -44,4 +42,4 @@ class TxControl: public CRTSControl
 };
 
 
-#define DEFAULT_TXCONTROL_NAME "tx"
+#define DEFAULT_TXCONTROL_NAME "TX"

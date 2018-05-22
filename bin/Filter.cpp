@@ -513,7 +513,7 @@ void FilterModule::InputOutputReport(FILE *file)
 "   *******************************************************************\n"
 "      All Channels:  Input: %" PRIu64 " bytes  Output: %" PRIu64 " bytes\n"
 "     -----------------------------------------------------------------\n",
-        name.c_str(), thread->threadNum,
+        name.c_str(), (thread?(thread->threadNum):0),
         filter->totalBytesIn(), filter->totalBytesOut());
 
     for(uint32_t i=0; i<numInputs; ++i)

@@ -6,31 +6,6 @@
 #include "crts/Filter.hpp"
 
 
-#define BUFLEN (1024)
-
-
-
-static void usage(void)
-{
-    char nameBuf[64], *name;
-    name = CRTS_BASENAME(nameBuf, 64);
-
-    fprintf(stderr,
-"\n"
-"Usage: %s\n"
-"\n"
-"  This is a simple example CRTS Filter module that reads standard input and\n"
-"  writes it to all connected filters.\n"
-"\n"
-"\n",
-    name);
-
-    errno = 0;
-    throw "usage help"; // This is how return an error from a C++ constructor
-    // the module loader will catch this throw.
-}
-
-
 class Stdin : public CRTSFilter
 {
     public:
@@ -46,31 +21,24 @@ class Stdin : public CRTSFilter
 
 Stdin::Stdin(int argc, const char **argv)
 {
-    CRTSModuleOptions opt(argc, argv, usage);
-
-    // This is so we have a working --help|-h option.
-    opt.get("--foo", "");
-
+    CRTSModuleOptions opt(argc, argv);
     DSPEW();
 }
 
 
+#define BUFLEN (1024)
+
+
 bool Stdin::start(uint32_t numInChannels, uint32_t numOutChannels)
 {
-    if(numOutChannels == 0)
-    {
-        WARN("There is output to write to.");
-        return true; // fail
-    }
-
     if(!isSource())
     {
-        WARN("This needs to be a source filter.");
+        WARN("This must be a source filter");
         return true; // fail
     }
 
-    // All the output channels will use the same ring buffer.
-    //
+    // We use one ring buffer for the source of each output Channel that
+    // all share the same ring buffer.
     createOutputBuffer(BUFLEN, ALL_CHANNELS);
 
     DSPEW();
@@ -88,16 +56,14 @@ bool Stdin::stop(uint32_t numInChannels, uint32_t numOutChannels)
 Stdin::~Stdin(void)
 {
     // Do nothing...
-
     DSPEW();
 }
 
 
-void Stdin::input(void *buffer, size_t len, uint32_t inputChannelNum)
+void Stdin::input(void *buffer_in, size_t len, uint32_t inputChannelNum)
 {
-    ASSERT(len == 0, "We got input to our stdin source");
+    uint8_t *buffer = (uint8_t *) getOutputBuffer(0);
 
-    buffer = getOutputBuffer(0);
 
     if(feof(stdin))
     {
@@ -108,7 +74,7 @@ void Stdin::input(void *buffer, size_t len, uint32_t inputChannelNum)
     }
 
     // This filter is a source. It reads stdin which is not a
-    // part of this CRTS filter stream. 
+    // part of this CRTS filter stream.
     //
     len = fread(buffer, 1, BUFLEN, stdin);
 
