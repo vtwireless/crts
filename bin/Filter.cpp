@@ -508,28 +508,28 @@ void *CRTSFilter::getOutputBuffer(uint32_t outputChannelNum)
 void FilterModule::InputOutputReport(FILE *file)
 {
     fprintf(file,
-"=======================================================================\n"
-"                         Filter \"%s\"\n"
-"\n"
-"    All Channels:  Input: %" PRIu64 " bytes  Output: %" PRIu64 " bytes\n"
-"   -----------------------------------------------------------------\n",
-        name.c_str(), filter->totalBytesIn(), filter->totalBytesOut());
+"   *******************************************************************\n"
+"   ******************* Filter \"%s\"  thread %" PRIu32 "\n"
+"   *******************************************************************\n"
+"      All Channels:  Input: %" PRIu64 " bytes  Output: %" PRIu64 " bytes\n"
+"     -----------------------------------------------------------------\n",
+        name.c_str(), thread->threadNum,
+        filter->totalBytesIn(), filter->totalBytesOut());
 
     for(uint32_t i=0; i<numInputs; ++i)
-        fprintf(file, "    Input Channel %" PRIu32 " <== %" PRIu64 " bytes\n",
+        fprintf(file, "       Input Channel %" PRIu32 " <== %" PRIu64 " bytes\n",
                 i, filter->totalBytesIn(i));
 
-    fprintf(file,
-"   -----------------------------------------------------------------\n");
- 
+    if(numOutputs)
+        fprintf(file,
+"     -----------------------------------------------------------------\n");
 
     for(uint32_t i=0; i<numOutputs; ++i)
-        fprintf(file, "   Output Channel %" PRIu32 " ==> %" PRIu64 " bytes\n",
+        fprintf(file, "      Output Channel %" PRIu32 " ==> %" PRIu64 " bytes\n",
                 i, filter->totalBytesOut(i));
 
-    fprintf(file,
-"=======================================================================\n\n"
-            );
+    if(numOutputs)
+        fprintf(file, "\n");
 }
 
 

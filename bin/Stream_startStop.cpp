@@ -299,10 +299,17 @@ bool Stream::stop(void)
     ///////////////////////////////////////////////////////////////////////
     // 6: Filter Input/Output Report
     //
+    fprintf(stderr,
+" =======================================================================\n"
+"          Stream %" PRIu32 "\n\n", streamNum);
+
     for(auto it : map)
-        if(dynamic_cast<Feed *>(it.second->filter) == 0)
+        if((dynamic_cast<Feed *>(it.second->filter) == 0))
             // it.second is a FilterModule
-            it.second->InputOutputReport();
+            it.second->InputOutputReport(stderr);
+
+    fprintf(stderr, "\n"
+" =======================================================================\n");
 #endif
 
 

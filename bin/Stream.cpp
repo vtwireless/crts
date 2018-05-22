@@ -25,6 +25,8 @@
 
 std::list<Stream*> Stream::streams;
 
+uint32_t Stream::streamCount = 0;
+
 // static Stream mutex and condition variables for
 // Stream::wait()
 //
@@ -203,7 +205,8 @@ void Stream::getSources(void)
 
 
 Stream::Stream(void):
-    isRunning(false), haveConnections(false), loadCount(0)
+    isRunning(false), haveConnections(false), loadCount(0),
+    streamNum(streamCount++)
 { 
     // This is the main thread.
     DASSERT(pthread_equal(Thread::mainThread, pthread_self()), "");

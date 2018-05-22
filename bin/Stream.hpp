@@ -131,4 +131,8 @@ class Stream
 
         // Never decreases.  Incremented with each new FilterModule.
         uint32_t loadCount;
+
+        uint32_t streamNum; // number starting at 0.
+
+        static uint32_t streamCount; // always increasing.
  };
