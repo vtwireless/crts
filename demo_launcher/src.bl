@@ -1,0 +1,26 @@
+#!/bin/bash
+
+set -ex
+
+topdir=$PWD
+
+# Do not run this if we already did.
+[ -f $topdir/src/SUCCESS ] && exit 0
+
+rm -rf src
+
+
+tar -xzmf demo_launcher.tar.gz
+
+mv lanceman2-demo_launcher* src
+
+cd src
+
+ln -s ../../quickbuild.make .
+
+make -j $(nproc || echo '3')
+
+
+# We really need to know: Did we succeed and make it this far in this
+# script?
+echo "The script ../$0 ran SUCCESSFULLY" > $topdir/src/SUCCESS

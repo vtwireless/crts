@@ -1,0 +1,23 @@
+#!/bin/bash
+
+##############################################################
+# configure here
+
+# The git repository tag
+tag=${DEMO_LAUNCHER_TAG:-master}
+
+
+# The sha512sum is optional.  Get its value by running:
+#    sha512sum demo_launcher.tar.gz
+
+sha512sum=
+
+
+##############################################################
+
+
+source ../GetSrcFromGithub.bash
+
+#Usage: GetSrcFromGithub user package tag tarname [sha512sum]
+
+GetSrcFromGithub lanceman2 demo_launcher $tag demo_launcher $sha512sum

@@ -29,7 +29,8 @@ apt-get install\
  imagemagick\
  joystick\
  doxygen\
- dia
+ dia\
+ libgtk-3-dev
 ```
 
 
