@@ -17,12 +17,11 @@ class JoystickTx: public CRTSController
 
         ~JoystickTx(void) {  DSPEW(); };
 
-        void execute(CRTSControl *c, void * &buffer, size_t &len, uint32_t channelNum);
+        void start(CRTSControl *c);
+        void stop(CRTSControl *c);
 
-        void shutdown(CRTSControl *c)
-        {
-            DSPEW("last use of CRTS Control named \"%s\"", c->getName());
-        };
+        void execute(CRTSControl *c, const void *buffer, size_t len,
+                uint32_t channelNum);
 
     private:
 
@@ -33,7 +32,7 @@ class JoystickTx: public CRTSController
 };
 
 
-// In mega HZ
+// in mega-herz (M Hz)
 #define DEFAULT_MAXFREQ (915.5)
 #define DEFAULT_MINFREQ (914.5)
 
@@ -88,24 +87,37 @@ JoystickTx::JoystickTx(int argc, const char **argv)
     controlName = opt.get("--controlTx", DEFAULT_JSCONTROL_NAME);
     js = getControl<CRTSControl *>(controlName);
 
-    if(tx == 0) throw "could not get TxControl";
-
     maxFreq = opt.get("--maxFreq", DEFAULT_MAXFREQ) * 1.0e6;
     minFreq = opt.get("--minFreq", DEFAULT_MINFREQ) * 1.0e6;
 
     freq = lastFreq = maxFreq;
-
-    tx->usrp->set_tx_freq(maxFreq);
-
-    DSPEW("controlJs=\"%s\" controlTx=\"%s\" maxFreq=%lg minFreq=%lg",
-            js->getName(), tx->getName(), maxFreq, minFreq);
-
+    DSPEW();
 }
 
 
+void JoystickTx::start(CRTSControl *c)
+{
+    if(c->getId() != js->getId())
+    {
+        // This call is from the CRTS Tx filter
+        DASSERT(tx->usrp, "");
+        tx->usrp->set_tx_freq(maxFreq);
+        // TODO: check that the freq was really set.
+    }
 
-void JoystickTx::execute(CRTSControl *c, void * &buffer,
-        size_t &len, uint32_t channelNum)
+    DSPEW("controlJs=\"%s\" controlTx=\"%s\" maxFreq=%lg minFreq=%lg",
+            js->getName(), tx->getName(), maxFreq, minFreq);
+}
+
+
+void JoystickTx::stop(CRTSControl *c)
+{
+    DSPEW();
+}
+
+
+void JoystickTx::execute(CRTSControl *c, const void *buffer,
+        size_t len, uint32_t channelNum)
 {
     if(c->getId() != js->getId())
     {

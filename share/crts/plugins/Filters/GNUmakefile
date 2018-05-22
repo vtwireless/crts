@@ -68,7 +68,9 @@ srcs :=\
  tx.cpp\
  rx.cpp\
  liquidFrame.cpp\
- liquidSync.cpp
+ liquidSync.cpp\
+ joystick.cpp\
+ sink.cpp
 
 
 

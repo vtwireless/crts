@@ -58,11 +58,6 @@ FilterModule::~FilterModule(void)
     // it in the end of this function, but first while the filter still
     // exists we need to do a few things.
 
-    for(auto const &control: filter->controls)
-        for(auto const &controller: control.second->controllers)
-            controller->shutdown(control.second);
-
-
     DASSERT(stream, "");
     DASSERT(filter, "");
 
@@ -544,10 +539,39 @@ bool FilterModule::callStopForEachOutput(void)
         // We have been here before, so we do not call stop() again.
         return false;
 
+    bool ret = filter->stop(numInputs, numOutputs);
+
+    // Call all the Controller stop() functions for this filter.
+    for(auto const &controlIt: filter->controls)
+        for(auto const &controller: controlIt.second->controllers)
+        {
+            try
+            {
+                controller->stop(controlIt.second);
+            }
+            catch(std::string str)
+            {
+                // The offending filter start() will likely spew too.
+                //
+                WARN("Controller \"%s\" stop() through an"
+                        " exception and failed:\n%s",
+                        controller->getName(), str.c_str());
+                ret = true; // One or more filter stop() failed
+            }
+            catch(...)
+            {
+                // The offending will likely spew too.
+                //
+                WARN("Controller \"%s\" stop() through an"
+                        " exception and failed",
+                        controller->getName());
+                ret =  true; // One or more filter stop() failed
+            }
+        }
+
     // If any stop() call fails (returns true) we have it all return true
     // (fail).
 
-    bool ret = filter->stop(numInputs, numOutputs);
     stopped = true; // Mark flag, we called stop().
 
     // Recure.  Stop() the children, but only once per filter, hence the

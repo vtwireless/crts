@@ -11,6 +11,10 @@ INSTALL_DIR = $(PREFIX)/share/crts/plugins/$(notdir $(CURDIR))
 
 srcs := $(patsubst %.cpp,%,$(wildcard *.cpp))
 
+# For now just this.
+srcs := joystickTx
+
+
 define MkSource
   $(1).so_SOURCES := $(1).cpp
 endef

@@ -32,6 +32,8 @@ reference code:
 
 #define DEFAULT_DEVICE_PATH  "/dev/input/js0"
 
+#define NUM_STRUCTS  (16) // For buffer size
+
 
 static void usage(void)
 {
@@ -47,7 +49,6 @@ static void usage(void)
 }
 
 
-
 class Joystick : public CRTSFilter
 {
     public:
@@ -55,61 +56,97 @@ class Joystick : public CRTSFilter
         Joystick(int argc, const char **argv);
         ~Joystick(void);
 
-        ssize_t write(void *buffer, size_t bufferLen, uint32_t channelNum);
+        bool start(uint32_t numInChannels, uint32_t numOutChannels);
+        bool stop(uint32_t numInChannels, uint32_t numOutChannels);
+        void input(void *buffer, size_t bufferLen, uint32_t inChannelNum);
 
     private:
 
         int fd;
+        const char *devicePath;
 };
 
 
 Joystick::Joystick(int argc, const char **argv): fd(-1)
 {
     CRTSModuleOptions opt(argc, argv, usage);
-    const char *devicePath = opt.get("--device", DEFAULT_DEVICE_PATH);
+    devicePath = opt.get("--device", DEFAULT_DEVICE_PATH);
+ }
+
+Joystick::~Joystick(void)
+{
+    DSPEW();
+}
+
+bool Joystick::start(uint32_t numInChannels, uint32_t numOutChannels)
+{
+    if(!isSource())
+    {
+        WARN("Should be a source filter");
+        return true; // fail
+    }
+
+    if(!numOutChannels)
+    {
+        WARN("Should have at least one output channel, got %"
+                PRIu32, numInChannels);
+        return true; // fail
+    }
+
+    // We use one buffer for the source of each output Channel
+    // that all share the same ring buffer.
+    createOutputBuffer(NUM_STRUCTS*sizeof(struct js_event), ALL_CHANNELS);
 
     errno = 0;
     fd = open(devicePath, O_RDONLY);
     if(fd < 0)
     {
         ERROR("open(\"%s\", O_RDONLY) failed", devicePath);
-        throw "open() failed";
+        return true; // fail
     }
 
     DSPEW("opened device \"%s\"", devicePath);
+
+    return false; // success
 }
 
-Joystick::~Joystick(void)
+
+bool Joystick::stop(uint32_t numInChannels, uint32_t numOutChannels)
 {
     if(fd >= 0)
+    {
         close(fd);
-
+        fd = -1;
+    }
     DSPEW();
+    return false; // success
 }
 
 
-// Read at most N joystick events at a time.
-#define NUM  (10)
-
-
-ssize_t Joystick::write(void *buffer, size_t len, uint32_t channelNum)
+void Joystick::input(void *buffer, size_t len, uint32_t channelNum)
 {
-    len = NUM*sizeof(struct js_event);
-    struct js_event *js = (struct js_event *) getBuffer(len);
+    len = NUM_STRUCTS*sizeof(struct js_event);
+    struct js_event *js = (struct js_event *) getOutputBuffer(0);
     buffer = (void *) js;
 
+    errno = 0;
+
     ssize_t ret = read(fd, buffer, len);
-    if(ret < 0 || ((size_t) ret)%sizeof(struct js_event))
+
+    if(ret < 0 ||
+            // This happens ...
+            ((size_t) ret)%sizeof(struct js_event))
     {
+        // We'll just shutdown in this case.
+        //
         stream->isRunning = false;
-        NOTICE("read() %zd", ret);
-        return 0;
+        NOTICE("read() returned %zd", ret);
+        return;
     }
+
     len = ret;
 
-    writePush(buffer, len, ALL_CHANNELS);
-
-    return 1;
+    output(len, ALL_CHANNELS);
 }
 
 

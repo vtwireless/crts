@@ -528,13 +528,22 @@ class CRTSController
         CRTSController(void);
         virtual ~CRTSController(void);
 
-        virtual void execute(CRTSControl *c, void * &buffer,
-                size_t &len, uint32_t channelNum) = 0;
+        /** start is called after all the filters start and
+         * before the stream is running.
+         *
+         * /param c the filters CRTS control
+         */
+        virtual void start(CRTSControl *c) = 0;
 
-        // This is called by each CRTS Filter as it finishes running.
-        // We don't get access to the CRTSFilter, we get access to the
-        // CRTSControl that the filter makes.
-        virtual void shutdown(CRTSControl *c) = 0;
+        /** stop is called just before the filters stop.
+         *
+         * /param c the filters CRTS control
+         */
+        virtual void stop(CRTSControl *c) = 0;
+
+        virtual void execute(CRTSControl *c, const void * buffer,
+                size_t len, uint32_t channelNum) = 0;
+
 
         const char *getName(void) const { return (const char *) name; };
         uint32_t getId(void) const { return id; };

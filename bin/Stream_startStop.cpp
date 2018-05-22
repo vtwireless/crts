@@ -85,7 +85,46 @@ bool Stream::start(void)
 
 
     ///////////////////////////////////////////////////////////////////////
-    // 2: Check that all outputs will have a ring buffer.  If a filter
+    // 2:  Call the Controller start() functions
+    //
+    for(auto it : map)
+    {
+        // it.second is a FilterModule pointer
+        for(auto const &controlIt: it.second->filter->controls)
+            for(auto const &controller: controlIt.second->controllers)
+            {
+                // This is why I hate C++.  What a f---ing mess.
+                //
+                try
+                {
+                    controller->start(controlIt.second);
+                }
+                catch(std::string str)
+                {
+                    // The offending filter start() will likely spew too.
+                    //
+                    WARN("Controller \"%s\" start() through an"
+                        " exception and failed:\n%s",
+                        controller->getName(), str.c_str());
+                    // We do not call the rest of them.
+                    return true; // One filter start() failed, we are screwed.
+                }
+                catch(...)
+                {
+                    // The offending will likely spew too.
+                    //
+                    WARN("Controller \"%s\" start() through an"
+                        " exception and failed",
+                        controller->getName());
+                    // We do not call the rest of them.
+                    return true; // One filter start() failed, we are screwed.
+                }
+            }
+    }
+
+
+    ///////////////////////////////////////////////////////////////////////
+    // 3: Check that all outputs will have a ring buffer.  If a filter
     //    module did not call createOutputBuffer() or
     //    createPassThroughBuffer() for a output channel than there will
     //    be no ring buffer for that output.
@@ -140,7 +179,7 @@ bool Stream::start(void)
 
 
     ///////////////////////////////////////////////////////////////////////
-    // 3: Now we set up all the ring buffers, creating the memory
+    // 4: Now we set up all the ring buffers, creating the memory
     //    mappings.
     //
     for(auto it : map)
@@ -161,15 +200,6 @@ bool Stream::start(void)
             }
         }
     }
-
-
-    // TODO: Instead of 2 above
-    ///////////////////////////////////////////////////////////////////////
-    // 4: Create ring Buffers for the channels that have none yet.  The
-    //    filter start() did not request one so we make one for each by
-    //    default.
-    //
-
 
     return false; // success
 }
