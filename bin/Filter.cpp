@@ -206,7 +206,7 @@ void FilterModule::createOutputBuffer(size_t maxLength,
     DASSERT(pthread_equal(Thread::mainThread, pthread_self()), "");
     DASSERT(maxLength, "");
     DASSERT(filter, "");
-    DASSERT(outputChannelNum <= numOutputs, "");
+    DASSERT(outputChannelNum < numOutputs, "");
     DASSERT(outputs, "");
 
     Output *output = outputs[outputChannelNum];
@@ -301,6 +301,7 @@ void CRTSFilter::createPassThroughBuffer(
                 size_t maxLength,
                 size_t thresholdLength)
 {
+    DASSERT(pthread_equal(Thread::mainThread, pthread_self()), "");
     DASSERT(filterModule, "");
     DASSERT(inputChannelNum < filterModule->numInputs, "");
     DASSERT(outputChannelNum < filterModule->numOutputs, "");
