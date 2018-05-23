@@ -8,6 +8,10 @@
 # whole demo_launcher source in src/ or we fail.
 #
 
+# We don't want the demo_launcher software to be part of the CRTS
+# software, so it's not a sub-directory.
+SUBDIRS := .
+
 # src.bl makes a clean file named src, but src is a directory, so we must
 # tell quickbuild that src is a directory:
 CLEANDIRS := src
