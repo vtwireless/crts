@@ -302,8 +302,8 @@ void CRTSFilter::createPassThroughBuffer(
                 size_t thresholdLength)
 {
     DASSERT(filterModule, "");
-    DASSERT(inputChannelNum <= filterModule->numInputs, "");
-    DASSERT(outputChannelNum <= filterModule->numOutputs, "");
+    DASSERT(inputChannelNum < filterModule->numInputs, "");
+    DASSERT(outputChannelNum < filterModule->numOutputs, "");
     DASSERT(maxLength >= thresholdLength, "");
 
     // Find the output channel of the up-stream filter that is feeding our
