@@ -196,6 +196,14 @@ function _crts_radio_complete()
             mods+=($mod)
             #echo "mod=${mod}"
         done
+        for i in $mod_dir/*/*.so ; do
+            if [ ! -f "$i" ] ; then
+                continue
+            fi
+            mod="$(basename $(dirname $i))/$(basename ${i%%.so})" || return 0
+            mods+=($mod)
+            #echo "mod=${mod}"
+        done
     done
 
 
