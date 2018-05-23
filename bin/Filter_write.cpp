@@ -152,6 +152,7 @@ void FilterModule::runUsersActions(size_t len, Input *input)
 
     if(!len)
     {
+        ControlActions(buf, len, inputChannelNum);
         filter->input(buf, len, inputChannelNum);
         currentInput = 0;
         return;
@@ -186,24 +187,7 @@ void FilterModule::runUsersActions(size_t len, Input *input)
         // Unset the advance input flag.
         advancedInput = false;
 
-#if 1
-        // If there are any users CRTS Controllers that "attached" to any
-        // of the CRTSControl objects in this CRTS filter we call their
-        // CRTSContollers::execute() like so:
-        for(auto const &controlIt: filter->controls)
-            for(auto const &controller: controlIt.second->controllers)
-            {
-                // Let the CRTSController do its' thing.
-                //
-                // TODO: CHECK THIS CODE:  The controller may even
-                // change the buffer and len in the up-comming
-                // filter->write();  buffer and len are non-constant
-                // references.
-                //
-                controller->execute(controlIt.second,
-                        buf, lenIn, inputChannelNum);
-            }
-#endif
+        ControlActions(buf, lenIn, inputChannelNum);
 
         filter->input(buf, lenIn, inputChannelNum);
 

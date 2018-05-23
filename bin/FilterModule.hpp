@@ -384,8 +384,9 @@ class FilterModule
 
         inline void advanceWriteBuffer(size_t len, uint32_t outputChannelNum);
 
-
         void InputOutputReport(FILE *file = stderr);
+
+        void ControlActions(const void *buffer, size_t len, uint32_t inputChannelNum);
 };
 
 
@@ -415,8 +416,27 @@ FilterModule::advanceWriteBuffer(size_t len, uint32_t outputChannelNum)
             AdvanceWriteBuffer(len, outputs[i], filter);
     }
 }
-        
 
+inline void
+FilterModule::ControlActions(const void *buffer, 
+        size_t len, uint32_t inputChannelNum)
+{
+    // If there are any users CRTS Controllers that "attached" to any
+    // of the CRTSControl objects in this CRTS filter we call their
+    // CRTSContollers::execute() like so:
+    for(auto const &controlIt: filter->controls)
+        for(auto const &controller: controlIt.second->controllers)
+            // Let the CRTSController do its' thing.
+            //
+            // TODO: CHECK THIS CODE:  The controller may even
+            // change the buffer and len in the up-comming
+            // filter->write();  buffer and len are non-constant
+            // references.
+            //
+            controller->execute(controlIt.second,
+                        buffer, len, inputChannelNum);
+}
+        
 
 // CRTSFilter::output() helper function.  It's called twice in
 // CRTSFilter::output() in Filter_write.cpp.  So we write the code once

@@ -21,7 +21,6 @@ static uint32_t controllerCreateCount = 0;
 std::list<CRTSController *> CRTSController::controllers;
 
 
-
 CRTSController::CRTSController(void):
     name(0), id(controllerCreateCount++)
 {

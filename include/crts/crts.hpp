@@ -184,6 +184,11 @@ class CRTSModuleOptions
             return ret;
         };
 
+        uint32_t get(const char *optName, uint32_t defaultVal)
+        {
+            return get(optName, (unsigned long) defaultVal);
+        };
+
         // This seems to get size_t too.
         unsigned long get(const char *optName, unsigned long defaultVal)
         {

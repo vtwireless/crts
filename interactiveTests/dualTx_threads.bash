@@ -13,7 +13,7 @@ crts_radio="../bin/crts_radio"
  $crts_radio\
  -f stdin\
  -f liquidFrame\
- -f tx [ --uhd addr=192.168.10.2 --freq 915.5 --rate 0.2 --gain 0 ]\
+ -f tx [ --uhd addr=192.168.10.2 --freq 915.5 --rate 0.2 --gain 15 ]\
  -t 0 -t 1 -t 2\
  -C dualTx\
  -D"
@@ -26,21 +26,4 @@ crts_radio="../bin/crts_radio"
  -t 0 -t 1 -t 2\
  -D |\
  hexdump -v"
-
-
-exit
-
-# If we had more USRPs
-
-# 914.5 MHz receiver
-./termRun "$crts_radio\
- -f rx [ --uhd addr=192.168.10.5 --freq 914.5 --rate 0.2 --gain 0 ]\
- -f liquidSync\
- -f stdout\
- -t 0 -t 1 -t 2\
- -D |\
- hexdump -v"
-
-
-
 

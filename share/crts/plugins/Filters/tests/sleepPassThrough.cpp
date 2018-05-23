@@ -1,8 +1,10 @@
-#include <stdio.h>
+#include <unistd.h>
 
 #include "crts/crts.hpp"
 #include "crts/debug.h"
 #include "crts/Filter.hpp"
+
+#define DEFAULT_USLEEP ((useconds_t) 1000000) // 1 usec = (1/1000000) second
 
 
 static void usage(void)
@@ -15,8 +17,13 @@ static void usage(void)
 "\n"
 "Usage: %s [ OPTIONS ]\n"
 "\n"
+"\n"
+"            OPTIONS\n"
+"\n"
+"    --utime USECS  set the sleep time in micro seconds to USECS micro seconds.\n"
+"                   The default sleep time is %" PRIu32 " micro seconds.\n"
 "\n",
-    name);
+    name, DEFAULT_USLEEP);
 
     errno = 0;
     throw "usage help"; // This is how return an error from a C++ constructor
@@ -25,28 +32,40 @@ static void usage(void)
 
 
 
-class Sleep : public CRTSFilter
+class SleepPassThrough : public CRTSFilter
 {
     public:
 
-        Sleep(int argc, const char **argv);
-        ~Sleep(void);
+        SleepPassThrough(int argc, const char **argv);
+        ~SleepPassThrough(void);
 
         bool start(uint32_t numInChannels, uint32_t numOutChannels);
         bool stop(uint32_t numInChannels, uint32_t numOutChannels);
         void input(void *buffer, size_t bufferLen, uint32_t inChannelNum);
+
+    private:
+
+    useconds_t usleepTime;
+
+
 };
 
 
 
-Sleep::Sleep(int argc, const char **argv)
+SleepPassThrough::SleepPassThrough(int argc, const char **argv)
 {
     CRTSModuleOptions opt(argc, argv, usage);
+
+    usleepTime = opt.get("--utime", DEFAULT_USLEEP);
+
+    // Check stupid size crap.
+    DASSERT(sizeof(useconds_t) == sizeof(uint32_t), "");
+
     DSPEW();
 }
 
 
-bool Sleep::start(uint32_t numInChannels, uint32_t numOutChannels)
+bool SleepPassThrough::start(uint32_t numInChannels, uint32_t numOutChannels)
 {
     if(isSource())
     {
@@ -70,7 +89,7 @@ bool Sleep::start(uint32_t numInChannels, uint32_t numOutChannels)
     return false; // success
 }
 
-bool Sleep::stop(uint32_t numInChannels, uint32_t numOutChannels)
+bool SleepPassThrough::stop(uint32_t numInChannels, uint32_t numOutChannels)
 {
     // Reset the filter parameters, nothing in this case.
     DSPEW();
@@ -78,14 +97,17 @@ bool Sleep::stop(uint32_t numInChannels, uint32_t numOutChannels)
 }
 
 
-void Sleep::input(void *buffer, size_t len, uint32_t inChannelNum)
+void SleepPassThrough::input(void *buffer, size_t len, uint32_t inChannelNum)
 {
+    if(usleepTime)
+        ASSERT(usleep(usleepTime) == 0, "");
+
     if(len)
         output(len, inChannelNum);
 }
 
 
-Sleep::~Sleep(void)
+SleepPassThrough::~SleepPassThrough(void)
 {
     // stop() should have been called if start was ever called,
     // so we have nothing to do here in this destructor.
@@ -95,4 +117,4 @@ Sleep::~Sleep(void)
 
 
 // Define the module loader stuff to make one of these class objects.
-CRTSFILTER_MAKE_MODULE(Sleep)
+CRTSFILTER_MAKE_MODULE(SleepPassThrough)

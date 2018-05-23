@@ -7,15 +7,16 @@
 #include <linux/input.h>
 #include <linux/joystick.h>
 
-#include "../Filters/txControl.hpp"
+#include "../../Filters/txControl.hpp"
+#include "../../Filters/rxControl.hpp"
 
-class JoystickTx: public CRTSController
+class JoystickTxRx: public CRTSController
 {
     public:
 
-        JoystickTx(int argc, const char **argv);
+        JoystickTxRx(int argc, const char **argv);
 
-        ~JoystickTx(void) {  DSPEW(); };
+        ~JoystickTxRx(void) {  DSPEW(); };
 
         void start(CRTSControl *c);
         void stop(CRTSControl *c);
@@ -26,9 +27,10 @@ class JoystickTx: public CRTSController
     private:
 
         TxControl *tx;
+        RxControl *rx;
         CRTSControl *js;
 
-        double maxFreq, minFreq, freq, lastFreq;
+        double maxFreq, minFreq, rxFreq, lastRxFreq, txFreq, lastTxFreq;
 };
 
 
@@ -36,7 +38,6 @@ class JoystickTx: public CRTSController
 #define DEFAULT_MAXFREQ (915.5)
 #define DEFAULT_MINFREQ (914.5)
 
-#define DEFAULT_TXCONTROL_NAME            "tx"
 #define DEFAULT_JSCONTROL_NAME      "joystick"
 
 
@@ -61,6 +62,10 @@ static void usage(void)
 "                      joystick control name is \"%s\".\n"
 "\n"
 "\n"
+"   --controlRx NAME   connect to RX control named NAME.  The default RX\n"
+"                      control name is \"%s\".\n"
+"\n"
+"\n"
 "   --controlTx NAME   connect to TX control named NAME.  The default TX\n"
 "                      control name is \"%s\".\n"
 "\n"
@@ -72,66 +77,95 @@ static void usage(void)
 "   --minFreq MIN      set the minimum carrier frequency to MIN Mega Hz. The\n"
 "                      default MIN is %lg\n"
 "\n"
-"\n", name, DEFAULT_JSCONTROL_NAME, DEFAULT_TXCONTROL_NAME,
+"\n", name, DEFAULT_JSCONTROL_NAME, DEFAULT_RXCONTROL_NAME,
+    DEFAULT_TXCONTROL_NAME,
     DEFAULT_MAXFREQ, DEFAULT_MINFREQ);
 }
 
 
-JoystickTx::JoystickTx(int argc, const char **argv)
+JoystickTxRx::JoystickTxRx(int argc, const char **argv)
 {
     CRTSModuleOptions opt(argc, argv, usage);
     const char *controlName;
 
     controlName = opt.get("--controlTx", DEFAULT_TXCONTROL_NAME);
     tx = getControl<TxControl *>(controlName);
+    controlName = opt.get("--controlRx", DEFAULT_RXCONTROL_NAME);
+    rx = getControl<RxControl *>(controlName);
     controlName = opt.get("--controlJs", DEFAULT_JSCONTROL_NAME);
     js = getControl<CRTSControl *>(controlName);
 
     maxFreq = opt.get("--maxFreq", DEFAULT_MAXFREQ) * 1.0e6;
     minFreq = opt.get("--minFreq", DEFAULT_MINFREQ) * 1.0e6;
 
-    freq = lastFreq = maxFreq;
+    txFreq = lastTxFreq = maxFreq;
+    rxFreq = lastRxFreq = maxFreq;
+
     DSPEW();
 }
 
 
-void JoystickTx::start(CRTSControl *c)
+void JoystickTxRx::start(CRTSControl *c)
 {
-    if(c->getId() != js->getId())
+    if(c->getId() == tx->getId())
     {
         // This call is from the CRTS Tx filter
         DASSERT(tx->usrp, "");
-        tx->usrp->set_tx_freq(maxFreq);
+        tx->usrp->set_tx_freq(txFreq);
+        lastTxFreq = txFreq;
         // TODO: check that the freq was really set.
     }
 
-    DSPEW("controlJs=\"%s\" controlTx=\"%s\" maxFreq=%lg minFreq=%lg",
-            js->getName(), tx->getName(), maxFreq, minFreq);
+    if(c->getId() == rx->getId())
+    {
+        // This call is from the CRTS Tx filter
+        DASSERT(tx->usrp, "");
+        rx->usrp->set_rx_freq(rxFreq);
+        lastRxFreq = rxFreq;
+        // TODO: check that the freq was really set.
+    }
+
+    DSPEW("control=\"%s\"", c->getName());
 }
 
 
-void JoystickTx::stop(CRTSControl *c)
+void JoystickTxRx::stop(CRTSControl *c)
 {
     DSPEW();
 }
 
 
-void JoystickTx::execute(CRTSControl *c, const void *buffer,
+void JoystickTxRx::execute(CRTSControl *c, const void *buffer,
         size_t len, uint32_t channelNum)
 {
-    if(c->getId() != js->getId())
+    if(c->getId() == tx->getId())
     {
         // This call is from the CRTS Tx filter
 
-        if(freq != lastFreq)
+        if(txFreq != lastTxFreq)
         {
-            fprintf(stderr, "   Setting carrier frequency to  %lg Hz\n", freq);
-            tx->usrp->set_tx_freq(freq);
-            lastFreq = freq;
+            fprintf(stderr, "   Setting TX carrier frequency to  %lg Hz\n", txFreq);
+            tx->usrp->set_tx_freq(txFreq);
+            lastTxFreq = txFreq;
         }
 
         return;
     }
+
+    if(c->getId() == rx->getId())
+    {
+        // This call is from the CRTS Rx filter
+
+        if(rxFreq != lastRxFreq)
+        {
+            fprintf(stderr, "   Setting RX carrier frequency to  %lg Hz\n", rxFreq);
+            rx->usrp->set_rx_freq(rxFreq);
+            lastRxFreq = rxFreq;
+        }
+
+        return;
+    }
+
 
     // Else this call is from the CRTS joystick filter
 
@@ -148,7 +182,7 @@ void JoystickTx::execute(CRTSControl *c, const void *buffer,
         if(!(e[i].type & JS_EVENT_AXIS) || e[i].number != 0)
             continue;
 
-        freq = minFreq +
+        txFreq = rxFreq = minFreq +
             (((double) e[i].value - SHRT_MIN)/((double) SHRT_MAX - SHRT_MIN)) * 
             (maxFreq - minFreq);
     }
@@ -156,4 +190,4 @@ void JoystickTx::execute(CRTSControl *c, const void *buffer,
 
 
 // Define the module loader stuff to make one of these class objects.
-CRTSCONTROLLER_MAKE_MODULE(JoystickTx)
+CRTSCONTROLLER_MAKE_MODULE(JoystickTxRx)

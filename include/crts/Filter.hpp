@@ -474,6 +474,10 @@ class CRTSFilter
                 uint32_t outputChannelNum = CRTSFilter::ALL_CHANNELS) const;
 
 
+        CRTSControl *makeControl(const char *controlName)
+        {
+            return makeControl(controlName, false);
+        };
 
  
     friend FilterModule; // The rest of the filter code and data.

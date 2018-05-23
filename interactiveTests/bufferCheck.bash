@@ -19,7 +19,7 @@ function waitForStart()
     # This can totally fail due to race condition.
     #
     while ! killall -CONT crts_radio 2> /dev/null  ; do
-        sleep 0.01
+        sleep 0.1
     done &
 }
 
@@ -38,6 +38,12 @@ function waitForFinish()
 }
 
 ret=0
+
+# This script is not so great.
+set +e
+killall -9 crts_radio
+set -e
+
 
 waitForStart
 

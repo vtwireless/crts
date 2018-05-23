@@ -16,9 +16,9 @@ class TxControl: public CRTSControl
     public:
 
         // This is a very course/crude control that lets the controllers
-        // just have at the guts of this RX device.  This may not be what
+        // just have at the guts of this TX device.  This may not be what
         // you want, but this is very simple way to get control to the
-        // controller.  It's an obvious first try, example, for RX filter
+        // controller.  It's an obvious first try, example, for TX filter
         // control/controller connectivity.
 
         uhd::usrp::multi_usrp::sptr &usrp;

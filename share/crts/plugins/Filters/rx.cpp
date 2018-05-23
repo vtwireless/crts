@@ -118,7 +118,7 @@ static const char *getControlName(int argc, const char **argv)
 // initializing stuff.
 //
 Rx::Rx(int argc, const char **argv):
-    rxControl(this, getControlName(argc, argv), usrp, rx_stream),
+    rxControl(this, getControlName(argc, argv), usrp),
     usrp(0), rx_stream(0), max_num_samps(0), numRxChannels(1)
 {
     CRTSModuleOptions opt(argc, argv, usage);
