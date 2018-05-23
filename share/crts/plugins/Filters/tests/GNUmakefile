@@ -4,7 +4,7 @@
 ROOT := ../../../../../
 include $(ROOT)/config.make
 
-INSTALL_DIR = $(PREFIX)/share/crts/plugins/$(notdir $(CURDIR))
+INSTALL_DIR = $(PREFIX)/share/crts/plugins/Filters/tests
 
 CPPFLAGS := -I$(ROOT)include
 
