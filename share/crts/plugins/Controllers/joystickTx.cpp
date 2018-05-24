@@ -120,7 +120,8 @@ void JoystickTx::stop(CRTSControl *c)
 
 
 // This function is called by two different threads one from the Tx filter
-// and one from the joystick filter.
+// and one from the joystick filter, hence the shared variable freq is
+// atomic.
 //
 void JoystickTx::execute(CRTSControl *c, const void *buffer,
         size_t len, uint32_t channelNum)

@@ -119,6 +119,8 @@ class JoystickReader : public CRTSFilter, public CRTSController
 
         double maxFreq, minFreq, lastFreq;
 
+        // freq is shared between this filters thread and the Tx filters
+        // thread.
         std::atomic<double> freq;
 };
 

@@ -1,0 +1,86 @@
+#!/bin/bash
+
+# Set defaults
+tag=
+root=/usr/local/encap/node
+prefix=
+
+default_tag="${TAG:=v10.2.0}"
+default_prefix="${PREFIX:=${root}-${default_tag}}"
+
+
+
+set -e
+
+
+function usage()
+{
+    cat << EOF
+
+
+  Usage: $0 [[[-]-prefix[=]| ]PREFIX] [TAG]
+
+   Install nodeJS from the github source.
+
+    
+  ---------------- OPTIONS -------------------------
+
+    -prefix PREFIX  Set the installation prefix directory.
+          Don't include a trailing '/'.   The default prefix
+          is $default_prefix
+
+    TAG   pick a particular git tag of the source to install.
+          The default tag is $default_tag
+
+EOF
+    exit 1
+}
+
+
+while [ -n "$1" ] ; do
+
+    case "$1" in
+
+        -h*|--h*)
+            usage
+            ;;
+        -prefix|--prefix)
+            shift 1
+            [ -z "$1"] && usage
+            prefix="$1"
+            ;;
+        -prefix=*|--prefix=*)
+            prefix="${1##*-prefix=}"
+            ;;
+        *)
+            tag="$1"
+            ;;
+    esac
+    shift
+done
+
+[ -n "$tag" ] || tag="$default_tag"
+[ -n "$prefix" ] || prefix="${root}-${tag}"
+
+set -o pipefail
+
+echo "prefix=$prefix"
+echo "nodeJS github tag=$tag"
+
+
+set -x
+mkdir BUILD_nodejs-${tag}
+cd BUILD_nodejs-${tag}
+
+path=nodejs/node
+
+wget -O - https://github.com/$path/tarball/$tag | tar -xz
+
+cd nodejs-node*
+
+./configure --prefix=$prefix
+make -j$(nproc||4)
+make install
+
+set +x
+echo "SUCCESSFULLY installed nodeJS $tag in prefix=$prefix"
