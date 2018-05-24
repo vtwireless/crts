@@ -6,6 +6,7 @@
 #include <crts/Controller.hpp>
 #include <linux/input.h>
 #include <linux/joystick.h>
+#include <atomic>
 
 #include "../Filters/txControl.hpp"
 
@@ -28,7 +29,9 @@ class JoystickTx: public CRTSController
         TxControl *tx;
         CRTSControl *js;
 
-        double maxFreq, minFreq, freq, lastFreq;
+        double maxFreq, minFreq, lastFreq;
+
+        std::atomic<double> freq;
 };
 
 
@@ -116,6 +119,9 @@ void JoystickTx::stop(CRTSControl *c)
 }
 
 
+// This function is called by two different threads one from the Tx filter
+// and one from the joystick filter.
+//
 void JoystickTx::execute(CRTSControl *c, const void *buffer,
         size_t len, uint32_t channelNum)
 {
@@ -123,11 +129,14 @@ void JoystickTx::execute(CRTSControl *c, const void *buffer,
     {
         // This call is from the CRTS Tx filter
 
-        if(freq != lastFreq)
+        // atomic get freq.
+        double f = freq;
+
+        if(f != lastFreq)
         {
-            fprintf(stderr, "   Setting carrier frequency to  %lg Hz\n", freq);
-            tx->usrp->set_tx_freq(freq);
-            lastFreq = freq;
+            fprintf(stderr, "   Setting carrier frequency to  %lg Hz\n", f);
+            tx->usrp->set_tx_freq(f);
+            lastFreq = f;
         }
 
         return;
@@ -148,6 +157,8 @@ void JoystickTx::execute(CRTSControl *c, const void *buffer,
         if(!(e[i].type & JS_EVENT_AXIS) || e[i].number != 0)
             continue;
 
+        // atomic set freq.
+        //
         freq = minFreq +
             (((double) e[i].value - SHRT_MIN)/((double) SHRT_MAX - SHRT_MIN)) * 
             (maxFreq - minFreq);

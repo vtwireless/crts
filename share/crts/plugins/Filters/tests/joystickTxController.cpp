@@ -8,6 +8,7 @@
 #include <stdlib.h>
 #include <linux/input.h>
 #include <linux/joystick.h>
+#include <atomic>
 
 #include "crts/debug.h"
 #include "crts/crts.hpp"
@@ -66,7 +67,7 @@ static void usage(void)
 "                       control name is \"" DEFAULT_TXCONTROL_NAME "\".\n"
 "\n"
 "\n"
-"  --device DEVICE_PATH set the linux device file to DEVICE_PATH.  The default\n"
+"   --device DEVICE     set the linux device file to DEVICE.  The default\n"
 "                       linux device file is \"" DEFAULT_DEVICE_PATH "\"\n"
 "\n"
 "\n"
@@ -94,16 +95,19 @@ class JoystickReader : public CRTSFilter, public CRTSController
     //
         bool start(uint32_t numInChannels, uint32_t numOutChannels);
         bool stop(uint32_t numInChannels, uint32_t numOutChannels);
+
+        // Called in this filter thread
         void input(void *buffer, size_t bufferLen, uint32_t inChannelNum);
+
 
     // For the controller
     //
-        void start(CRTSControl *c) { };
-        void stop(CRTSControl *c) { };
+        void start(CRTSControl *c) { DSPEW(); };
+        void stop(CRTSControl *c) { DSPEW(); };
+
+        // Called in TX filter thread
         void execute(CRTSControl *c, const void * buffer, size_t len,
-                uint32_t inChannelNum)
-        {
-        };
+                uint32_t inChannelNum);
 
     private:
 
@@ -112,10 +116,32 @@ class JoystickReader : public CRTSFilter, public CRTSController
         struct js_event jsEvents[NUM_STRUCTS];
 
         TxControl *tx;
-        //CRTSControl *js;
 
-        double maxFreq, minFreq, freq, lastFreq;
+        double maxFreq, minFreq, lastFreq;
+
+        std::atomic<double> freq;
 };
+
+
+// The joystick controller controlling the TX
+//
+void JoystickReader::execute(CRTSControl *c, const void * buffer, size_t len,
+                uint32_t inChannelNum)
+{
+    // This call is from the CRTS Tx filters' thread
+
+    DASSERT(c->getId() == tx->getId(), "");
+
+    // atomic get freq in this thread.
+    double f = freq;
+
+    if(f != lastFreq)
+    {
+        fprintf(stderr, "   Setting carrier frequency to  %lg Hz\n", f);
+        tx->usrp->set_tx_freq(f);
+        lastFreq = f;
+    }
+}
 
 
 JoystickReader::JoystickReader(int argc, const char **argv): fd(-1)
@@ -151,7 +177,7 @@ bool JoystickReader::start(uint32_t numInChannels, uint32_t numOutChannels)
     if(numOutChannels)
     {
         WARN("Should not have output channels, got %"
-                PRIu32, numInChannels);
+                PRIu32, numOutChannels);
         return true; // fail
     }
 
@@ -183,6 +209,8 @@ bool JoystickReader::stop(uint32_t numInChannels, uint32_t numOutChannels)
 
 void JoystickReader::input(void *buffer, size_t len, uint32_t channelNum)
 {
+    // This call is from this CRTS filters' thread
+
     DASSERT(len == 0, "");
 
     len = NUM_STRUCTS*sizeof(struct js_event);
@@ -201,7 +229,21 @@ void JoystickReader::input(void *buffer, size_t len, uint32_t channelNum)
         return;
     }
 
-    fwrite(jsEvents, 1, len, crtsOut);
+    size_t n = ret/sizeof(struct js_event);
+
+    for(size_t i=0; i<n; ++i)
+    {
+        if(!(jsEvents[i].type & JS_EVENT_AXIS) || jsEvents[i].number != 0)
+            continue;
+
+        // atomic set freq in this thread.
+        freq = minFreq +
+            (((double) jsEvents[i].value - SHRT_MIN)/
+             ((double) SHRT_MAX - SHRT_MIN))*(maxFreq - minFreq);
+    }
+
+    // Spew for the hell of it.
+    //fwrite(jsEvents, 1, len, crtsOut);
 }
 
 
