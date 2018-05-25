@@ -5,9 +5,13 @@ tag=
 root=/usr/local/encap/node
 prefix=
 
+#
 default_tag="${TAG:=v10.2.0}"
-default_prefix="${PREFIX:=${root}-${default_tag}}"
+#
+#default_tag="${TAG:=v8.11.2}"
 
+
+default_prefix="${PREFIX:=${root}-${default_tag}}"
 
 
 set -e
@@ -72,9 +76,8 @@ set -x
 mkdir BUILD_nodejs-${tag}
 cd BUILD_nodejs-${tag}
 
-path=nodejs/node
 
-wget -O - https://github.com/$path/tarball/$tag | tar -xz
+wget -O - https://github.com/nodejs/node/tarball/$tag | tar -xz
 
 cd nodejs-node*
 
