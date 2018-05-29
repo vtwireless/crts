@@ -24,13 +24,16 @@ Building and installing CRTS requires:
 ```
 apt-get install\
  build-essential\
+ patchelf\
  libreadline-dev\
  graphviz\
  imagemagick\
  joystick\
  doxygen\
  dia\
- libgtk-3-dev
+ libgtk-3-dev\
+ git\
+ patchelf
 ```
 
 
@@ -132,12 +135,30 @@ GNURADIO__PREFIX.
 ```
 which will generate the one file config.make.
 
+
+
+Then run
+
+```
+./Install_NodeJS
+```
+
+or
+
+
+```
+./Install_NodeJS -prefix MY_PREFIX
+```
+where MY_PREFIX is the node JS installation prefix directory,
+or install node JS your own way.
+
+
 Then run
 ```
 make download
 ```
-which will download the liquid-dsp and libfec package tarballs
-and maybe one or more files.
+which will download some files using node JS's npm, the liquid-dsp and
+libfec package tarballs and a few more files.
 
 
 If you are building and installing libUHD from GitHub source using
