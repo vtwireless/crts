@@ -1,5 +1,11 @@
 DEVELOPER NOTES:
 
+WebRTC google talk
+https://www.youtube.com/watch?v=p2HzZkd2A40
+
+
+
+
 
 notes on CRTSFilter
 
@@ -186,55 +192,6 @@ The following packages were automatically installed and are no longer required:
   python-sip python-subprocess32 python-tz python-webencodings python-wxgtk3.0 python-wxversion python-yaml python-zmq rtl-sdr uhd-host
 
 
-```
-apt-get install build-essential libreadline-dev graphviz imagemagick joystick doxygen
-```
-
-If we do not use package "libuhd-dev" 
-
-In addition 
-```
-apt-get install libboost-all-dev python-mako libqt4-dev qt4-dev-tools libqwt5-qt4-dev swig libfftw3-dev texlive
-```
-
-
-
-We need this to build gnuradio in /gnuradio
-
-```
-apt-get install\
- python-bs4\
- python-cheetah\
- python-cycler\
- python-dateutil\
- python-decorator\
- python-functools32\
- python-glade2\
- python-html5lib\
- python-imaging\
- python-lxml\
- python-matplotlib\
- python-matplotlib-data\
- python-networkx\
- python-opengl\
- python-pygraphviz\
- python-pyparsing\
- python-qt4\
- python-qwt5-qt4\
- python-scipy\
- python-sip\
- python-subprocess32\
- python-tz\
- python-webencodings\
- python-wxgtk3.0\
- python-wxversion\
- python-yaml\
- python-zmq
-```
-
-Maybe more...
-
-
 ## Installing from git clone source
 
 In the top source directory run
@@ -283,3 +240,88 @@ cd interactiveTests
 
 and look at and run test programs in that directory.
 
+
+###################################################################################
+
+Tue May 29 11:30:06 EDT 2018
+
+This may not be the least number of packages required.
+
+# on a ubuntu Mate system  16.04
+
+dpkg --add-architecture i386
+
+apt-get install\
+ build-essential\
+ libreadline-dev\
+ graphviz\
+ imagemagick\
+ joystick\
+ doxygen\
+ dia\
+ libgtk-3-dev\
+ gcc-multilib\
+ libgnutls30\
+ csh\
+ libstdc++6:i386\
+ libgcc1:i386\
+ zlib1g:i386\
+ libncurses5:i386\
+ vim-gtk\
+ libgtk2.0-dev\
+ libgtk2.0-doc\
+ libgtk-3-dev\
+ libgtk-3-doc\
+ devhelp\
+ sox\
+ at\
+ imagemagick-doc\
+ imagemagick\
+ graphviz-dev\
+ curl\
+ pkgconf\
+ autoconf\
+ libtool\
+ automake\
+ locate\
+ libgnutls28-dev\
+ libboost-all-dev\
+ python-mako\
+ libqt4-dev\
+ qt4-dev-tools\
+ libqwt5-qt4-dev\
+ swig\
+ libfftw3-dev\
+ texlive\
+ cmake\
+ python-bs4\
+ python-cheetah\
+ python-cycler\
+ python-dateutil\
+ python-decorator\
+ python-functools32\
+ python-glade2\
+ python-html5lib\
+ python-imaging\
+ python-lxml\
+ python-matplotlib\
+ python-matplotlib-data\
+ python-networkx\
+ python-opengl\
+ python-pygraphviz\
+ python-pyparsing\
+ python-qt4\
+ python-qwt5-qt4\
+ python-scipy\
+ python-sip\
+ python-subprocess32\
+ python-tz\
+ python-wxgtk3.0\
+ python-wxversion\
+ python-yaml\
+ python-zmq\
+ python-weblib\
+ git
+ 
+
+ 
