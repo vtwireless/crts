@@ -70,7 +70,8 @@ srcs :=\
  liquidFrame.cpp\
  liquidSync.cpp\
  joystick.cpp\
- sink.cpp
+ sink.cpp\
+ fileIn.cpp
 
 
 

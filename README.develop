@@ -3,58 +3,15 @@ DEVELOPER NOTES:
 WebRTC google talk
 https://www.youtube.com/watch?v=p2HzZkd2A40
 
+WebRTC getUserMedia Test Page
+https://mozilla.github.io/webrtc-landing/gum_test.html
 
 
+moving Firefox and WebRTC forward
+https://blog.mozilla.org/webrtc/
 
-
-notes on CRTSFilter
-
-
-
-class CRTSFilter
-{
-    public:
-
-        CRTSFilter(int argc, const char **argv);
-        ~CRTSFilter(void);
-
-        // We have a start() and stop() so we can reconfigure and restart
-        // the streams/graphs.
-        //
-        // GNUradio cannot restart the flow without stopping the process
-        // and re-running the process.  There is no Block start and start.
-        // eg: if we ran the star ship reactor core and drive system with
-        // this code, and the reactor core was started in the constructor
-        // of a Block (Filter), we have to shutdown the reactor core any
-        // time we needed to move a conduit.  But with a start and stop
-        // used to stop and start the flow, we do not have to shutdown the
-        // reactor core to move a conduit.
-        //
-        void start(uint32_t numInChannels, uint32_t numOutChannels) = 0;
-        void stop(uint32_t numInChannels, uint32_t numOutChannels) = 0;
-        void write(void *buffer, size_t bufferLen, uint32_t inChannelNum) = 0;
-};
-
-
-
-class MyFilter : public CRTSFilter
-{
-    public:
-
-        MyFilter(int argc, const char **argv);
-        ~MyFilter(void);
-
-        void start(uint32_t numInChannels, uint32_t numOutChannels);
-        void stop(uint32_t numInChannels, uint32_t numOutChannels);
-        void input(void *buffer, size_t bufferLen, uint32_t inChannelNum);
-};
-
-
-
-
-
-
-
+WebRTC - Signaling
+https://www.tutorialspoint.com/webrtc/webrtc_signaling.htm
 
 
 
@@ -274,4 +231,10 @@ apt-get install\
  patchelf
 
 
-
+# for gstreamer-1.14.1 source
+libbison-dev
+flex
+gtk-doc-tools
+json-glib-tools
+libjson-glib-dev
+libnice-dev

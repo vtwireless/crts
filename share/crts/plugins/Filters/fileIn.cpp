@@ -1,12 +1,48 @@
 #include <stdio.h>
-#include <string.h>
-#include <stdlib.h>
 #include <errno.h>
-#include <string>
+#include <unistd.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
 
 #include "crts/crts.hpp"
 #include "crts/debug.h"
 #include "crts/Filter.hpp"
+
+#define BUFLEN (1024)
+
+#define DEFAULT_FILENAME  "-"
+
+
+
+static void usage(void)
+{
+    char nameBuf[64], *name;
+    name = CRTS_BASENAME(nameBuf, 64);
+
+    fprintf(stderr,
+"\n"
+"\n"
+"Usage: %s [ OPTIONS ]\n"
+"\n"
+"\n    Read a file (raw) without a stream buffer.\n"
+"\n"
+"  ---------------------------------------------------------------------------\n"
+"                           OPTIONS\n"
+"  ---------------------------------------------------------------------------\n"
+"\n"
+"\n"
+"    --file FILE  open and read file FILE.  The default file is " DEFAULT_FILENAME
+"\n"
+"                 which is STDIN_FILENO the standard input.\n"
+"\n"
+"\n",
+    name);
+
+    errno = 0;
+    throw "usage help"; // This is how return an error from a C++ constructor
+    // the module loader will catch this throw.
+}
 
 
 class FileIn : public CRTSFilter
@@ -16,101 +52,106 @@ class FileIn : public CRTSFilter
         FileIn(int argc, const char **argv);
         ~FileIn(void);
 
-        ssize_t write(void *buffer, size_t bufferLen,
-                uint32_t channelNum);
+        bool start(uint32_t numInChannels, uint32_t numOutChannels);
+        bool stop(uint32_t numInChannels, uint32_t numOutChannels);
+        void input(void *buffer, size_t bufferLen, uint32_t inChannelNum);
+
     private:
 
-        FILE *file;
- };
+        const char *filename;
+
+        int fd;
+};
 
 
-// This is called if the user ran something like: 
-//
-//    crts_radio -f file [ --help ]
-//
-//
-static void usage(void)
+FileIn::FileIn(int argc, const char **argv): fd(-1)
 {
-    char name[64];
-    fprintf(crtsOut, "Usage: %s [ --file IN_FILENAME ]\n"
-            "\n"
-            "  The option IN_FILENAME is optional.\n"
-            "  The default input is stdin.\n"
-            "\n"
-            "\n"
-            , CRTS_BASENAME(name, 64));
+    CRTSModuleOptions opt(argc, argv, usage);
 
-    throw ""; // This is how return an error from a C++ constructor
-    // the module loader with catch this throw.
+    filename = opt.get("--file", "stdin");
+
+    DSPEW();
 }
 
 
-
-FileIn::FileIn(int argc, const char **argv)
+bool FileIn::start(uint32_t numInChannels, uint32_t numOutChannels)
 {
-    CRTSModuleOptions opt(argc, argv, usage);
-    const char *filename = opt.get("--file", "");
- 
-    if(filename && filename[0])
+    if(numOutChannels)
     {
-        errno = 0;
-        file = fopen(filename, "r");
-        if(!file)
+
+        if(strcmp(filename, "stdin") && strcmp(filename, "-"))
+            fd = open(filename, O_RDONLY);
+        else
+            fd = STDIN_FILENO;
+
+        if(fd < 0)
         {
-            ERROR("fopen(\"%s\", \"r\") failed", filename);
-            throw "failed to open file";
+            WARN("open(\"%s\", O_RDONLY) failed", filename);
+            return true; // fail
         }
-        INFO("opened file: %s", filename);
     }
-    else
-        file = stdin;
+
+ 
+    if(!isSource())
+    {
+        WARN("This must be a source");
+        return true; // fail.
+    }
+
+    // We use one buffer for the source of each output Channel
+    // that all share the same ring buffer.
+    createOutputBuffer(BUFLEN, ALL_CHANNELS);
 
     DSPEW();
+    return false; // success
+}
+
+
+bool FileIn::stop(uint32_t numInChannels, uint32_t numOutChannels)
+{
+    // In this function we could flush away all the input data to stdin,
+    // but if the input never stops that could be a problem.  We could
+    // close a file here, but that's not a good idea either.  So stop() in
+    // this filter does nothing, any input to stdin will just accumulate.
+    //
+    // We have no reactor core to shutdown in this, stdin, case.
+    //
+    // Buffers all get destroyed automatically and if a start() happens
+    // again buffers get re-created.
+
+    if(fd > -1 && fd != STDIN_FILENO)
+        close(fd);
+    fd = -1;
+
+    DSPEW();
+    return false; // success
 }
 
 
 FileIn::~FileIn(void)
 {
-    if(file && file != stdin)
-        fclose(file);
-    file = 0;
+    // Do nothing...
 
     DSPEW();
 }
 
 
-ssize_t FileIn::write(void *buffer, size_t len, uint32_t channelNum)
+void FileIn::input(void *buffer_in, size_t len, uint32_t inputChannelNum)
 {
-    // This filter is a source so there no data passed to
-    // whatever called this write().
-    //
-    DASSERT(buffer == 0, "");
+    uint8_t *buffer = (uint8_t *) getOutputBuffer(0);
 
-    if(feof(file)) 
+    ssize_t ret = read(fd, buffer, BUFLEN);
+
+    if(ret < 1)
     {
+        NOTICE("read(,,%zu) returned %zd", BUFLEN, ret);
         // end of file
         stream->isRunning = false;
-        NOTICE("read end of file");
-        return 0; // We are done.
+        return;
     }
- 
-    // Recycle the buffer and len argument variables.
-    len = 1024;
-    // Get a buffer from the buffer pool.
-    buffer = (uint8_t *) getBuffer(len);
 
-    // This filter is a source, it reads file which is not a
-    // part of this filter stream.
-    size_t ret = fread(buffer, 1, len, file);
-
-    if(ret != len)
-        NOTICE("fread(,1,%zu,file) only read %zu bytes", len, ret);
-
-    if(ret > 0)
-        // Send this buffer to the next readers write call.
-        writePush(buffer, ret, ALL_CHANNELS);
-
-    return 1;
+    // Send the output to other down-stream filters.
+    output(ret, ALL_CHANNELS);
 }
 
 
