@@ -6,12 +6,15 @@ https://www.youtube.com/watch?v=p2HzZkd2A40
 WebRTC getUserMedia Test Page
 https://mozilla.github.io/webrtc-landing/gum_test.html
 
-
 moving Firefox and WebRTC forward
 https://blog.mozilla.org/webrtc/
 
 WebRTC - Signaling
 https://www.tutorialspoint.com/webrtc/webrtc_signaling.htm
+
+GStreamer WebRTC demos
+refers to most of the gstreamer codes.
+https://github.com/centricular/gstwebrtc-demos
 
 
 
