@@ -76,28 +76,29 @@ FileIn::FileIn(int argc, const char **argv): fd(-1)
 
 bool FileIn::start(uint32_t numInChannels, uint32_t numOutChannels)
 {
-    if(numOutChannels)
-    {
-
-        if(strcmp(filename, "stdin") && strcmp(filename, "-"))
-            fd = open(filename, O_RDONLY);
-        else
-            fd = STDIN_FILENO;
-
-        if(fd < 0)
-        {
-            WARN("open(\"%s\", O_RDONLY) failed", filename);
-            return true; // fail
-        }
-    }
-
- 
     if(!isSource())
     {
         WARN("This must be a source");
         return true; // fail.
     }
 
+    if(!numOutChannels)
+    {
+        WARN("There must be an output channel");
+        return true; // fail
+    }
+
+    if(strcmp(filename, "stdin") && strcmp(filename, "-"))
+        fd = open(filename, O_RDONLY);
+    else
+        fd = STDIN_FILENO;
+
+    if(fd < 0)
+    {
+        WARN("open(\"%s\", O_RDONLY) failed", filename);
+        return true; // fail
+    }
+ 
     // We use one buffer for the source of each output Channel
     // that all share the same ring buffer.
     createOutputBuffer(BUFLEN, ALL_CHANNELS);
