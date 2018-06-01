@@ -9,6 +9,7 @@
 #include <errno.h>
 #include <string>
 #include <typeinfo>
+#include <vector>
 #include <gnu/lib-names.h>
 
 #include <crts/debug.h>
@@ -190,7 +191,8 @@ class CRTSModuleOptions
         };
 
         // This seems to get size_t too.
-        unsigned long get(const char *optName, unsigned long defaultVal)
+        unsigned long get(const char *optName, unsigned long defaultVal,
+                char **end = 0)
         {
             const char *arg = 0;
             const char *opt = 0;
@@ -203,8 +205,42 @@ class CRTSModuleOptions
             ret = strtoul(arg, &endptr, 10);
             if(errno || arg == endptr)
                 _crtsThrowUsage(arg, optName, usage);
+            if(end) *end = endptr;
             return ret;
         };
+
+
+
+        template <class T>
+        std::vector<T> getV(const char *optName, T defaultVal)
+        {
+            const char *arg = 0;
+            const char *opt = 0;
+            std::vector<T> ret;
+            getInit(arg, opt, optName);
+            if(!arg)
+            {
+                ret = { defaultVal };
+                return ret;
+            }
+
+            opt = arg;
+            char *end = 0;
+            do
+                ret.push_back(strtoT<T>(arg, &end, optName));
+            while(*end && end);
+
+            std::string str = "[";
+            for(size_t i=0; i<ret.size(); ++i)
+                str += std::to_string(ret[i]) + ",";
+            str += "]";
+
+            DSPEW("Got option vector \"%s\" from arg=\"%s\"",
+                    str.c_str(), arg);
+
+            return ret;
+        };
+
 
 #if 0
         size_t get(const char *optName, size_t defaultVal)
@@ -214,6 +250,33 @@ class CRTSModuleOptions
 #endif
 
     private:
+
+
+        template <class T>
+        T strto(const char * s, char **end, int base)
+        {
+            if(std::is_same<T, double>::value)
+                return (T) strtod(s, end);
+            if(std::is_same<T, unsigned long>::value)
+                return (T) strtoul(s, end, base);
+            return 0;
+        };
+
+        template <class T>
+        T strtoT(const char * &s, char **end, const char *optName)
+        {
+            errno = 0;
+            T val = strto<T>(s, end, 10);
+
+            if(errno || *end == s)
+                _crtsThrowUsage(s, optName, usage);
+            if(!(*end) || *end == s)
+                *end = 0;
+            else
+                s = *end+1; // go to next
+            return val;
+        };
+
 
         // It could be that opt and optName are not the same if we
         // parse option arguments like: --file=foobar
@@ -232,7 +295,7 @@ class CRTSModuleOptions
                     arg = argv[++i];
                     continue;
                 }
-        }
+        };
 
         int argc;
         const char **argv;

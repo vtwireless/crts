@@ -29,8 +29,9 @@ class Tx : public CRTSFilter
 
         TxControl txControl;
 
-        std::string uhd_args, subdev, channels;
-        double freq, rate, gain;
+        std::string uhd_args, subdev;
+        std::vector<size_t> channels;
+        std::vector<double> freq, rate, gain;
 
         uhd::usrp::multi_usrp::sptr usrp;
         uhd::tx_streamer::sptr tx_stream;
@@ -68,6 +69,10 @@ static void usage(void)
 "  ---------------------------------------------------------------------------\n"
 "                           OPTIONS\n"
 "  ---------------------------------------------------------------------------\n"
+"\n"
+"\n"
+"                  FREQ, GAIN, and RATE may be a single number or a list of\n"
+"                  numbers with each number separated by a comma (,).\n"
 "\n"
 "\n"
 "   --channels CH   which channel(s) to use (specify \"0\", \"1\", \"0,1\", etc)\n"
@@ -109,7 +114,8 @@ static void usage(void)
         TX_FREQ, TX_GAIN, TX_RATE, name, name);
 
     errno = 0;
-    throw "usage help"; // This is how return an error from a C++ constructor
+    throw "usage help";
+    // This is how return an error from a C++ constructor
     // the module loader will catch this throw.
 }
 
@@ -131,15 +137,17 @@ Tx::Tx(int argc, const char **argv):
     CRTSModuleOptions opt(argc, argv, usage);
 
     uhd_args = opt.get("--uhd", "");
-    freq = opt.get("--freq", TX_FREQ);
-    rate = opt.get("--rate", TX_RATE);
-    gain = opt.get("--gain", TX_GAIN);
+    freq = opt.getV<double>("--freq", TX_FREQ);
+    rate = opt.getV<double>("--rate", TX_RATE);
+    gain = opt.getV<double>("--gain", TX_GAIN);
+    channels = opt.getV<size_t>("--channels", 0);
     subdev = opt.get("--subdev", "");
-    channels = opt.get("--channels", "");
 
     // Convert the rate and freq to Hz from MHz
-    freq *= 1.0e6;
-    rate *= 1.0e6;
+    for(size_t i=0; i<freq.size(); ++i)
+        freq[i] *= 1.0e6;
+    for(size_t i=0; i<rate.size(); ++i)
+        rate[i] *= 1.0e6;
 
     DSPEW();
 }
@@ -150,6 +158,18 @@ Tx::~Tx(void)
     // TODO: delete usrp device; how?
 
     DSPEW();
+}
+
+
+static double getVal(std::vector<double> vec, size_t i)
+{
+    ASSERT(vec.size(), "");
+
+    if(vec.size() > i)
+        return vec[i];
+
+    // return the last element
+    return vec[vec.size() -1];
 }
 
 
@@ -187,36 +207,16 @@ bool Tx::start(uint32_t numInChannels, uint32_t numOutChannels)
 
         uhd::stream_args_t stream_args("fc32", "sc16");
 
-        std::vector<size_t> channel_nums;
-        for(const char *s=channels.c_str(); *s;)
-        {
-            char *end = 0;
-            errno = 0;
-            size_t ch = strtoul(s, &end, 10);
-            if(errno)
-            {
-                WARN("Bad channel number in \"%s\"",
-                        channels.c_str());
-                return true;
-            }
-            DSPEW("channel %zu", ch);
-            channel_nums.push_back(ch);
-            if(!(*end) || end == s) break;
-            s = end+1; // go to next
-        }
-
-        if(channel_nums.size())
-        {
-            stream_args.channels = channel_nums;
-            numTxChannels = channel_nums.size();
-        }
-        else
-            channel_nums = { 0 };
+        stream_args.channels = channels;
+        numTxChannels = channels.size();
 
         tx_stream = usrp->get_tx_stream(stream_args);
 
-        for(size_t i=0; i<channel_nums.size(); ++i)
-            if(crts_usrp_tx_set(usrp, freq, rate, gain, channel_nums[i]))
+        for(size_t i=0; i<channels.size(); ++i)
+            if(crts_usrp_tx_set(usrp,
+                        getVal(freq,i),
+                        getVal(rate,i),
+                        getVal(gain,i), channels[i]))
             {
                 stop(0,0);
                 return true; // fail
@@ -250,22 +250,20 @@ bool Tx::stop(uint32_t numInChannels, uint32_t numOutChannels)
 
 
 
-// len is the number of bytes not complex floats.
+// len is the number of bytes not complex floats or frames.
 //
 void Tx::input(void *buffer, size_t len, uint32_t channelNum)
 {
     // We must write integer number of std::complex<float> 
-    len -= len % sizeof(std::complex<float>);
+    len -= len % (numTxChannels*sizeof(std::complex<float>));
+
+    size_t numFrames = len/(numTxChannels*sizeof(std::complex<float>));
 
     // TODO: check for error here, and retry?
-    size_t ret = tx_stream->send(buffer, len/(numTxChannels*sizeof(std::complex<float>)),
-            metadata);
+    size_t ret = tx_stream->send(buffer, numFrames, metadata);
 
-    if(ret != len/sizeof(std::complex<float>))
-    {
-        WARN("wrote only %zu of complex values not %zu", ret,
-                len/sizeof(std::complex<float>));
-    }
+    if(ret != numFrames)
+        WARN("wrote only %zu frames not %zu", ret, numFrames);
 
     // Mark the number of bytes to advance the input buffer which is not
     // necessarily the same as "len" that was inputted.

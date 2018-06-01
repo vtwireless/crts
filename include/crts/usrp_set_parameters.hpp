@@ -9,9 +9,9 @@
 
 
 
-#define CHECK_COMPARE(r, x, y, ret)                                     \
+#define CHECK_COMPARE(r, x, y, ret, chan)                               \
     do {                                                                \
-        DSPEW(r " " #x ": %g", y);                                      \
+        DSPEW(r " %zu " #x ": %g", chan, y);                            \
         if(x > y * 1.001 || x < y * 0.999)                              \
         {                                                               \
             WARN(r " " #x " setting %g != got %g", x, y);               \
@@ -39,15 +39,15 @@ crts_usrp_rx_set(uhd::usrp::multi_usrp::sptr usrp,
     tune.dsp_freq = 0;
 
     usrp->set_rx_rate(rate, chan);
-    CHECK_COMPARE("RX", rate, usrp->get_rx_rate(chan), ret);
+    CHECK_COMPARE("RX", rate, usrp->get_rx_rate(chan), ret, chan);
     if(ret) return ret;
 
     usrp->set_rx_freq(tune, chan);
-    CHECK_COMPARE("RX", freq, usrp->get_rx_freq(chan), ret);
+    CHECK_COMPARE("RX", freq, usrp->get_rx_freq(chan), ret, chan);
     if(ret) return ret;
 
     usrp->set_rx_gain(gain, chan);
-    CHECK_COMPARE("RX", gain, usrp->get_rx_gain(chan), ret);
+    CHECK_COMPARE("RX", gain, usrp->get_rx_gain(chan), ret, chan);
     return ret;
 }
 
@@ -69,15 +69,15 @@ crts_usrp_tx_set(uhd::usrp::multi_usrp::sptr usrp,
     tune.dsp_freq = 0;
 
     usrp->set_tx_rate(rate, chan);
-    CHECK_COMPARE("TX", rate, usrp->get_tx_rate(chan), ret);
+    CHECK_COMPARE("TX", rate, usrp->get_tx_rate(chan), ret, chan);
     if(ret) return ret;
 
     usrp->set_tx_freq(tune, chan);
-    CHECK_COMPARE("TX", freq, usrp->get_tx_freq(chan), ret);
+    CHECK_COMPARE("TX", freq, usrp->get_tx_freq(chan), ret, chan);
     if(ret) return ret;
 
     usrp->set_tx_gain(gain, chan);
-    CHECK_COMPARE("TX", gain, usrp->get_tx_gain(chan), ret);
+    CHECK_COMPARE("TX", gain, usrp->get_tx_gain(chan), ret, chan);
     return ret;
 }
 

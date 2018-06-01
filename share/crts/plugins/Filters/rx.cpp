@@ -31,8 +31,9 @@ class Rx : public CRTSFilter
 
         RxControl rxControl;
 
-        std::string uhd_args, subdev, channels;
-        double freq, rate, gain;
+        std::string uhd_args, subdev;
+        std::vector<size_t> channels;
+        std::vector<double> freq, rate, gain;
 
         uhd::usrp::multi_usrp::sptr usrp;
         uhd::rx_streamer::sptr rx_stream;
@@ -70,6 +71,10 @@ static void usage(void)
 "  ---------------------------------------------------------------------------\n"
 "                           OPTIONS\n"
 "  ---------------------------------------------------------------------------\n"
+"\n"
+"\n"
+"                  FREQ, GAIN, and RATE may be a single number or a list of\n"
+"                  numbers with each number separated by a comma (,).\n"
 "\n"
 "\n"
 "   --channels CH   which channel(s) to use (specify \"0\", \"1\", \"0,1\", etc)\n"
@@ -135,15 +140,17 @@ Rx::Rx(int argc, const char **argv):
     CRTSModuleOptions opt(argc, argv, usage);
 
     uhd_args = opt.get("--uhd", "");
-    freq = opt.get("--freq", RX_FREQ);
-    rate = opt.get("--rate", RX_RATE);
-    gain = opt.get("--gain", RX_GAIN);
+    freq = opt.getV<double>("--freq", TX_FREQ);
+    rate = opt.getV<double>("--rate", TX_RATE);
+    gain = opt.getV<double>("--gain", TX_GAIN);
+    channels = opt.getV<size_t>("--channels", 0);
     subdev = opt.get("--subdev", "");
-    channels = opt.get("--channels", "");
 
     // Convert the rate and freq to Hz from MHz
-    freq *= 1.0e6;
-    rate *= 1.0e6;
+    for(size_t i=0; i<freq.size(); ++i)
+        freq[i] *= 1.0e6;
+    for(size_t i=0; i<rate.size(); ++i)
+        rate[i] *= 1.0e6;
 
     DSPEW();
 }
@@ -152,6 +159,17 @@ Rx::Rx(int argc, const char **argv):
 Rx::~Rx(void)
 {
     DSPEW();
+}
+
+static double getVal(std::vector<double> vec, size_t i)
+{
+    ASSERT(vec.size(), "");
+
+    if(vec.size() > i)
+        return vec[i];
+
+    // return the last element
+    return vec[vec.size() -1];
 }
 
 
@@ -190,39 +208,13 @@ bool Rx::start(uint32_t numInChannels, uint32_t numOutChannels)
 
         uhd::stream_args_t stream_args("fc32"); //complex floats
 
-        std::vector<size_t> channel_nums;
-        for(const char *s=channels.c_str(); *s;)
-        {
-            char *end = 0;
-            errno = 0;
-            size_t ch = strtoul(s, &end, 10);
-            if(errno)
-            {
-                WARN("Bad channel number in \"%s\"",
-                        channels.c_str());
-                return true;
-            }
-            DSPEW("channel %zu", ch);
-            channel_nums.push_back(ch);
-            if(!(*end) || end == s) break;
-            s = end+1; // go to next
-        }
-
-        if(channel_nums.size())
-        {
-            stream_args.channels = channel_nums;
-            numRxChannels = channel_nums.size();
-        }
-        else
-        {
-            numRxChannels = 1;
-            channel_nums = { 0 };
-        }
-
         rx_stream = usrp->get_rx_stream(stream_args);
 
-        for(size_t i=0; i<channel_nums.size(); ++i)
-            if(crts_usrp_rx_set(usrp, freq, rate, gain, channel_nums[i]))
+        for(size_t i=0; i<channels.size(); ++i)
+            if(crts_usrp_rx_set(usrp,
+                        getVal(freq,i),
+                        getVal(rate,i),
+                        getVal(gain,i), channels[i]))
             {
                 stop(0,0);
                 return true; // fail
