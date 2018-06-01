@@ -29,7 +29,7 @@ class Tx : public CRTSFilter
 
         TxControl txControl;
 
-        std::string uhd_args;
+        std::string uhd_args, subdev, channels;
         double freq, rate, gain;
 
         uhd::usrp::multi_usrp::sptr usrp;
@@ -37,6 +37,7 @@ class Tx : public CRTSFilter
 
         uhd::tx_metadata_t metadata;
 
+        size_t numTxChannels;
 };
 
 
@@ -59,12 +60,41 @@ static void usage(void)
 "\n"
 "  As an example you can run something like this:\n"
 "\n"
-"       crts_radio -f stdin -f tx [ --uhd addr=192.168.10.3 --freq 932 ]\n"
+"       crts_radio -f tx [ --uhd addr=192.168.10.3 --freq 932 ] -f stdout\n"
+"\n"
+"  Most options are used to configure the lib UHD multi_usrp object at startup.\n"
 "\n"
 "\n"
 "  ---------------------------------------------------------------------------\n"
 "                           OPTIONS\n"
 "  ---------------------------------------------------------------------------\n"
+"\n"
+"\n"
+"   --channels CH   which channel(s) to use (specify \"0\", \"1\", \"0,1\", etc)\n"
+"\n"
+"\n"
+"   --control NAME  set the name of the CRTS control to NAME.  The default value of\n"
+"                   NAME is \"" DEFAULT_TXCONTROL_NAME "\".\n"
+"\n"
+"\n"
+"   --freq FREQ     set the initial receiver frequency to FREQ MHz.  The default\n"
+"                   initial receiver frequency is %g MHz.\n"
+"\n"
+"\n"
+"   --gain GAIN     set the initial receiver gain to GAIN.  The default initial\n"
+"                   receiver gain is %g.\n"
+"\n"
+"\n"
+"   --rate RATE     set the initial receiver sample rate to RATE million samples\n"
+"                   per second.  The default initial receiver rate is %g million\n"
+"                   samples per second.\n"
+"\n"
+"\n"
+"   --subdev DEV    UHD subdev spec.\n"
+"\n"
+"                           Example: %s [ --subdev \"0:A 0:B\" ]\n"
+"\n"
+"                   to get 2 channels on a Basic RX.\n"
 "\n"
 "\n"
 "   --uhd ARGS      set the arguments to give to the uhd::usrp constructor.\n"
@@ -74,26 +104,9 @@ static void usage(void)
 "                   will use the USRP (Universal Software Radio Peripheral)\n"
 "                   which is accessible at Ethernet IP4 address 192.168.10.3\n"
 "\n"
-"\n"
-"   --freq FREQ     set the initial transmitter frequency to FREQ MHz.  The default\n"
-"                   initial transmitter frequency is %g MHz.\n"
-"\n"
-"\n"
-"   --gain GAIN     set the initial transmitter gain to GAIN.  The default initial\n"
-"                   transmitter gain is %g.\n"
-"\n"
-"\n"
-"   --rate RATE     set the initial transmitter sample rate to RATE million samples\n"
-"                   per second.  The default initial transmitter rate is %g million\n"
-"                   samples per second.\n"
-"\n"
-"\n"
-"   --control NAME  set the name of the CRTS control to NAME.  The default value of\n"
-"                   NAME is \"%s\".\n"
-"\n"
 "\n",
-        name, name,
-        TX_FREQ, TX_GAIN, TX_RATE, DEFAULT_TXCONTROL_NAME);
+        name,
+        TX_FREQ, TX_GAIN, TX_RATE, name, name);
 
     errno = 0;
     throw "usage help"; // This is how return an error from a C++ constructor
@@ -113,7 +126,7 @@ static const char *getControlName(int argc, const char **argv)
 
 Tx::Tx(int argc, const char **argv):
     txControl(this, getControlName(argc, argv), usrp),
-    usrp(0), tx_stream(0)
+    usrp(0), tx_stream(0), numTxChannels(1)
 {
     CRTSModuleOptions opt(argc, argv, usage);
 
@@ -121,6 +134,8 @@ Tx::Tx(int argc, const char **argv):
     freq = opt.get("--freq", TX_FREQ);
     rate = opt.get("--rate", TX_RATE);
     gain = opt.get("--gain", TX_GAIN);
+    subdev = opt.get("--subdev", "");
+    channels = opt.get("--channels", "");
 
     // Convert the rate and freq to Hz from MHz
     freq *= 1.0e6;
@@ -151,20 +166,61 @@ bool Tx::start(uint32_t numInChannels, uint32_t numOutChannels)
 
     if(usrp == 0)
     {
+        // TODO: We need to add the ability to vary freq, gain, and rate
+        // for each channel.
+
         // TODO: try catch etc.  The crts_radio code will catch any thrown
         // exceptions, but will not know what to do but fail which I
         // guess is fine.
         //
         usrp = uhd::usrp::multi_usrp::make(uhd_args);
 
-        if(crts_usrp_tx_set(usrp, freq, rate, gain))
+        if(subdev.length())
         {
-            stop(0,0);
-            return true; // fail
+            DSPEW("setting subdev=\"%s\"", subdev.c_str());
+            usrp->set_tx_subdev_spec(subdev);
+            DSPEW("set subdev");
         }
 
+        //usrp->set_time_now(uhd::time_spec_t(0.0), 0);
+
+
         uhd::stream_args_t stream_args("fc32", "sc16");
+
+        std::vector<size_t> channel_nums;
+        for(const char *s=channels.c_str(); *s;)
+        {
+            char *end = 0;
+            errno = 0;
+            size_t ch = strtoul(s, &end, 10);
+            if(errno)
+            {
+                WARN("Bad channel number in \"%s\"",
+                        channels.c_str());
+                return true;
+            }
+            DSPEW("channel %zu", ch);
+            channel_nums.push_back(ch);
+            if(!(*end) || end == s) break;
+            s = end+1; // go to next
+        }
+
+        if(channel_nums.size())
+        {
+            stream_args.channels = channel_nums;
+            numTxChannels = channel_nums.size();
+        }
+        else
+            channel_nums = { 0 };
+
         tx_stream = usrp->get_tx_stream(stream_args);
+
+        for(size_t i=0; i<channel_nums.size(); ++i)
+            if(crts_usrp_tx_set(usrp, freq, rate, gain, channel_nums[i]))
+            {
+                stop(0,0);
+                return true; // fail
+            }
     }
 
     metadata.start_of_burst = true;
@@ -202,7 +258,7 @@ void Tx::input(void *buffer, size_t len, uint32_t channelNum)
     len -= len % sizeof(std::complex<float>);
 
     // TODO: check for error here, and retry?
-    size_t ret = tx_stream->send(buffer, len/sizeof(std::complex<float>),
+    size_t ret = tx_stream->send(buffer, len/(numTxChannels*sizeof(std::complex<float>)),
             metadata);
 
     if(ret != len/sizeof(std::complex<float>))

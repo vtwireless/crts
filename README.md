@@ -240,7 +240,7 @@ For the X310
 
 /usr/local/encap/uhd/lib/uhd/utils/uhd_images_downloader.py
 
-/usr/local/encap/uhd/bin/uhd_image_loader" --args="type=x300,addr=192.168.12.2
+/usr/local/encap/uhd/bin/uhd_image_loader" --args="type=x300,addr=192.168.12.2"
 
 
 ## Tests

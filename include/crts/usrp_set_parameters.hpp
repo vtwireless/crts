@@ -24,7 +24,7 @@
 
 static inline bool
 crts_usrp_rx_set(uhd::usrp::multi_usrp::sptr usrp,
-        double freq, double rate, double gain)
+        double freq, double rate, double gain, size_t chan=0)
 {
     DASSERT(freq > 0, "");
     DASSERT(rate > 0, "");
@@ -38,23 +38,23 @@ crts_usrp_rx_set(uhd::usrp::multi_usrp::sptr usrp,
     tune.rf_freq = freq;
     tune.dsp_freq = 0;
 
-    usrp->set_rx_rate(rate);
-    CHECK_COMPARE("RX", rate, usrp->get_rx_rate(), ret);
+    usrp->set_rx_rate(rate, chan);
+    CHECK_COMPARE("RX", rate, usrp->get_rx_rate(chan), ret);
     if(ret) return ret;
 
-    usrp->set_rx_freq(tune);
-    CHECK_COMPARE("RX", freq, usrp->get_rx_freq(), ret);
+    usrp->set_rx_freq(tune, chan);
+    CHECK_COMPARE("RX", freq, usrp->get_rx_freq(chan), ret);
     if(ret) return ret;
- 
-    usrp->set_rx_gain(gain);
-    CHECK_COMPARE("RX", gain, usrp->get_rx_gain(), ret);
+
+    usrp->set_rx_gain(gain, chan);
+    CHECK_COMPARE("RX", gain, usrp->get_rx_gain(chan), ret);
     return ret;
 }
 
 
 static inline bool
 crts_usrp_tx_set(uhd::usrp::multi_usrp::sptr usrp,
-        double freq, double rate, double gain)
+        double freq, double rate, double gain, size_t chan=0)
 {
     DASSERT(freq > 0, "");
     DASSERT(rate > 0, "");
@@ -68,16 +68,16 @@ crts_usrp_tx_set(uhd::usrp::multi_usrp::sptr usrp,
     tune.rf_freq = freq;
     tune.dsp_freq = 0;
 
-    usrp->set_tx_rate(rate);
-    CHECK_COMPARE("TX", rate, usrp->get_tx_rate(), ret);
+    usrp->set_tx_rate(rate, chan);
+    CHECK_COMPARE("TX", rate, usrp->get_tx_rate(chan), ret);
     if(ret) return ret;
 
-    usrp->set_tx_freq(tune);
-    CHECK_COMPARE("TX", freq, usrp->get_tx_freq(), ret);
+    usrp->set_tx_freq(tune, chan);
+    CHECK_COMPARE("TX", freq, usrp->get_tx_freq(chan), ret);
     if(ret) return ret;
- 
-    usrp->set_tx_gain(gain);
-    CHECK_COMPARE("TX", gain, usrp->get_tx_gain(), ret);
+
+    usrp->set_tx_gain(gain, chan);
+    CHECK_COMPARE("TX", gain, usrp->get_tx_gain(chan), ret);
     return ret;
 }
 

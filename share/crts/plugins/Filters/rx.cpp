@@ -31,7 +31,7 @@ class Rx : public CRTSFilter
 
         RxControl rxControl;
 
-        std::string uhd_args;
+        std::string uhd_args, subdev, channels;
         double freq, rate, gain;
 
         uhd::usrp::multi_usrp::sptr usrp;
@@ -64,18 +64,19 @@ static void usage(void)
 "\n"
 "       crts_radio -f rx [ --uhd addr=192.168.10.3 --freq 932 ] -f stdout\n"
 "\n"
+"  Most options are used to configure the lib UHD multi_usrp object at startup.\n"
+"\n"
 "\n"
 "  ---------------------------------------------------------------------------\n"
 "                           OPTIONS\n"
 "  ---------------------------------------------------------------------------\n"
 "\n"
 "\n"
-"   --uhd ARGS      set the arguments to give to the uhd::usrp constructor.\n"
+"   --channels CH   which channel(s) to use (specify \"0\", \"1\", \"0,1\", etc)\n"
 "\n"
-"                                 Example: %s [ --uhd addr=192.168.10.3 ]\n"
 "\n"
-"                   will use the USRP (Universal Software Radio Peripheral)\n"
-"                   which is accessible at Ethernet IP4 address 192.168.10.3\n"
+"   --control NAME  set the name of the CRTS control to NAME.  The default value of\n"
+"                   NAME is \"" DEFAULT_RXCONTROL_NAME "\".\n"
 "\n"
 "\n"
 "   --freq FREQ     set the initial receiver frequency to FREQ MHz.  The default\n"
@@ -91,13 +92,23 @@ static void usage(void)
 "                   samples per second.\n"
 "\n"
 "\n"
-"   --control NAME  set the name of the CRTS control to NAME.  The default value of\n"
-"                   NAME is \"%s\".\n"
+"   --subdev DEV    UHD subdev spec.\n"
 "\n"
+"                           Example: %s [ --subdev \"0:A 0:B\" ]\n"
+"\n"
+"                   to get 2 channels on a Basic RX.\n"
+"\n"
+"\n"
+"   --uhd ARGS      set the arguments to give to the uhd::usrp constructor.\n"
+"\n"
+"                                 Example: %s [ --uhd addr=192.168.10.3 ]\n"
+"\n"
+"                   will use the USRP (Universal Software Radio Peripheral)\n"
+"                   which is accessible at Ethernet IP4 address 192.168.10.3\n"
 "\n"
 "\n",
-        name, name,
-        RX_FREQ, RX_GAIN, RX_RATE, DEFAULT_RXCONTROL_NAME);
+        name,
+        RX_FREQ, RX_GAIN, RX_RATE, name, name);
 
     errno = 0;
     throw "usage help"; // This is how return an error from a C++ constructor
@@ -127,6 +138,8 @@ Rx::Rx(int argc, const char **argv):
     freq = opt.get("--freq", RX_FREQ);
     rate = opt.get("--rate", RX_RATE);
     gain = opt.get("--gain", RX_GAIN);
+    subdev = opt.get("--subdev", "");
+    channels = opt.get("--channels", "");
 
     // Convert the rate and freq to Hz from MHz
     freq *= 1.0e6;
@@ -134,7 +147,7 @@ Rx::Rx(int argc, const char **argv):
 
     DSPEW();
 }
-    
+
 
 Rx::~Rx(void)
 {
@@ -158,28 +171,62 @@ bool Rx::start(uint32_t numInChannels, uint32_t numOutChannels)
         return true; // fail
     }
 
+
+
     if(usrp == 0)
     {
-        // TODO: try catch ??
-        //
-        // TODO: Maybe we could just make the usrp in the constructor.
-        //
-        if(usrp == 0)
-            usrp = uhd::usrp::multi_usrp::make(uhd_args);
+        usrp = uhd::usrp::multi_usrp::make(uhd_args);
 
-        if(crts_usrp_rx_set(usrp, freq, rate, gain))
+        if(subdev.length())
         {
-            stop(0,0);
-            return true; // fail
+            DSPEW("setting subdev=\"%s\"", subdev.c_str());
+            usrp->set_rx_subdev_spec(subdev);
+            DSPEW("set subdev");
         }
-    }
 
-    if(rx_stream == 0)
-    {
+        //usrp->set_time_now(uhd::time_spec_t(0.0), 0);
+
+
+
         uhd::stream_args_t stream_args("fc32"); //complex floats
-        //std::vector<size_t> channels = { 0 };
-        //stream_args.channels = channels;
+
+        std::vector<size_t> channel_nums;
+        for(const char *s=channels.c_str(); *s;)
+        {
+            char *end = 0;
+            errno = 0;
+            size_t ch = strtoul(s, &end, 10);
+            if(errno)
+            {
+                WARN("Bad channel number in \"%s\"",
+                        channels.c_str());
+                return true;
+            }
+            DSPEW("channel %zu", ch);
+            channel_nums.push_back(ch);
+            if(!(*end) || end == s) break;
+            s = end+1; // go to next
+        }
+
+        if(channel_nums.size())
+        {
+            stream_args.channels = channel_nums;
+            numRxChannels = channel_nums.size();
+        }
+        else
+        {
+            numRxChannels = 1;
+            channel_nums = { 0 };
+        }
+
         rx_stream = usrp->get_rx_stream(stream_args);
+
+        for(size_t i=0; i<channel_nums.size(); ++i)
+            if(crts_usrp_rx_set(usrp, freq, rate, gain, channel_nums[i]))
+            {
+                stop(0,0);
+                return true; // fail
+            }
     }
 
     uhd::stream_cmd_t stream_cmd(
