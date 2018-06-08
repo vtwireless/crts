@@ -76,7 +76,7 @@ function CRTSClient() {
 
     ws.onmessage = function(e) {
 
-        spew("got message: " + e.data);
+        //spew("got message: " + e.data);
 
         var obj = JSON.parse(e.data);
         var name = obj.name; // callback name (not subscription name)
@@ -94,7 +94,7 @@ function CRTSClient() {
                     '" not found for message: ' +
                     '\n  ' + e.data);
 
-        spew('handling message=\n   ' + e.data);
+        //spew('handling message=\n   ' + e.data);
 
         // Call the on callback function using array spread syntax.
         //https://developer.mozilla.org/en/docs/Web/JavaScript/Reference/Operators/Spread_operator
@@ -129,7 +129,7 @@ function CRTSClient() {
     });
 
     On('spectrum', function(tag, values) {
-        console.log(tag + ': ' + values.toString());
+        console.log('"spectrum" : ' + tag + ': ' + values.toString());
     });
 
 
