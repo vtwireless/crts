@@ -35,8 +35,8 @@ int main(int argc, char *argv[])
 "   Example output:\n"
 "\n"
 "  [\n"
-"      {\"host\":\"\",\"device\":\"192.168.12.2\",\"serial\":\"30EE438\"},\n"
-"      {\"host\":\"\",\"device\":\"192.168.10.3\",\"serial\":\"E0R24N9UP\"}\n"
+"      {\"type\":\"usrp2\",\"host\":\"\",\"device\":\"192.168.12.2\",\"name\":\"\",\"serial\":\"30EE238\"},\n"
+"      {\"type\":\"usrp2\",\"host\":\"\",\"device\":\"192.168.10.3\",\"name\":\"\",\"serial\":\"E0R14N9UP\"}\n"
 "  ]\n"
 "\n"
 "\n",
