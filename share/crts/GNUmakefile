@@ -1,5 +1,5 @@
 
-include ../../config.make
+-include ../../config.make
 
 SUBDIRS := plugins
 

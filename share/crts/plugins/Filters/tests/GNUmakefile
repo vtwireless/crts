@@ -1,12 +1,12 @@
 # This makefile can be used to build any of the modules
 # that are at this directory level, share/crts/plugins/.
 
-ROOT := ../../../../../
-include $(ROOT)/config.make
+ROOT := ../../../../..
+-include $(ROOT)/config.make
 
 INSTALL_DIR = $(PREFIX)/share/crts/plugins/Filters/tests
 
-CPPFLAGS := -I$(ROOT)include
+CPPFLAGS := -I$(ROOT)/include
 
 
 srcs :=\
@@ -27,4 +27,4 @@ undefine MkSource
 joystickTxController.so_LDFLAGS := -luhd
 
 
-include $(ROOT)quickbuild.make
+include $(ROOT)/quickbuild.make

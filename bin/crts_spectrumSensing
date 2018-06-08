@@ -1,0 +1,148 @@
+#!/usr/bin/env python
+##################################################
+# Gnuradio Python Flow Graph
+# Title: Spectrum Sensing Nikita
+# Generated: Wed Feb 26 12:29:17 2014
+##################################################
+
+from gnuradio import blocks
+from gnuradio import fft
+from gnuradio import gr
+from gnuradio import uhd
+from gnuradio.fft import window
+import json
+import argparse
+from socket import *
+#import struct
+
+
+class spectrum_sensing_nikita(gr.top_block):
+
+    def __init__(self, center_freq, bins, bandwidth, device_addr):
+        gr.top_block.__init__(self, "Spectrum Sensing Nikita")
+
+        ##################################################
+        # Blocks
+        ##################################################
+        self.uhd_usrp_source_0 = uhd.usrp_source(
+        	device_addr=device_addr,
+        	stream_args=uhd.stream_args(
+        		cpu_format="fc32",
+        		channels=range(1),
+        	),
+        )
+        self.uhd_usrp_source_0.set_samp_rate(bandwidth)
+        self.uhd_usrp_source_0.set_center_freq(center_freq, 0)
+        self.uhd_usrp_source_0.set_gain(0, 0)
+        self.uhd_usrp_source_0.set_bandwidth(bandwidth, 0)
+        self.fft_vxx_0 = fft.fft_vcc(bins, True, (window.blackmanharris(bins)), True, 1)
+        self.blocks_stream_to_vector_0 = blocks.stream_to_vector(\
+                gr.sizeof_gr_complex*1, bins)
+        self.blocks_probe_signal_vx_0 = blocks.probe_signal_vf(bins)
+        self.blocks_complex_to_mag_0 = blocks.complex_to_mag(bins)
+
+        ##################################################
+        # Connections
+        ##################################################
+        self.connect((self.uhd_usrp_source_0, 0), (self.blocks_stream_to_vector_0, 0))
+        self.connect((self.blocks_stream_to_vector_0, 0), (self.fft_vxx_0, 0))
+        self.connect((self.fft_vxx_0, 0), (self.blocks_complex_to_mag_0, 0))
+        self.connect((self.blocks_complex_to_mag_0, 0), (self.blocks_probe_signal_vx_0, 0))
+
+
+
+    
+parser = argparse.ArgumentParser(description='Spectrum sensing script.  Replace the CAPITALIZED words with input values')
+parser.add_argument('-f','--freq',\
+        help='Center frequency in MHz',\
+        default=915.0)
+parser.add_argument('-b','--bandwidth',\
+        help='Bandwidth in MHz',\
+        default=0.5)
+parser.add_argument('-n','--bins',\
+        help='Number of FFT bins.  More for higher accuracy',\
+        default=15)
+parser.add_argument('-r','--rate',\
+        help='Number of times per second the data is sent',\
+        default=5.0)
+parser.add_argument('-p','--port',\
+        help='Server port',\
+        default=9292)
+parser.add_argument('-d','--device',\
+        help='UHD USRP device',\
+        default='addr=192.168.10.3')
+parser.add_argument('-a','--address',\
+        help='Server address',\
+        default='localhost')
+parser.add_argument('-i','--user_id',\
+        help='Send id as with spectrum data',\
+        default=0)
+parser.add_argument('-t','--tag',\
+        help='Send id as with spectrum data',\
+        default="tag")
+
+
+
+
+
+def SendSpectrum(tcpClientSock, tb, iD, tag):
+    #s = struct.pack('f'*bins, *tb.blocks_probe_signal_vx_0.level())
+    #tcpClientSock.send(s)
+
+    tcpClientSock.send('i%d{"name":"spectrum","args":["%s",%s]}' %\
+            (iD, tag, list(tb.blocks_probe_signal_vx_0.level())));
+    #tcpClientSock.send('hello spectrum')
+
+
+
+# This is bad code.  There's so much wrong with this.
+#
+def CORNET_3D_Daemon(tcpClientSock, args):
+
+    tb = spectrum_sensing_nikita(float(args['freq'])*1e6, \
+            int(args['bins']), float(args['bandwidth'])*1e6,\
+            args['device'])
+    tb.start()
+    period = 1.0/float(args['rate'])
+    if period < 1.0/60.0:
+        period = 1.0/60.0
+    iD = int(args['user_id'])
+    tag = args['tag']
+
+    tcpClientSock.settimeout(period)
+
+    while True: 
+        try:
+            data = tcpClientSock.recv(500)
+            #print data
+            if data.startswith('{'):
+                params = json.loads[data]
+                print 'Got parameters:'
+                print params
+                tb = spectrum_sensing_nikita(params['freq']*1e6, \
+                        params['bins'], params['bandwidth']*1e6,\
+                        args['device'])
+                period = 1/float(params['r'])
+                if period < 1.0/60.0:
+                    period = 1.0/60.0
+                tcpClientSock.settimeout(period)
+                tb.start()
+                SendSpectrum(tcpClientSock, tb, iD, tag)
+            else:
+                print 'spectrumSensing finishing'
+                tb.stop()
+                break
+        except timeout:
+            SendSpectrum(tcpClientSock, tb, iD, tag)
+        except Exception as inst:
+            print inst
+            tb.stop()
+            break
+
+
+if __name__ == '__main__':
+    args = vars(parser.parse_args())
+    tcpClient = socket(AF_INET,SOCK_STREAM)
+    tcpClient.connect((args['address'], int(args['port'])))
+    CORNET_3D_Daemon(tcpClient, args)
+    tcpClient.close() 

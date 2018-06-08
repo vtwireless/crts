@@ -8,7 +8,6 @@ defined radios (SDRs).
 
 Currently developing on: 
   - Debian GNU/Linux 9.3 (stretch)
-  - Debian GNU/Linux 8.10 (jessie)
   - Ubuntu 16.04
 
 ## Dependencies
@@ -33,7 +32,9 @@ apt-get install\
  dia\
  libgtk-3-dev\
  git\
- patchelf
+ yui-compressor\
+ patchelf\
+ python-netifaces
 ```
 
 
@@ -250,4 +251,11 @@ cd interactiveTests
 ```
 
 and look at and run test programs in that directory.
+
+
+## Running the CRTS server
+
+```
+DEBUG=express:* crts_server
+```
 

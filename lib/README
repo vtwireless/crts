@@ -1,0 +1,4 @@
+This project should be using WebRTC.  The node WebRTC module is named
+"wrtc".  In particular it should be using a peer to peer connection to
+control and monitor the USRPs.  It's not so obvious how to use a C++
+WebRTC API to code the program that controls the USRPs.

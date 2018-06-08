@@ -2,7 +2,7 @@
 # that are at this directory level, share/crts/plugins/.
 
 ROOT := ../../../../
-include $(ROOT)/config.make
+-include $(ROOT)/config.make
 
 QS_CPPFLAGS := $(shell pkg-config --cflags quickscope)
 #QS_CPPFLAGS := -I$(shell pkg-config --variable=includedir quickscope)

@@ -73,6 +73,8 @@ crts_mkTUN_SOURCES :=\
  $(LIB)/tun_alloc.cpp\
  $(LIB)/getTunViaUSocket.cpp
 
+# Install crts_server and spectrumSensing too.
+INSTALLED := crts_server crts_spectrumSensing
 
 # TODO: make quickbuild.make do this patchelf thing:
 #

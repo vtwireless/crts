@@ -16,7 +16,7 @@ SUBDIRS := .
 # tell quickbuild that src is a directory:
 CLEANDIRS := src
 
-include ../config.make
+-include ../config.make
 
 # After we install nothing here, we do this to install demo_launcher using
 # the build system in the demo_launcher package.
