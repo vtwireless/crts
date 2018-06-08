@@ -1,7 +1,7 @@
 # This makefile can be used to build any of the modules
 # that are at this directory level, share/crts/plugins/.
 
-ROOT := ../../../../
+ROOT := ../../../..
 -include $(ROOT)/config.make
 
 QS_CPPFLAGS := $(shell pkg-config --cflags quickscope)
@@ -9,7 +9,7 @@ QS_CPPFLAGS := $(shell pkg-config --cflags quickscope)
 QS_LDFLAGS := $(shell pkg-config --libs quickscope) -lm
 
 
-CPPFLAGS := -I$(ROOT)include -I$(ROOT)lib -I$(ROOT)liquid-dsp/src/include
+CPPFLAGS := -I$(ROOT)/include -I$(ROOT)/lib -I$(ROOT)/liquid-dsp/src/include
 
 INSTALL_DIR = $(PREFIX)/share/crts/plugins/$(notdir $(CURDIR))
 
@@ -122,4 +122,4 @@ POST_INSTALL_COMMAND =\
 # above we auto generate lines like this:
 #*.so_SOURCES := *.cpp
 
-include $(ROOT)quickbuild.make
+include $(ROOT)/quickbuild.make

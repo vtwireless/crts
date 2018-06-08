@@ -90,7 +90,7 @@ def SendSpectrum(tcpClientSock, tb, iD, tag):
     #tcpClientSock.send(s)
 
     tcpClientSock.send('i%d{"name":"spectrum","args":["%s",%s]}' %\
-            (iD, tag, list(tb.blocks_probe_signal_vx_0.level())));
+             (iD, tag, list(tb.blocks_probe_signal_vx_0.level())));
     #tcpClientSock.send('hello spectrum')
 
 

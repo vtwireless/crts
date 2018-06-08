@@ -25,6 +25,8 @@ COMMON_LD :=\
 mapTest_SOURCES := mapTest.cpp debug.c makeRingBuffer.cpp
 mapTest_LDFLAGS := -lrt
 
+crts_findUSRPs_SOURCES := crts_findUSRPs.cpp
+crts_findUSRPs_LDFLAGS := -L$(UHD_PREFIX)/lib -luhd -Wl,-rpath,$(UHD_PREFIX)/lib
 
 crts_radio_SOURCES :=\
  crts_radio.cpp\
