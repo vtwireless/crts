@@ -89,7 +89,7 @@ def SendSpectrum(tcpClientSock, tb, iD, tag):
     #s = struct.pack('f'*bins, *tb.blocks_probe_signal_vx_0.level())
     #tcpClientSock.send(s)
 
-    tcpClientSock.send('i%d{"name":"spectrum","args":["%s",%s]}' %\
+    tcpClientSock.send('{"name":"spectrum","args":[ %d,"%s",%s]}' %\
              (iD, tag, list(tb.blocks_probe_signal_vx_0.level())));
     #tcpClientSock.send('hello spectrum')
 
@@ -145,4 +145,5 @@ if __name__ == '__main__':
     tcpClient = socket(AF_INET,SOCK_STREAM)
     tcpClient.connect((args['address'], int(args['port'])))
     CORNET_3D_Daemon(tcpClient, args)
-    tcpClient.close() 
+    tcpClient.close()
+    print "crts_spectrumSensing Exiting"

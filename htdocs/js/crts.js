@@ -1,6 +1,19 @@
 var debug = true;
 
-var cleanup = false;
+// Lets make crts a singleton.
+var crts = false;
+
+// cleanupFunctions is mostly so that developers get feedback when things
+// change.  For the most part, javaScript can cleanup on it's own, but
+// gives little feedback.
+var cleanupFunctions = [];
+
+function cleanup() {
+    cleanupFunctions.forEach(function(cleanup) {
+        cleanup();
+    });
+    delete cleanupFunctions;
+}
 
 function fail() {
 
@@ -12,7 +25,7 @@ function fail() {
     text += '\n' + line + '\nCALL STACK\n' + line + '\n' +
         new Error().stack + '\n' + line + '\n';
     console.log(text);
-    if(cleanup) cleanup();
+    cleanup();
     alert(text);
     window.stop();
     throw "javascript error"
@@ -29,7 +42,27 @@ function assert(val, msg=null) {
 }
 
 
-function CRTSClient() {
+function CRTSClient(onInit=function(){}) {
+
+    // The CRTS object we are making is a singleton.
+    if(crts === false) {
+        crts = {};
+        crts.onInits = [];
+        crts.onInits.unshift(onInit);
+    } else {
+        // we have a crts object already.
+        if(crts.onInits !== undefined)
+            // and the onInits have not been called yet,
+            // so we add this one to be called later.
+            crts.onInits.unshift(onInit);
+        else
+            // we can call it now.
+            onInit(crts);
+        return;
+    }
+
+    console.log("crts=" + crts);
+
 
     // Why does this WebSocket() standard not have this as the default url
     // arg?
@@ -108,7 +141,7 @@ function CRTSClient() {
 
     ws.onclose = function() {
 
-        spew("close");
+        spew("close"); // developer feedback...
     };
 
     ws.onopen = function() {
@@ -122,22 +155,57 @@ function CRTSClient() {
         spew("got \"init\" client id=" + id);
         Emit('init', 'hi server');
 
-        Emit('launchSpectrumSensing', 915.0/*freq MHz*/, 2.0/*bandwidth MHz*/,
-            3/*bins*/, 10/*update rate*/, "args=192.168.10.3"/*uhd device on host*/,
-            'localhost'/*host or '' for no ssh to run spectrumSensing*/,
-            'apple4'/*the whatever tag*/);
+        if(crts.onInits !== undefined) {
+            crts.onInits.forEach(function(init) {
+                init(crts);
+            });
+            delete crts.onInits;
+        }
     });
 
-    On('spectrum', function(tag, values) {
-        console.log('"spectrum" : ' + tag + ': ' + values.toString());
+    var spectrumDisplays = {};
+
+
+    On('spectrum', function(id, tag, values) {
+        spew('"spectrum" : ' + tag + ': ' + values.toString());
     });
 
-
-    cleanup = function() {
+    cleanupFunctions.unshift(function() {
         ws.close();
-    }
+    });
 
-    return {}; // TODO: add interfaces?
+
+    crts.createSpectrumDisplay = function(tag, uhd_args, host) {
+
+        Emit('launchSpectrumSensing', 915.0/*freq MHz*/, 2.0/*bandwidth MHz*/,
+            3/*bins*/, 10/*update rate*/, uhd_args/*uhd device on host*/,
+            host/*host or '' for no ssh to run spectrumSensing*/,
+            tag/*the whatever tag string*/);
+
+        spectrumDisplays[tag] = {};
+    };
+
+    crts.stopSpectrum = function(tag) {
+
+        spew('requesting "stopSpectrumSensing" for tag: ' + tag);
+        Emit('stopSpectrumSensing', tag);
+    };
+
 }
 
-CRTSClient();
+function CRTSCreateSpectrumDisplay(tag="tag", uhd_args="", host="") {
+
+    CRTSClient(function(crts) {
+
+        crts.createSpectrumDisplay(tag, uhd_args, host);
+    });
+}
+
+function CRTSStopSpectrum(tag) {
+
+    CRTSClient(function(crts) {
+
+        crts.stopSpectrum(tag);
+    });
+}
+
