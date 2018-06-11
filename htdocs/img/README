@@ -1,0 +1,5 @@
+Do not check in binary files into the CRTS repository.  Check in a
+download script (*.dl) instead.
+
+For example: myImage.jpg.dl
+

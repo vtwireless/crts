@@ -1,0 +1,20 @@
+All the files in this directory and subdirectories can be "seen" from the
+web.  Put another way, this is the "root" directory of the static files
+that are served via HTTP GET via the NodeJS program crts_server.  The
+crts_server program also uses the WebSockets protocol and in the future
+will use the WebRTC protocol (as of Mon, Jun 11 2018 it does not).
+
+On many web server systems this directory would be named /var/www/htdocs,
+but that does not work for our development scheme, since we require that
+this software not require a root user installation, and we also require
+that we have a completely encapsulated installation in a single "prefix"
+directory tree.   In addition we also require that (in the default
+installation) the directory/file structure in the source be the same as
+the installed software package, but with some development files missing;
+for example we don't install most make files and most C++ files.  There
+may be options to install some files not in the "prefix" directory tree.
+
+As a consequence of this strict file structure we can run all the CRTS
+programs from the source directory without installing it.  That saves a
+lot of development and user time, and makes guessing the path to source
+files easy.

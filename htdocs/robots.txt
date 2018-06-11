@@ -1,0 +1,13 @@
+# This reference explains this file:
+# https://en.wikipedia.org/wiki/Robots_exclusion_standard
+#
+# There is no point in indexing tests, javaScript and CSS files.
+User-agent: *
+Disallow: /js/
+Disallow: /css/
+Disallow: /tests/
+# Note: we let the /img/ (images) get indexed, and that's good.
+
+# throttle crawlers visits to every N seconds.
+# 30 seconds
+Crawl-delay: 100
