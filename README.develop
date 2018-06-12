@@ -1,5 +1,8 @@
 DEVELOPER NOTES:
 
+
+Collection of notes to study:
+
 WebRTC google talk
 https://www.youtube.com/watch?v=p2HzZkd2A40
 
@@ -15,6 +18,18 @@ https://www.tutorialspoint.com/webrtc/webrtc_signaling.htm
 GStreamer WebRTC demos
 refers to most of the gstreamer codes.
 https://github.com/centricular/gstwebrtc-demos
+
+
+TODO:
+
+We need to get rid of X3DOM.  It does not seem to be maintained well.
+Currently we have to use an out-of-date version because all newer versions
+do not support elevationGrid.
+
+In it's place we should use the WebGL which is has native support in
+the browsers.  Or three.js https://threejs.org/
+
+
 
 
 

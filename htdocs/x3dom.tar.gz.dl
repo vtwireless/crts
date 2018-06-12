@@ -1,0 +1,45 @@
+#!/bin/bash
+
+##############################################################
+# configure here
+
+# The git repository tag
+tag=master
+
+
+# The sha512sum is optional.  Get its value by running:
+#    sha512sum x3dom.tar.gz
+
+sha512sum=f51c79ce84e035c6c886dc9557d20bbecf\
+3f8a9f3454347c2f996d80ecb1a0bcef62c63cdd6d80\
+f416ac38bc664ead4a1cc3c205947659784d628df351\
+47784e
+
+
+source ../GetSrcFromGithub.bash
+
+#Usage: GetSrcFromGithub user package tag tarname [sha512sum]
+
+GetSrcFromGithub vtwireless x3dom-1.5.0-dev $tag x3dom $sha512sum
+
+
+exit 0
+
+
+# Tried this and this release is broken.
+#!/bin/bash
+
+set -ex
+
+version=1.7.2
+url=http://x3dom.org/download/$version/x3dom-$version.zip
+
+wget --no-use-server-timestamps -O x3dom.zip $url
+
+set +e
+
+
+if ! sha512sum -c x3dom.zip.sha512sum ; then
+    rm -f x3dom.zip
+    exit 1
+fi

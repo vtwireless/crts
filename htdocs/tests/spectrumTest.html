@@ -2,9 +2,27 @@
 <html lang=en>
 <head>
     <meta charset="utf-8"/>
-    <link rel='stylesheet' href='../css/main.css'></link>
+    <link rel="stylesheet" href="../css/main.css"></link>
+
     <script src="../js/crts.js"></script>
-    <title>CRTS</title>
+    <link rel="stylesheet" href="../x3dom/x3dom.css"></link>
+    <script src="../x3dom/x3dom.js"></script>
+
+    <style>
+    footer {
+        background-color: #999;
+        width: 100%;
+    }
+
+    x3d {
+        background-color: #FFF;
+        height: 400px;
+        width: 100%;
+        border: none;
+    }
+    </style>
+
+    <title>Spectrum Test</title>
 </head>
 <body>
 
@@ -19,7 +37,22 @@
         <li><a href="#" onclick="CRTSStopSpectrum('tag0')">Stop Spectrum Test</a></li>
     </ul>
 
-    <p>Return to <a href="index.html">CRTS Development Tests index</a></p>
+    <x3d>
+        <scene>
+                <shape DEF='ExampleElevationGridShape'>
+                    <elevationGrid solid='false' xDimension='6' zDimension='6'
+                        height='0 0 0 0 0 0 0 1 1 1 1 0 0 1 2 2 1 0 0 1 2 2 1 0 0 1 1 1 1 0 0 0 0 0 0 0'>
+                    </elevationGrid DEF='DiffuseRedAppearance'>
+                    <appearance>
+                        <material diffuseColor='0.3 0.1 0.7'></material>
+                    </appearance> 
+	        </shape>
+        </scene>
+    </x3d>
+
+    <footer>
+        Return to <a href="index.html">CRTS Development Tests index</a>
+    </footer>
 
 </body>
 </html>
