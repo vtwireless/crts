@@ -1,0 +1,7 @@
+#!/bin/bash
+
+set -ex
+
+sha512sum -c x3dom.zip.sha512sum
+
+unzip x3dom.zip -d x3dom

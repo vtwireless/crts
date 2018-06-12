@@ -12,8 +12,9 @@
 
     <ul>
         <li><a href="#"
-        onclick="CRTSCreateSpectrumDisplay('tag0', 'args=192.168.10.3',
-        'localhost')">Run Spectrum Test</a></li>
+        onclick="CRTSCreateSpectrumDisplay(915.0/*freq MHz*/, 2.0/*bandwidth MHz*/,
+                4/*bins*/, 1/*update rate*/, 'tag0', 'args=192.168.10.3',
+                'localhost')">Run Spectrum Test</a></li>
 
         <li><a href="#" onclick="CRTSStopSpectrum('tag0')">Stop Spectrum Test</a></li>
     </ul>

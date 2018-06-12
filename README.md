@@ -30,6 +30,7 @@ apt-get install\
  joystick\
  doxygen\
  dia\
+ wget\
  libgtk-3-dev\
  git\
  yui-compressor\

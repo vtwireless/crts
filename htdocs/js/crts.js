@@ -1,19 +1,18 @@
+// Developer configuration
 var debug = true;
 
-// Lets make crts a singleton.
+var spew = console.log.bind(console);
+
+if(debug)
+    var dspew = spew;
+else
+    var dspew = function() {};
+
+
+// Lets make crts a singleton.  Kind of like the application, there can
+// only be one.
 var crts = false;
 
-// cleanupFunctions is mostly so that developers get feedback when things
-// change.  For the most part, javaScript can cleanup on it's own, but
-// gives little feedback.
-var cleanupFunctions = [];
-
-function cleanup() {
-    cleanupFunctions.forEach(function(cleanup) {
-        cleanup();
-    });
-    delete cleanupFunctions;
-}
 
 function fail() {
 
@@ -25,7 +24,10 @@ function fail() {
     text += '\n' + line + '\nCALL STACK\n' + line + '\n' +
         new Error().stack + '\n' + line + '\n';
     console.log(text);
-    cleanup();
+
+    if(crts) crts.cleanup();
+
+
     alert(text);
     window.stop();
     throw "javascript error"
@@ -58,24 +60,47 @@ function CRTSClient(onInit=function(){}) {
         else
             // we can call it now.
             onInit(crts);
-        return;
+
+        return; // We already have the singleton crts object.
     }
 
-    console.log("crts=" + crts);
+    // We can call CRTSClient() many times but it only runs
+    // here once and with one crts object.
+
+
+    crts.cleanupFunctions = [];
+
+    crts.cleanup = function() {
+
+        this.cleanupFunctions.forEach(function(cleanup) {
+            cleanup(crts);
+        });
+        delete crts.cleanupFunctions;
+        delete crts;
+        crts = false;
+        // We are done diddly done with this crts object,
+        // but we could make another...
+    };
 
 
     // Why does this WebSocket() standard not have this as the default url
-    // arg?
+    // arg?  Stupid standards people.
+    //
     var url = location.protocol.replace(/^http/, 'ws') +
         '//' + location.hostname + ':' + location.port + '/';
 
+    // We'll make only one webSocket object.
     var ws = new WebSocket(url);
     var pre = 'WebSocket(' + url + '):';
 
     // spew() is just a object local console.log() wrapper to keep prints
     // starting the same prefix for a given websocket connection.
-    var spew = console.log.bind(console, pre);
+    spew = console.log.bind(console, pre);
 
+    if(debug) dspew = spew;
+
+    // Other functions may call spew().
+    crts.spew = spew;
 
     /////////////////////////////////////////////////////////////
     //  BEGIN: Making Socket.IO like interfaces: On() Emit()
@@ -152,9 +177,15 @@ function CRTSClient(onInit=function(){}) {
     On('init', function(id) {
         pre = 'WebSocket[' + id + '](' + url + '):';
         spew = console.log.bind(console, pre);
+        if(debug) dspew = spew;
         spew("got \"init\" client id=" + id);
+
         Emit('init', 'hi server');
 
+        // This is where we know that the server is ready for this
+        // client to send commands to server.  If we need another
+        // transaction to startup we can put this if block in a
+        // different On() call.
         if(crts.onInits !== undefined) {
             crts.onInits.forEach(function(init) {
                 init(crts);
@@ -163,29 +194,73 @@ function CRTSClient(onInit=function(){}) {
         }
     });
 
+
+    crts.cleanupFunctions.unshift(function() {
+        ws.close();
+    });
+
     var spectrumDisplays = {};
 
 
     On('spectrum', function(id, tag, values) {
-        spew('"spectrum" : ' + tag + ': ' + values.toString());
+
+        if(spectrumDisplays[tag] === undefined) {
+            // This may be a late send, we can ignore it.
+            dspew('bad spectrum array');
+            return;
+        }
+
+        if(spectrumDisplays[tag].spectrumHandler)
+            spectrumDisplays[tag].spectrumHandler(tag, values);
+        else if(debug)
+            spew('"spectrum" : ' + tag + ': ' + values.toString());
     });
 
-    cleanupFunctions.unshift(function() {
-        ws.close();
-    });
+    // tag is a string that is unique to this particular spectrum display
+    // on this webSocket client.
+    crts.createSpectrumDisplay = function(freq, bandwidth, 
+                bins, updateRate, tag, uhd_args, host,
+                spectrumHandler) {
 
+        spew("createSpectrumDisplay(freq=" + freq +
+            " MHz, bandwidth=" + bandwidth +
+            " MHz, bins=" + bins +
+            ", updateRate=" + updateRate +
+            ", tag=" + tag +
+            ", uhd_args=" + uhd_args +
+            ', host="' + host,
+            '", spectrumHandler=' + spectrumHandler);
 
-    crts.createSpectrumDisplay = function(tag, uhd_args, host) {
+        if(spectrumDisplays[tag] !== undefined) {
 
-        Emit('launchSpectrumSensing', 915.0/*freq MHz*/, 2.0/*bandwidth MHz*/,
-            3/*bins*/, 10/*update rate*/, uhd_args/*uhd device on host*/,
+            let str = 'You have a spectrum display named "' +
+                tag + '" already.';
+            spew(str);
+            alert(str);
+            return;
+        }
+
+        spectrumDisplays[tag] = {
+            spectrumHandler: spectrumHandler,
+            freq: freq,
+            bandwidth: bandwidth,
+            bins: bins,
+            updateRate: updateRate,
+            tag: tag,
+            uhd_args: uhd_args,
+            host: host
+        };
+
+        Emit('launchSpectrumSensing', freq/*MHz*/, bandwidth/*MHz*/,
+            bins/*number of bins*/, updateRate, uhd_args/*uhd device on host*/,
             host/*host or '' for no ssh to run spectrumSensing*/,
             tag/*the whatever tag string*/);
-
-        spectrumDisplays[tag] = {};
     };
 
     crts.stopSpectrum = function(tag) {
+
+        if(spectrumDisplays[tag] === undefined) return;
+        delete spectrumDisplays[tag];
 
         spew('requesting "stopSpectrumSensing" for tag: ' + tag);
         Emit('stopSpectrumSensing', tag);
@@ -193,11 +268,13 @@ function CRTSClient(onInit=function(){}) {
 
 }
 
-function CRTSCreateSpectrumDisplay(tag="tag", uhd_args="", host="") {
+function CRTSCreateSpectrumDisplay(freq, bandwidth, bins, updateRate,
+            tag="tag", uhd_args="", host="", spectrumHandler=null) {
 
     CRTSClient(function(crts) {
 
-        crts.createSpectrumDisplay(tag, uhd_args, host);
+        crts.createSpectrumDisplay(freq, bandwidth, bins, updateRate,
+                    tag, uhd_args, host, spectrumHandler);
     });
 }
 
