@@ -26,7 +26,9 @@ GetSrcFromGithub vtwireless x3dom-1.5.0-dev $tag x3dom $sha512sum
 exit 0
 
 
-# Tried this and this release is broken.
+# Tried this and this release has a broken elevationGrid.  Tried many
+# other releases and many had a broken elevationGrid; hence we settled on
+# version 1.5.0-dev which we had to put in our own github repository.
 #!/bin/bash
 
 set -ex
@@ -37,7 +39,6 @@ url=http://x3dom.org/download/$version/x3dom-$version.zip
 wget --no-use-server-timestamps -O x3dom.zip $url
 
 set +e
-
 
 if ! sha512sum -c x3dom.zip.sha512sum ; then
     rm -f x3dom.zip

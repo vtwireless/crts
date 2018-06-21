@@ -1,9 +1,19 @@
 #!/usr/bin/env python
-##################################################
-# Gnuradio Python Flow Graph
-# Title: Spectrum Sensing Nikita
-# Generated: Wed Feb 26 12:29:17 2014
-##################################################
+
+#####################################################################
+# to simply test try running:
+#
+#   nc -lp 8285
+#
+# and:
+#
+#   crts_spectrumFeed --port 8285 --address localhost
+#
+#
+# You should see json spew in the output of nc (netcat). 
+#
+#####################################################################
+
 
 from gnuradio import blocks
 from gnuradio import fft
@@ -13,7 +23,6 @@ from gnuradio.fft import window
 import json
 import argparse
 from socket import *
-#import struct
 
 
 class spectrum_sensing_nikita(gr.top_block):
@@ -52,7 +61,7 @@ class spectrum_sensing_nikita(gr.top_block):
 
 
     
-parser = argparse.ArgumentParser(description='Spectrum sensing script.  Replace the CAPITALIZED words with input values')
+parser = argparse.ArgumentParser(description='Spectrum feed script.  Replace the CAPITALIZED words with input values')
 parser.add_argument('-f','--freq',\
         help='Center frequency in MHz',\
         default=915.0)
@@ -86,13 +95,9 @@ parser.add_argument('-t','--tag',\
 
 
 def SendSpectrum(tcpClientSock, tb, iD, tag):
-    #s = struct.pack('f'*bins, *tb.blocks_probe_signal_vx_0.level())
-    #tcpClientSock.send(s)
 
-    tcpClientSock.send('{"name":"spectrum","args":[ %d,"%s",%s]}' %\
+    tcpClientSock.send('{"name":"spectrumUpdate","args":[ %d,"%s",%s]}' %\
              (iD, tag, list(tb.blocks_probe_signal_vx_0.level())));
-    #tcpClientSock.send('hello spectrum')
-
 
 
 # This is bad code.  There's so much wrong with this.
@@ -114,22 +119,22 @@ def CORNET_3D_Daemon(tcpClientSock, args):
     while True: 
         try:
             data = tcpClientSock.recv(500)
-            #print data
+            print data
             if data.startswith('{'):
-                params = json.loads[data]
-                print 'Got parameters:'
+                params = json.loads(data)
+                print 'crts_spectrumFeed Got parameters:'
                 print params
                 tb = spectrum_sensing_nikita(params['freq']*1e6, \
                         params['bins'], params['bandwidth']*1e6,\
                         args['device'])
-                period = 1/float(params['r'])
+                period = 1/float(params['updateRate'])
                 if period < 1.0/60.0:
                     period = 1.0/60.0
                 tcpClientSock.settimeout(period)
                 tb.start()
                 SendSpectrum(tcpClientSock, tb, iD, tag)
             else:
-                print 'spectrumSensing finishing'
+                print 'crts_spectrumFeed finishing'
                 tb.stop()
                 break
         except timeout:
@@ -146,4 +151,4 @@ if __name__ == '__main__':
     tcpClient.connect((args['address'], int(args['port'])))
     CORNET_3D_Daemon(tcpClient, args)
     tcpClient.close()
-    print "crts_spectrumSensing Exiting"
+    print "crts_spectrumFeed Exiting"

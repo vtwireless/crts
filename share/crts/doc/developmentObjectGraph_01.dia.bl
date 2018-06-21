@@ -3,4 +3,5 @@
 set -xe
 
 tar -xvzf crts_extra.tar.gz --strip-components=1
+touch developmentObjectGraph_01.dia
 

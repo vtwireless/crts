@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang=en>
+<head>
+    <meta charset="utf-8"/>
+    <link rel="stylesheet" href="../css/main.css"></link>
+    <link rel="stylesheet" href="../x3dom/x3dom.css"></link>
+    <script src="../x3dom/x3dom.js"></script>
+    <script src="../js/crts.js"></script>
+    <script>
+    
+onload = function() {
+
+    
+    var GetElementById
+
+   
+};
+  
+    </script>
+
+    <style>
+        body {
+            background-color: #999;
+        }
+        table, th, td {
+            border: 1px solid black;
+        }
+        x3d {
+            background-color: #000;
+            margin: 0;
+            padding: 0;
+            height: 400px;
+            width: 100%;
+            border: none;
+        }
+    </style>
+
+    <title>Spectrum Test</title>
+</head>
+<body>
+
+    <h1>CRTS USRP Spectrum Test</h1>
+
+    <table>
+        <tr><td>tag</td>            <td><input id=tag value="tag0"/></td></tr>
+        <tr><td>freq</td>           <td><input id=freq value="915.0"/>MHz</td></tr>
+        <tr><td>bandwidth</td>      <td><input id=bandwidth value="2.0"/>MHz</td></tr>
+        <tr><td>number of bins</td> <td><input id=bins value="3"/></td></tr>
+        <tr><td>update rate</td>    <td><input id=updateRae value="1.0"/>Hz</td></tr>
+    </table>
+
+
+
+    <ul>
+        <li><a href="#" id=onclick="create()">create()</a></li>
+        <li><a href="#" id=onclick="set()">set()</a></li>
+        <li><a href="#" id=onclick="get()">get()</a></li>
+        <li><a href="#" id=onclick="start()">start()</a></li>
+        <li><a href="#" id=onclick="stop()">stop()</a></li>
+        <li><a href="#" id=onclick="destroy()">stop()</a></li>
+    </ul>
+
+
+    <div id=divx3d>
+    <x3d>
+        <scene>
+            <navigationInfo headlight=false isActive=true type=EXAMINE></navigationInfo>
+
+            <viewpoint id='Viewpoint-YZ-1' description='Viewpoint-YZ-1'
+                jump='true' fieldOfView='.7854'
+                position='0.136642481 0.59793629 1.56949713'
+                orientation='-0.98615036 0.1263879 -0.1073944156 0.4772151'>
+            </viewpoint>
+            <viewpoint id='Viewpoint-XY-1' description='Viewpoint-XY-1'
+                jump='true' fieldOfView='.7854'
+                position='-1.6424799197210986 0.205489675 -0.3075525'
+                orientation='-0.03872787129104291 -0.9991937718210429 0.010581 1.74412'>
+            </viewpoint>
+	    <viewpoint id='Viewpoint-YZ-2' description='Viewpoint-YZ-2'
+                jump='true' fieldOfView='.7854'
+                position='0.0198 0.2981 1.6569'
+                orientation='-0.9685 0.1982 -0.15 0.0835'>
+            </viewpoint>
+	    <viewpoint id='Viewpoint-XY-2' description='Viewpoint-XY-2'
+                jump='true' fieldOfView='.7854'
+                position='-1.8853716256416397 1.5722537248199746 0.17580314696241373'
+                orientation='-0.335108736 -0.889188734566 -0.311521314 1.7512755492'>
+            </viewpoint>
+	    <viewpoint id='Viewpoint-XZ-1' description='Viewpoint-XZ-1'
+                jump='true' fieldOfView='.7854'
+                position='1.9537995456287178 0.6589140875897082 0.9812132445233'
+                orientation='0.0405848243 0.90196754 0.42989234 0.96180461'>
+            </viewpoint>
+
+            <transform translation='-1 0 -1'>
+                <shape>
+                    <appearance>
+			<material ambientIntensity=0.6
+                            shininess=0.2 diffuseColor='1 1 1'
+                            emissiveColor='0.2 0.2 0.2'>
+                        </material>
+		    </appearance>
+		    <elevationGrid id=elevationGrid
+                        height='0.0 0.3 0.0  0.0 0.15 0.0  0.0 0.0 0.0'
+                        solid=false
+                        xDimension=3 zDimension=3
+                        xSpacing=1 zSpacing=1
+                        creaseAngle=3 ccw=false
+                        colorPerVertex=true>
+                        <color id=color
+                            color='1 0 0  0 0.98 0  0 0 0
+                                0 0 0  0 0 0  0 0 1.0
+                                0 0 0  0 1 0  0 1 1'>
+                        </color>
+		    </elevationGrid>	
+	        </shape>
+            </transform>
+        </scene>
+    </x3d>
+    </div>
+
+    <p>press <b>Page Up</b> and <b>Page Down</b> to jump through
+     five different view positions</p>
+
+    <footer>
+        Return to <a href="index.html">CRTS Development Tests index</a>
+    </footer>
+
+</body>
+</html>
