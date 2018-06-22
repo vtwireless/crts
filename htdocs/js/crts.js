@@ -166,7 +166,7 @@ function CRTSClient(onInit=function(){}) {
                     '" not found for message: ' +
                     '\n  ' + e.data);
 
-        //spew('handling message=\n   ' + e.data);
+        //dspew('handling message=\n   ' + e.data);
 
         // Call the on callback function using array spread syntax.
         //https://developer.mozilla.org/en/docs/Web/JavaScript/Reference/Operators/Spread_operator

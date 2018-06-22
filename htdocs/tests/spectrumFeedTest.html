@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang=en>
+<head>
+    <meta charset="utf-8"></meta>
+    <link rel="stylesheet" href="../css/main.css"></link>
+    <link rel="stylesheet" href="../x3dom/x3dom.css"></link>
+    <script src="../x3dom/x3dom.js"></script>
+    <script src="../js/3DSpectrumDisplay.js"></script>
+    <script src="../js/crts.js"></script>
+
+    <script>
+
+// This is the value of all the inputs at startup
+// which may be changed by the client/user.
+//
+var inputs = {
+    usrp: '',
+    hosts: '[ "" ]',
+    tag: "",
+    freq: 915.0,
+    bandwidth: 2.0,
+    bins: 3,
+    steps: 2,
+    updateRate: 1.0
+};
+
+var display = null;
+
+
+function SelectOnchange() {
+
+    spew('SelectOnchange()');
+    if(this.options.length < 1) {
+        inputs.tag = '';
+        GetElementById('tag').value = inputs.tag;
+        return;
+    }
+
+    var option = this.options[this.selectedIndex];
+    inputs.tag = option.Serial;
+    document.getElementById('tag').value = inputs.tag;
+}
+
+function UpdateSelectWithUsrps(usrpSelect) {
+
+    let hosts = JSON.parse(inputs.hosts);
+
+    USRPs_getList(hosts, function(hostURRPs) {
+
+        dspew('GOT USRPS =' + JSON.stringify(hostURRPs));
+
+        while(usrpSelect.firstElementChild)
+            usrpSelect.removeChild(usrpSelect.firstElementChild);
+
+        Object.keys(hostURRPs).forEach(function(host) {
+            // host
+            hostURRPs[host].forEach(function(usrp) {
+
+                // usrp with this host
+                assert(usrp.addr !== undefined, "a usrp at host '" +
+                        host + "' has no addr");
+                var option = document.createElement('OPTION');
+                option.Host = host;
+                option.Serial = usrp.serial;
+                option.UhdArgs =  "addr=" + usrp.addr;
+                option.text = ' type: ' + usrp.type +
+                    ' | host="' + host + '"' +
+                    ' | addr=' + usrp.addr +
+                    ' | Serial # ' + usrp.serial;
+                usrpSelect.appendChild(option);
+            });
+        });
+
+        usrpSelect.onchange = SelectOnchange;
+        usrpSelect.onchange();
+    });
+}
+
+
+onload = function() {
+
+    // Initialize the inputs values
+    Object.keys(inputs).forEach(function(key) {
+        var input = document.getElementById(key);
+        if(input) {
+            if(input.nodeName === 'INPUT') {
+                input.value = inputs[key];
+                dspew('input["' + key + '"].value=' + inputs[key]);
+            } else if(input.nodeName === 'SELECT') {
+                // What ever. 
+            }
+            input.Key = key;
+        }
+    });
+
+    UpdateSelectWithUsrps(GetElementById('usrp'));
+
+
+};
+
+function onInput(e, key, convert = null) {
+
+    if(convert)
+        inputs[key] = convert(e.value);
+    else
+        inputs[key] = e.value;
+
+    spew('got ' + key + '=' + inputs[key]);
+}
+
+// create a spectrum Feed.
+function create() {
+
+    spew('create tag="' + inputs.tag + '"');
+    var select = GetElementById('usrp');
+    var option = select.options[select.selectedIndex];
+
+    if(option === undefined ||
+            option.UhdArgs === undefined ||
+            option.Host === undefined) {
+        spew("Bad selection");
+        return;
+    }
+
+    SpectrumFeed_create(inputs.tag, option.Host, option.UhdArgs);
+}
+
+function set() {
+
+    spew('set tag="' + inputs.tag + '"');
+
+    if(display)
+        display.setNumTimeSteps(inputs.steps);
+
+    SpectrumFeed_set(inputs.tag, inputs.freq, inputs.bandwidth,
+            inputs.bins, inputs.updateRate);
+
+}
+
+function get() {
+
+    spew('get tag="' + inputs.tag + '"');
+    var obj;
+
+}
+
+function start() {
+
+    spew('start tag="' + inputs.tag + '"');
+    if(inputs.tag.length < 1) return;
+
+    SpectrumFeed_set(inputs.tag, inputs.freq, inputs.bandwidth,
+        inputs.bins, inputs.updateRate);
+
+    SpectrumFeed_start(inputs.tag);
+}
+
+function stop() {
+
+    spew('stop tag="' + inputs.tag + '"');
+    SpectrumFeed_stop(inputs.tag);
+}
+
+function destroy() {
+
+    spew('destroy tag="' + inputs.tag + '"');
+    if(inputs.tag.length < 1) return;
+    SpectrumFeed_destroy(inputs.tag);
+}
+
+    </script>
+
+    <style>
+        body {
+            background-color: #999;
+        }
+        table, th, td {
+            border: 1px solid black;
+        }
+        span.button:hover {
+            color: #529;
+            background-color: #eee;
+        }
+        span.button:active {
+            color: #522;
+            background-color: #aaa;
+        }
+        span.button {
+            color: #33A;
+            cursor: pointer;
+        }
+        .floater {
+            float: left;
+            margin: 10px;
+        }
+        .clear {
+            clear: both;
+        }
+        x3d {
+            width: 100%;
+            height: 100%;
+        }
+    </style>
+
+    <title>Spectrum Test</title>
+</head>
+<body>
+
+    <h1>CRTS USRP Spectrum Feed Test</h1>
+
+    <div class=floater>
+
+        <div id=x3dHolder style="background-color: #aaa; width: 800px; height:500px;">
+        </div>
+
+        <p>press <b>Page Up</b> and <b>Page Down</b> to jump through
+            five different view positions</p>
+    </div>
+
+
+
+    <div class=floater>
+
+        <div style='margin:20px;'>
+            select USRP
+            <select id=usrp onchange="SelectOnchange()"></select>
+        </div>
+
+        <br/><br/>
+
+        <table>
+            <tr><td>hosts</td>          <td><input onchange="onInput(this, 'hosts')" id=hosts />array of hosts with USRP's connected</td></tr>
+            <tr><td>spectrum tag</td>   <td><input onchange="onInput(this, 'tag')" id=tag readonly/>from above selection</td></tr>
+            <tr><td>freq</td>           <td><input onchange="onInput(this, 'freq', parseFloat)" id=freq />MHz</td></tr>
+            <tr><td>bandwidth</td>      <td><input onchange="onInput(this, 'bandwidth', parseFloat )" id=bandwidth />MHz</td></tr>
+            <tr><td>number of bins</td> <td><input onchange="onInput(this, 'bins', parseInt)" id=bins />in FFT sample</td></tr>
+            <tr><td>number of steps</td><td><input onchange="onInput(this, 'steps', parseInt)" id=steps />for 3D display</td></tr>
+            <tr><td>update rate</td>    <td><input onchange="onInput(this, 'updateRate', parseFloat)" id=updateRate />Hz</td></tr>
+        </table>
+
+        <ul>
+            <li><span class=button onclick="UpdateSelectWithUsrps(GetElementById('usrp'))">UpdateSelectWithUsrps()</span></li>
+            <li><span class=button onclick="create()">SpectrumFeed_create()</span></li>
+            <li><span class=button onclick="set()">SpectrumFeed_set()</span></li>
+            <li><span class=button onclick="get()">SpectrumFeed_get()</span></li>
+            <li><span class=button onclick="start()">SpectrumFeed_start()</span></li>
+            <li><span class=button onclick="stop()">SpectrumFeed_stop()</span></li>
+            <li><span class=button onclick="destroy()">SpectrumFeed_destroy()</span></li>
+            <li><span class=button
+                    onclick="display = threeDSpectrumDisplay(inputs.tag,
+                    GetElementById('x3dHolder'), inputs.steps)">Create 3D another Display</span></li>
+
+        </ul>
+
+    </div>
+
+
+    <footer class=clear>
+        Return to <a href="index.html">CRTS Development Tests index</a>
+    </footer>
+
+</body>
+</html>

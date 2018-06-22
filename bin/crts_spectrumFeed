@@ -96,7 +96,7 @@ parser.add_argument('-t','--tag',\
 
 def SendSpectrum(tcpClientSock, tb, iD, tag):
 
-    tcpClientSock.send('{"name":"spectrumUpdate","args":[ %d,"%s",%s]}' %\
+    tcpClientSock.sendall('{"name":"spectrumUpdate","args":[ %d,"%s",%s]}' %\
              (iD, tag, list(tb.blocks_probe_signal_vx_0.level())));
 
 
