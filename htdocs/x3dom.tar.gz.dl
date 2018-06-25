@@ -10,11 +10,9 @@ tag=master
 # The sha512sum is optional.  Get its value by running:
 #    sha512sum x3dom.tar.gz
 
-sha512sum=f51c79ce84e035c6c886dc9557d20bbecf\
-3f8a9f3454347c2f996d80ecb1a0bcef62c63cdd6d80\
-f416ac38bc664ead4a1cc3c205947659784d628df351\
-47784e
-
+sha512sum=659b9826bd00980211d06f7e655c43b415df40d9656af\
+221145b012898a06225e9dc48e1243344bfade736ab75accacf5e86\
+77205eff6442bfacc17d2e65cd28
 
 source ../GetSrcFromGithub.bash
 
@@ -28,7 +26,8 @@ exit 0
 
 # Tried this and this release has a broken elevationGrid.  Tried many
 # other releases and many had a broken elevationGrid; hence we settled on
-# version 1.5.0-dev which we had to put in our own github repository.
+# version 1.5.0-dev which we had to put in our own github repository given
+# we could not find it elsewhere on the web.
 #!/bin/bash
 
 set -ex
