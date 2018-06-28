@@ -250,10 +250,13 @@ function CRTSClient(onInit=function(){}) {
             });
         } else {
             // If there are no Displays we can at least spew.
-            dspew('"spectrum" : ' + tag + ': ' + values.toString());
+            dspew('"spectrumUpdate": ' + tag + ': ' + values.toString());
         }
 
         sf.values = values;
+
+        if(!sf.running)
+            sf.running = true;
     });
 
 
@@ -395,7 +398,7 @@ function CRTSClient(onInit=function(){}) {
             sf.haveNewParameters = false;
         }
         
-        sf.running = true;
+        //sf.running = true;
     };
 
     crts.SpectrumFeed_destroy = function(tag) {

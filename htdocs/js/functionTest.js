@@ -1,11 +1,10 @@
 //
 // p - object with list of parameters that gets added to.
 //
-// requires that <table id=inputTable></table> exists.
+// inputTable - <table> element to append to.
 //
 function FunctionTest_init(p, inputTable) {
 
-    var obj = {};
 
     function FindChildren(node, func) {
         for(let child=node.firstChild; child; child=child.nextSibling) {
@@ -17,11 +16,13 @@ function FunctionTest_init(p, inputTable) {
     function AppendParameterText(text, parameter) {
         var val = parameter.value;
         text.data += parameter.Name + '=';
-        spew(' ----------------------------- ' + (typeof val));
 
-        if(Array.isArray(val))
-            text.data += '[';
-        else if(typeof val === 'string')
+        if(Array.isArray(val)) {
+            text.data += JSON.stringify(val);
+            return;
+        }
+
+        if(typeof val === 'string')
             text.data += '"';
 
         text.data += val;
@@ -34,13 +35,11 @@ function FunctionTest_init(p, inputTable) {
 
         let text = node.firstChild;
 
-        spew(' --------------- changing :' + text.data + '   Args=' + node.Args);
-
         text.data = node.FunctionName + '(';
         let gotData = false;
         node.Args.forEach(function(parameter) {
             if(gotData)
-                text.data += ',';
+                text.data += ', ';
             else
                 gotData = true;
             AppendParameterText(text, parameter);
@@ -55,7 +54,7 @@ function FunctionTest_init(p, inputTable) {
     // Create an input and add it to the inputTable and make
     // obj have more object data in it.
     //
-    obj.CreateInput = function(id, par) {
+    function CreateInput(id, par) {
 
         // Array of functions that use this input parameter
         par.Functions = [];
@@ -67,14 +66,16 @@ function FunctionTest_init(p, inputTable) {
 
         let td = document.createElement('TD');
         tr.appendChild(td);
+        td.className = 'parameterName';
+        td.appendChild(document.createTextNode(par.Name))
+
+
+        td = document.createElement('TD');
+        tr.appendChild(td);
         td.appendChild(document.createTextNode(par.description));
 
         td = document.createElement('TD');
         tr.appendChild(td);
-
-        let unitTd = document.createElement('TD');
-        tr.appendChild(unitTd);
-        unitTd.appendChild(document.createTextNode(par.units));
 
         if(par.container !== undefined) {
             par.container = td;
@@ -85,11 +86,20 @@ function FunctionTest_init(p, inputTable) {
 
         let input = par.input = document.createElement('INPUT');
 
+        td.appendChild(input);
+
+
+        if(par.units !== undefined && par.units.length)
+            td.appendChild(document.createTextNode(' ' + par.units));
+
         if(par.readonly !== undefined && par.readonly) {
             input.readOnly = true;
+            let span = document.createElement('span');
+            span.className = 'readonly';
+            span.appendChild(document.createTextNode("readonly"));
+            td.appendChild(span);
         }
 
-        td.appendChild(input);
 
         if(Array.isArray(par.value))
             input.value = JSON.stringify(par.value);
@@ -106,9 +116,14 @@ function FunctionTest_init(p, inputTable) {
         }
 
         // Setup all the text nodes to get text from this input.
-        input.onkeyup = function(e) {
+        input.onkeyup = function() {
             if(Array.isArray(par.value)) {
-                par.value = JSON.parse(input.value);
+                try {
+                    par.value = JSON.parse(input.value);
+                } catch(e) {
+                    spew("bad functionTest <input> value: JSON.parse(" +
+                        input.value + ') failed');
+                };
             } else if(isFloat(par.value)) {
                 par.value = parseFloat(input.value);
             } else if(isInt(par.value)) {
@@ -123,31 +138,44 @@ function FunctionTest_init(p, inputTable) {
             });
         };
         input.onchange = input.onkeyup;
+
+        par.setValue = function(val) {
+
+            // val needs to be a string.
+            assert(typeof val === 'string',
+                "par.setValue(val) val is not a string");
+            par.input.value = val;
+            // Simulate an onkeyup event for this <input>
+            par.input.onkeyup();
+        };
+
     }
 
     // Initialize the inputs values
     Object.keys(p).forEach(function(key) {
-        obj.CreateInput(key, p[key]);
+        CreateInput(key, p[key]);
     });
 
 
-    obj.UpdateFunctions = function() {
+    function UpdateFunctions() {
 
         FindChildren(document.getElementsByTagName("BODY")[0], function(node) {
 
             if(node.className === 'functionButton' && node.firstChild &&
                 node.firstChild.nodeType === Node.TEXT_NODE) {
 
+                
                 let tNode =  node.firstChild;
                 let text = tNode.data;
-                let functionName = text.replace(/\(.*$/, '');
-                let args = text.replace(functionName + '(', '');
-                args = args.replace(/\).*$/, '');
-                spew('func() ==' + functionName + '(' + args + ')');
+                let functionName = text.replace(/\(.*$/, '').replace(/\s*/, '');
+                let args = text.replace(functionName + '(', '').
+                    replace(/\).*$/, '').replace(/\s*/g, '');
+
                 node.FunctionName = functionName;
                 node.Args = [];
 
-                args.replace(/\s*/, '').split(',').forEach(function(arg) {
+                // Make an array of args:
+                args.split(',').forEach(function(arg) {
 
                     assert(p[arg] !== undefined && p[arg].value !== undefined,
                         'Bad arg: ' + arg + ' in function ' + functionName + '()');
@@ -162,15 +190,28 @@ function FunctionTest_init(p, inputTable) {
                 });
 
                 node.onclick = function() {
-                    spew("TODO: need to call: " + functionName + '(argsArray=' + JSON.stringify(node.Args) + ')');
+                    // Construct the argument array now, on the fly, so
+                    // that we get the latest value for the parameters.
+                    var args = [];
+                    node.Args.forEach(function(parameter) {
+                        args.push(parameter.value);
+                    });
+
+                    spew("Running: " + functionName + tNode.data);
+
+                    window[functionName](...args);
                 };
 
-                spew(' ---------------------- ' + functionName + '()');
-                spew(' ---------------------- ' + functionName + '(argsArray=' + args + ')');
+                spew('making function caller for: ' + functionName + '(argsArray=[' + args + '])');
              }
         });
     }
 
-    obj.UpdateFunctions();
-}
+    UpdateFunctions();
 
+    // Simulate onkeyup events for all <input>s.
+    Object.keys(p).forEach(function(key) {
+        if(p[key].input !== undefined)
+            p[key].input.onkeyup();
+    });
+}

@@ -1,10 +1,11 @@
-        
-table, th, td {
-    border: 1px solid black;
+
+td.parameterName {
+    font-size: 130%;
+    text-align: center;
 }
 span.functionButton:hover {
     color: #529;
-    background-color: #eee;
+    background-color: #aaa;
 }
 span.functionButton:active {
     color: #522;
@@ -13,4 +14,9 @@ span.functionButton:active {
 span.functionButton {
     color: #33A;
     cursor: pointer;
+    font-size: 130%;
+}
+span.readonly {
+    color: #922;
+    margin-left: 4px;
 }
