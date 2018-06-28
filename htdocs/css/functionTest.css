@@ -1,0 +1,16 @@
+        
+table, th, td {
+    border: 1px solid black;
+}
+span.functionButton:hover {
+    color: #529;
+    background-color: #eee;
+}
+span.functionButton:active {
+    color: #522;
+    background-color: #aaa;
+}
+span.functionButton {
+    color: #33A;
+    cursor: pointer;
+}
