@@ -1,4 +1,4 @@
-SUBDIRS := css js img
+SUBDIRS := css js img tests
 
 INSTALL_DIR = $(PREFIX)/htdocs
 
