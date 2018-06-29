@@ -57,20 +57,23 @@ function ThreeDSpectrumDisplay(feedTag, parentNode=null, nSteps = 6) {
 
             let heights = '';
             let colors = '';
+            // The array size is: obj.values[obj.nSteps][obj.bins]
             for(z=0;z<obj.nSteps; ++z) {
-                for(let x=0; x<bins; ++x) {
+                for(let x=0; x<obj.bins; ++x) {
                     heights += obj.values[z][x].toString() + ' ';
                     colors += '0.2 1 0.2   ';
                 }
             }
             // Add a zero height row to the front.
-            for(let x=0; x<bins; ++x) {
+            for(let x=0; x<obj.bins; ++x) {
                 heights += '0 ';
                 colors += '1 0.2 0.2 ';
             }
 
             obj.elevationGrid.setAttribute('height', heights);
             obj.color.setAttribute('color', colors);
+
+            //spew('height=' + heights);
 
             //spew('elevationGrid.outerHTML=' + elevationGrid.outerHTML);
 
@@ -101,7 +104,9 @@ function ThreeDSpectrumDisplay(feedTag, parentNode=null, nSteps = 6) {
         function threeDSpectrumDisplay_set(freq, bandwidth, bins, updateRate) {
 
             if(freq) {
-                obj.freq = _freq;
+
+                // We got new parameters.
+                obj.freq = freq;
                 obj.bandwidth = bandwidth;
                 obj.bins = bins;
                 obj.updateRate = updateRate;
@@ -118,34 +123,40 @@ function ThreeDSpectrumDisplay(feedTag, parentNode=null, nSteps = 6) {
             // Example: values[2][20]  row 2   bin slot 20
 
             for(let z=0; z<obj.nSteps; ++z) {
-                let vals = [];
-                obj.values[z] = vals;
-                for(let x=0; x<bins; ++x)
-                    vals[x] = 0.5;
-                }
+                obj.values[z] = [];
+                for(let x=0; x<obj.bins; ++x)
+                    obj.values[z][x] = 0.5;
+            }
 
-            elevationGrid.setAttribute('xDimension', bins.toString());
+            elevationGrid.setAttribute('xDimension', obj.bins.toString());
+            elevationGrid.setAttribute('xspacing', 3.0/(obj.bins));
+
             elevationGrid.setAttribute('zDimension', (obj.nSteps + 1).toString());
-            elevationGrid.setAttribute('xspacing', 3.0/(obj.nSteps + 1));
-            elevationGrid.setAttribute('zspacing', 3.0/bins);
+            elevationGrid.setAttribute('zspacing', 3.0/(obj.nSteps + 1));
 
             setHeightAndColor();
-        }
+        };
+
+        obj.threeDSpectrumDisplay_set = threeDSpectrumDisplay_set;
+
+
 
 
         function threeDSpectrumDisplay_update(values) {
 
+            const yScale = 1.0e+3;
+
             //spew('threeDSpectrumDisplay_update(' + values + ')');
 
-            assert(values.length == bins,
-                "threeDSpectrumDisplay_update([" + values +
-                "]) with bins=" + bins);
+            assert(values.length == obj.bins,
+                "threeDSpectrumDisplay_update([" + obj.values +
+                "]) with bins=" + obj.bins);
 
-            for(let z=0; z<obj.nSteps-1; ++z)
-                for(let x=0; x<bins; ++x)
+            for(let z=0; z<(obj.nSteps-1); ++z)
+                for(let x=0; x<obj.bins; ++x)
                     obj.values[z][x] = obj.values[z+1][x];
 
-            for(let x=0; x<bins; ++x)
+            for(let x=0; x<obj.bins; ++x)
                 obj.values[obj.nSteps-1][x] = values[x] * yScale;
 
             setHeightAndColor();
