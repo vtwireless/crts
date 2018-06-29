@@ -5,7 +5,6 @@
 //
 function FunctionTest_init(p, inputTable) {
 
-
     function FindChildren(node, func) {
         for(let child=node.firstChild; child; child=child.nextSibling) {
             func(child);
@@ -14,6 +13,29 @@ function FunctionTest_init(p, inputTable) {
     }
 
     function AppendParameterText(text, parameter) {
+
+        if(parameter.value === undefined || parameter.Name === undefined) {
+            // This is not in our parameter list so we'll assume that
+            // it is a window global variable with name/key parameter.
+            //
+            text.data += parameter;
+            let val = window[parameter];
+            assert(val !== undefined, parameter +
+                    ' is not a window global varable' +
+                    ' or in the parameter list');
+
+            if(val.toString !== undefined) {
+                text.data += '=';
+                if(typeof val === 'string')
+                    text.data += '"';
+                text.data += val.toString();
+                if(typeof val === 'string')
+                    text.data += '"';
+            }
+
+            return;
+        }
+
         var val = parameter.value;
         text.data += parameter.Name + '=';
 
@@ -177,24 +199,32 @@ function FunctionTest_init(p, inputTable) {
                 // Make an array of args:
                 args.split(',').forEach(function(arg) {
 
-                    assert(p[arg] !== undefined && p[arg].value !== undefined,
-                        'Bad arg: ' + arg + ' in function ' + functionName + '()');
-
-                    // Add to the functions list of arguments.
-                    node.Args.push(p[arg]);
-
-                    // Add this function to the array of functions that use
-                    // the parameter p[arg].
-                    //
-                    p[arg].Functions.push(node);
+                    if(p[arg] !== undefined && p[arg].value !== undefined) {
+                        node.Args.push(p[arg]); // This p[arg] is in the parameter list
+                        // Add this function to the array of functions that use
+                        // the parameter p[arg].
+                        //
+                        p[arg].Functions.push(node);
+                    } else
+                        // This arg is not in our parameter list so we
+                        // will use arg differently.
+                        node.Args.push(arg);
                 });
 
                 node.onclick = function() {
                     // Construct the argument array now, on the fly, so
                     // that we get the latest value for the parameters.
                     var args = [];
+
                     node.Args.forEach(function(parameter) {
-                        args.push(parameter.value);
+                        if(parameter.value !== undefined)
+                            args.push(parameter.value);
+                        else {
+                            assert(window[parameter] !== undefined, parameter +
+                                ' is not a window global varable' +
+                                ' or in the parameter list');
+                            args.push(window[parameter]);
+                        }
                     });
 
                     spew("Running: " + functionName + tNode.data);

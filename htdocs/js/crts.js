@@ -295,7 +295,7 @@ function CRTSClient(onInit=function(){}) {
         // object that keeps the state, parameters, and display callback
         // functions.
 
-        if(spectrumFeeds[tag] == undefined) {
+        if(spectrumFeeds[tag] === undefined) {
 
             dspew('Making spectrumFeed named "' + tag);
 
@@ -321,17 +321,19 @@ function CRTSClient(onInit=function(){}) {
         } else
             sf = spectrumFeeds[tag];
 
+        if(onset) {
+            sf.onsets.push(onset);
+            // update parameters in the new Display
+            onset(sf.freq, sf.bandwidth, sf.bins, sf.updateRate);
+        }
+
         if(onupdate) {
             sf.onupdates.push(onupdate);
             if(sf.values)
                 // update the values to the new Display
                 onupdate(sf.values);
         }
-        if(onset) {
-            sf.onsets.push(onset);
-            // update parameters in the new Display
-            onset(sf.freq, sf.bandwidth, sf.bins, sf.updateRate);
-        }
+
         if(ondestroy)
             sf.ondestroys.unshift(ondestroy);
     };
@@ -381,6 +383,16 @@ function CRTSClient(onInit=function(){}) {
         }
     };
 
+    On('stopSpectrumFeed', function(tag) {
+
+        var sf = getSpectrumFeed(tag, "SpectrumFeed_start");
+        if(sf === false) return;
+
+        spew('spectrumFeed with tag ' + tag + ' stopped');
+        sf.running = false;
+    });
+
+
     crts.SpectrumFeed_start = function(tag) {
 
         var sf = getSpectrumFeed(tag, "SpectrumFeed_start");
@@ -397,7 +409,9 @@ function CRTSClient(onInit=function(){}) {
                 sf.tag/*the whatever tag string*/);
             sf.haveNewParameters = false;
         }
-        
+       
+        // We wait until we get a 'spectrumUpdate' to set the
+        // running flag.
         //sf.running = true;
     };
 
@@ -509,9 +523,34 @@ function SpectrumDisplay_create(tag,
 
 
 // For a given tag this adds another display for the spectrum data.  This
-// does build the display.  The user of this function uses this to make a
-// particular spectrum display be it 2D or 3D, or whatever.  You can have
-// any number of "displays" for a given spectra tag.
+// does not build the display.  The user of this function uses this to
+// make a particular spectrum display be it 2D or 3D, or whatever.  You
+// can have any number of "displays" for a given spectra tag.
+//
+// Q: Why not make and return an object?
+//
+// 1. In javaScript returning an object is a problem given that the
+//    functions in the returned object may not be valid until an
+//    asynchronous initialization event happens.
+//
+// 2. We wish to not have to pass objects around between codes that are
+//    otherwise independent.
+//
+// 3. The information that is shared between codes that use these shared
+//    objects does not have a general object in it, and therefore can
+//    be the same kind of information the is shared on the webSocket
+//    client/server interface; it's JSON.  If we used an general object we
+//    could not shared this object with the server, but JSON (not a
+//    general object) can be shared between the client and the server.
+//
+// 4. Thinking about 3.  We don't want to go down the networked
+//    javaScript/CORBA rabbit hole.  CORBA and RPC have failed to catch on
+//    for so many reasons.
+//
+// reference:
+//
+//  https://stackoverflow.com/questions/3835785/why-has-corba-lost-popularity
+//  https://en.wikipedia.org/wiki/Common_Object_Request_Broker_Architecture
 //
 function SpectrumFeed_create(tag, host="", uhd_args="",
         // Different event handler functions that a "display implementation"

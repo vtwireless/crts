@@ -1,46 +1,44 @@
-// This javaScript is paired with the file ../3DSpectrumDisplay.htm
-// which has the x3d xml scene graph in it, this also needs the
-// x3dom javaScript, x3dom.js, and the crts.js loaded.
+// This javaScript needs the crts.js, x3dom javaScript, x3dom.js, and the
+// crts.js loaded.
 
 
-// One stink'n global to flag the singleton existence
-// in addition to the constructor threeDSpectrumDisplay().
-var threeDSpectrumDisplay_obj = null;
+// A list of ThreeDSpectrumDisplay thingys.
+var threeDSpectrumDisplay_obj = {};
 
 
 // Create a x3DOM 3D canvas and use SpectrumDisplay_create() to set
 // callbacks to feed it data.
-function threeDSpectrumDisplay(feedTag, parentNode=null, _nSteps = 3) {
+function ThreeDSpectrumDisplay(feedTag, parentNode=null, nSteps = 6) {
 
-    if(threeDSpectrumDisplay_obj)
-        // We make just one 3DSpectrumDisplay.  We tried to make more
-        // but x3dom bugs totally stopped us.
+    if(threeDSpectrumDisplay_obj[feedTag] !== undefined) {
+
+        // We are calling this more than once for this feedTag.
+
+        var obj = threeDSpectrumDisplay_obj[feedTag];
+
+        if(obj.nSteps !== nSteps) {
+            obj.nSteps = nSteps;
+            obj.threeDSpectrumDisplay_set(null/*freq*/);
+        }
+
+        // We make just one 3DSpectrumDisplay per feedTag.
+    }
+
+    if(Object.keys(threeDSpectrumDisplay_obj).length) {
+
+        // TODO:
+        // x3dom bugs stopped us from have more than one obj.
         //
-        // TODO: At least for now, but we could extend to any number
-        // of these.
-        return threeDSpectrumDisplay_obj;
+        spew('Cannot make more than one ThreeDSpectrumDisplay');
+        return;
+    }
 
 
-    let nSteps = _nSteps, // number of values to display at a time
-        bins, // number of values per time step
-        freq, // center frequency
-        values, // values[step][bin]
-        lastHeightsLength = 0,
-        // x3dom elevationGrid that is in 3DSpectrumDisplay.htm
-        elevationGrid = null,
-        // color in the x3dom elevationGrid
-        color = null,
-        // to scale the values
-        yScale = 1.0e3, // height scale
-        maxHeight = -9.9e+15, minHeight = 9.9e+15,
-        running = false;
+    // This is the first time calling this for this feedTag.
 
+    var obj = threeDSpectrumDisplay_obj[feedTag] = {};
 
-    var obj = threeDSpectrumDisplay_obj = {};
-
-    obj.setNumTimeSteps = function(_nSteps) {
-        nSteps = _nSteps;
-    };
+    obj.nSteps = nSteps; // number of values to display at a time
 
 
     function OnLoad() {
@@ -49,19 +47,19 @@ function threeDSpectrumDisplay(feedTag, parentNode=null, _nSteps = 3) {
         // 3DSpectrumDisplay.htm is loaded
 
         // x3dom elevationGrid that is in 3DSpectrumDisplay.htm
-        elevationGrid = GetElementById('elevationGrid');
+        obj.elevationGrid = GetElementById('elevationGrid');
 
         // color in the x3dom elevationGrid
-        color = GetElementById('color');
+        obj.color = GetElementById('color');
 
 
         function setHeightAndColor() {
 
             let heights = '';
-            colors = '';
-            for(z=0;z<nSteps; ++z) {
+            let colors = '';
+            for(z=0;z<obj.nSteps; ++z) {
                 for(let x=0; x<bins; ++x) {
-                    heights += values[z][x].toString() + ' ';
+                    heights += obj.values[z][x].toString() + ' ';
                     colors += '0.2 1 0.2   ';
                 }
             }
@@ -71,14 +69,14 @@ function threeDSpectrumDisplay(feedTag, parentNode=null, _nSteps = 3) {
                 colors += '1 0.2 0.2 ';
             }
 
-            elevationGrid.setAttribute('height', heights);
-            color.setAttribute('color', colors);
+            obj.elevationGrid.setAttribute('height', heights);
+            obj.color.setAttribute('color', colors);
 
             //spew('elevationGrid.outerHTML=' + elevationGrid.outerHTML);
-            
+
             // Reload the x3dom elevationGrid to force it to render
             // our changes.
-            var container = elevationGrid.parentNode;
+            let container = elevationGrid.parentNode;
 
             assert(container, "container is false");
 
@@ -90,24 +88,24 @@ function threeDSpectrumDisplay(feedTag, parentNode=null, _nSteps = 3) {
 
 	    var content = container.innerHTML;
 	    container.innerHTML = content;
-        
+
             // x3dom elevationGrid that is in 3DSpectrumDisplay.htm
-            elevationGrid = GetElementById('elevationGrid');
+            obj.elevationGrid = GetElementById('elevationGrid');
 
             // color in the x3dom elevationGrid
-            color = GetElementById('color');
-
+            obj.color = GetElementById('color');
         }
 
 
         // This is called when parameters change.
-        function threeDSpectrumDisplay_set(
-                _freq, _bandwidth, _bins, _updateRate) {
+        function threeDSpectrumDisplay_set(freq, bandwidth, bins, updateRate) {
 
-            freq = _freq;
-            bandwidth = _bandwidth;
-            bins = _bins;
-            updateRate = _updateRate;
+            if(freq) {
+                obj.freq = _freq;
+                obj.bandwidth = bandwidth;
+                obj.bins = bins;
+                obj.updateRate = updateRate;
+            }
 
             dspew('threeDSpectrumDisplay_set(' +
                 'freq=' + freq +
@@ -116,38 +114,39 @@ function threeDSpectrumDisplay(feedTag, parentNode=null, _nSteps = 3) {
                 ', updateRate=' + updateRate +
                 ')');
 
-            values = []; // values[nStep][bins]
+            obj.values = []; // values[nStep][bins]
             // Example: values[2][20]  row 2   bin slot 20
 
-            for(let z=0; z<nSteps; ++z) {
+            for(let z=0; z<obj.nSteps; ++z) {
                 let vals = [];
-                values[z] = vals;
+                obj.values[z] = vals;
                 for(let x=0; x<bins; ++x)
                     vals[x] = 0.5;
-            }
+                }
 
             elevationGrid.setAttribute('xDimension', bins.toString());
-            elevationGrid.setAttribute('zDimension', (nSteps + 1).toString());
-            elevationGrid.setAttribute('xspacing', 3.0/(nSteps + 1));
+            elevationGrid.setAttribute('zDimension', (obj.nSteps + 1).toString());
+            elevationGrid.setAttribute('xspacing', 3.0/(obj.nSteps + 1));
             elevationGrid.setAttribute('zspacing', 3.0/bins);
 
             setHeightAndColor();
-         }
+        }
 
-        function threeDSpectrumDisplay_update(_values) {
 
-            //spew('threeDSpectrumDisplay_update(' + _values + ')');
+        function threeDSpectrumDisplay_update(values) {
 
-            assert(_values.length == bins,
-                "threeDSpectrumDisplay_update([" + _values +
+            //spew('threeDSpectrumDisplay_update(' + values + ')');
+
+            assert(values.length == bins,
+                "threeDSpectrumDisplay_update([" + values +
                 "]) with bins=" + bins);
 
-            for(let z=0; z<nSteps-1; ++z)
+            for(let z=0; z<obj.nSteps-1; ++z)
                 for(let x=0; x<bins; ++x)
-                    values[z][x] = values[z+1][x];
+                    obj.values[z][x] = obj.values[z+1][x];
 
             for(let x=0; x<bins; ++x)
-                values[nSteps-1][x] = _values[x] * yScale;
+                obj.values[obj.nSteps-1][x] = values[x] * yScale;
 
             setHeightAndColor();
         }
@@ -162,13 +161,6 @@ function threeDSpectrumDisplay(feedTag, parentNode=null, _nSteps = 3) {
             threeDSpectrumDisplay_update,
             threeDSpectrumDisplay_set,
             threeDSpectrumDisplay_destroy);
-
-    
-        obj.setNumTimeSteps = function(_nSteps) {
-            nSteps = _nSteps;
-            if(running)
-                threeDSpectrumDisplay_set(freq, bandwidth, bins, updateRate);
-        };
 
         spew("3DSpectrumDisplay is OKAY");
     }
@@ -227,6 +219,4 @@ function threeDSpectrumDisplay(feedTag, parentNode=null, _nSteps = 3) {
         };
         xhttp.send();
     }
-
-    return obj;
 }

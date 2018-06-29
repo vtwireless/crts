@@ -175,7 +175,11 @@ function UpdateUSRPSelect(select, parameters) {
 }
 
 
+var x3dContainer = null;
+
 onload = function() {
+
+    x3dContainer = GetElementById('x3dContainer');
 
     FunctionTest_init(parameters, GetElementById('inputTable'));
 
@@ -222,7 +226,7 @@ function UpdateSelectWithUsrps(hosts) {
 
     <div class=floater>
 
-        <div id=x3dHolder style="background-color: #aaa; width: 800px; height:500px;">
+        <div id=x3dContainer style="background-color: #aaa; width: 800px; height:500px;">
         </div>
 
         <p>press <b>Page Up</b> and <b>Page Down</b> to jump through
@@ -248,6 +252,7 @@ function UpdateSelectWithUsrps(hosts) {
             <li><span class=functionButton>SpectrumFeed_start(spectrumKey)</span></li>
             <li><span class=functionButton>SpectrumFeed_stop(spectrumKey)</span></li>
             <li><span class=functionButton>SpectrumFeed_destroy(spectrumKey)</span></li>
+            <li><span class=functionButton>ThreeDSpectrumDisplay(spectrumKey, x3dContainer, steps)</span></li>
         </ul>
 
  
