@@ -18,7 +18,15 @@ function ThreeDSpectrumDisplay(feedTag, parentNode=null, nSteps = 6) {
 
         if(obj.nSteps !== nSteps) {
             obj.nSteps = nSteps;
+
+            // delete the old values array and let threeDSpectrumDisplay_set()
+            // resize them.
+            for(let z=0; z<obj.nSteps; ++z)
+                delete obj.values[z];
+
             obj.threeDSpectrumDisplay_set(null/*freq*/);
+
+            return;
         }
 
         // We make just one 3DSpectrumDisplay per feedTag.
@@ -70,16 +78,16 @@ function ThreeDSpectrumDisplay(feedTag, parentNode=null, nSteps = 6) {
                 colors += '1 0.2 0.2 ';
             }
 
+            obj.color.color = colors;
             obj.elevationGrid.setAttribute('height', heights);
-            obj.color.setAttribute('color', colors);
 
             //spew('height=' + heights);
 
-            //spew('elevationGrid.outerHTML=' + elevationGrid.outerHTML);
+            //spew('obj.elevationGrid.outerHTML=' + obj.elevationGrid.outerHTML);
 
             // Reload the x3dom elevationGrid to force it to render
             // our changes.
-            let container = elevationGrid.parentNode;
+            let container = obj.elevationGrid.parentNode;
 
             assert(container, "container is false");
 
@@ -90,6 +98,7 @@ function ThreeDSpectrumDisplay(feedTag, parentNode=null, nSteps = 6) {
             // reloading it.
 
 	    var content = container.innerHTML;
+
 	    container.innerHTML = content;
 
             // x3dom elevationGrid that is in 3DSpectrumDisplay.htm
@@ -117,7 +126,7 @@ function ThreeDSpectrumDisplay(feedTag, parentNode=null, nSteps = 6) {
                 ', bandwidth=' + bandwidth +
                 ', bins=' + bins +
                 ', updateRate=' + updateRate +
-                ')');
+                ')  nSteps=' + obj.nSteps);
 
             obj.values = []; // values[nStep][bins]
             // Example: values[2][20]  row 2   bin slot 20
@@ -131,8 +140,8 @@ function ThreeDSpectrumDisplay(feedTag, parentNode=null, nSteps = 6) {
             elevationGrid.setAttribute('xDimension', obj.bins.toString());
             elevationGrid.setAttribute('xspacing', 3.0/(obj.bins));
 
-            elevationGrid.setAttribute('zDimension', (obj.nSteps + 1).toString());
-            elevationGrid.setAttribute('zspacing', 3.0/(obj.nSteps + 1));
+            elevationGrid.setAttribute('zDimension', obj.nSteps + 1);
+            elevationGrid.setAttribute('zspacing', 3.0/(obj.nSteps - 1));
 
             setHeightAndColor();
         };

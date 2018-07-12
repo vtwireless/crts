@@ -124,8 +124,10 @@ def CORNET_3D_Daemon(tcpClientSock, args):
                 params = json.loads(data)
                 print 'crts_spectrumFeed Got parameters:'
                 print params
-                tb = spectrum_sensing_nikita(params['freq']*1e6, \
-                        params['bins'], params['bandwidth']*1e6,\
+                tb = spectrum_sensing_nikita(\
+                        float(params['freq']*1e6),\
+                        int(params['bins']),\
+                        float(params['bandwidth']*1e6),\
                         args['device'])
                 period = 1/float(params['updateRate'])
                 if period < 1.0/60.0:

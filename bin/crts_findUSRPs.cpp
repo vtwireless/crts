@@ -5,6 +5,7 @@
 
 #include <uhd/device.hpp>
 #include <string>
+#include <map>
 #include <string.h>
 #include <stdio.h>
 
@@ -64,10 +65,19 @@ int main(int argc, char *argv[])
     
     int count = 0;
 
+    std::map<std::string, bool> found_devices;
+
     printf("[\n");
 
     for (size_t i = 0; i < device_addrs.size(); ++i)
     {
+        if(found_devices.find(device_addrs[i]["serial"]) != found_devices.end())
+            // We do not print for devices with the same serial number
+            // that we already found.
+            continue;
+
+        found_devices[device_addrs[i]["serial"]] = true;
+
         std::string str = device_addrs[i].to_string();
 
         if(str.length())

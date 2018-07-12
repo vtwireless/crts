@@ -83,6 +83,7 @@ function FunctionTest_init(p, inputTable) {
         // This object needs it's key that it is named as.
         par.Name = id;
 
+
         let tr = document.createElement('TR');
         inputTable.appendChild(tr);
 
@@ -129,26 +130,31 @@ function FunctionTest_init(p, inputTable) {
             input.value = par.value.toString();
 
 
-        function isInt(n){
-            return Number(n) === n && n % 1 === 0;
-        }
-
-        function isFloat(n){
-            return Number(n) === n && n % 1 !== 0;
-        }
+        // By keeping the initial value we can remember what type the
+        // value is, so that we know how to get a value in the future.
+        var initialValue = par.value;
 
         // Setup all the text nodes to get text from this input.
         input.onkeyup = function() {
-            if(Array.isArray(par.value)) {
+
+            function isInt(n){
+                return Number(n) === n && n % 1 === 0;
+            }
+
+            function isFloat(n){
+                return Number(n) === n && n % 1 !== 0;
+            }
+
+            if(Array.isArray(initialValue)) {
                 try {
                     par.value = JSON.parse(input.value);
                 } catch(e) {
                     spew("bad functionTest <input> value: JSON.parse(" +
                         input.value + ') failed');
                 };
-            } else if(isFloat(par.value)) {
+            } else if(isFloat(initialValue)) {
                 par.value = parseFloat(input.value);
-            } else if(isInt(par.value)) {
+            } else if(isInt(initialValue)) {
                 par.value = parseInt(input.value);
             } else // string
                 par.value = input.value;
@@ -159,6 +165,7 @@ function FunctionTest_init(p, inputTable) {
                 UpdateFunctionText(node);
             });
         };
+
         input.onchange = input.onkeyup;
 
         par.setValue = function(val) {
