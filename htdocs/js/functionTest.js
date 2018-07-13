@@ -194,13 +194,14 @@ function FunctionTest_init(p, inputTable) {
                 node.firstChild.nodeType === Node.TEXT_NODE) {
 
                 
-                let tNode =  node.firstChild;
+                var tNode =  node.firstChild;
                 let text = tNode.data;
-                let functionName = text.replace(/\(.*$/, '').replace(/\s*/, '');
-                let args = text.replace(functionName + '(', '').
+                if(node.FunctionName === undefined)
+                    node.FunctionName = text.replace(/\(.*$/, '').replace(/\s*/, '');
+
+                var args = text.replace(node.FunctionName + '(', '').
                     replace(/\).*$/, '').replace(/\s*/g, '');
 
-                node.FunctionName = functionName;
                 node.Args = [];
 
                 // Make an array of args:
@@ -221,25 +222,25 @@ function FunctionTest_init(p, inputTable) {
                 node.onclick = function() {
                     // Construct the argument array now, on the fly, so
                     // that we get the latest value for the parameters.
-                    var args = [];
+                    var _args = [];
 
                     node.Args.forEach(function(parameter) {
                         if(parameter.value !== undefined)
-                            args.push(parameter.value);
+                            _args.push(parameter.value);
                         else {
                             assert(window[parameter] !== undefined, parameter +
                                 ' is not a window global varable' +
                                 ' or in the parameter list');
-                            args.push(window[parameter]);
+                            _args.push(window[parameter]);
                         }
                     });
 
-                    spew("Running: " + functionName + tNode.data);
+                    spew("Running: " + node.FunctionName + '(' + _args + ')');
 
-                    window[functionName](...args);
+                    window[node.FunctionName](..._args);
                 };
 
-                spew('making function caller for: ' + functionName + '(argsArray=[' + args + '])');
+                spew('making function caller for: ' + node.FunctionName + '(argsArray=[' + args + '])');
              }
         });
     }

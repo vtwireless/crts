@@ -285,7 +285,7 @@ function CRTSClient(onInit=function(){}) {
 
     // tag is a string that is unique to this particular spectrum display
     // on this webSocket client.
-    crts.SpectrumFeed_create = function(tag, host, uhd_args,
+    crts.SpectrumFeed_create = function(tag, host, port, uhd_args,
                 onupdate, onset, ondestroy) {
         var sf;
 
@@ -312,6 +312,7 @@ function CRTSClient(onInit=function(){}) {
                 // last requested state
                 running: false,
                 host: host,
+                port: port,
                 values: false,
                 haveNewParameters: true,
                 onupdates: [],
@@ -406,6 +407,7 @@ function CRTSClient(onInit=function(){}) {
                 sf.bins/*number of bins*/, sf.updateRate/*Hz*/,
                 sf.uhd_args/*uhd device on host*/,
                 sf.host/*host or '' for no ssh to run spectrumSensing*/,
+                sf.port/*ssh port*/,
                 sf.tag/*the whatever tag string*/);
             sf.haveNewParameters = false;
         }
@@ -446,7 +448,7 @@ function CRTSClient(onInit=function(){}) {
         }
 
         Emit('getUSRPsList', hosts);
-        
+
         // We need a wrapper web socket handler that removes
         // its self after it is called.
         On('getUSRPsList', function(usrps) {
@@ -517,8 +519,10 @@ function USRPs_getList(hosts/*array of strings of hostnames*/,
 function SpectrumDisplay_create(tag,
         onupdate=null, onset=null, ondestroy=null) {
 
-    SpectrumFeed_create(tag, null/*host*/, null/*uhd_args*/,
-        onupdate, onset, ondestroy);
+    // We assume that the spectrum feed parameters are
+    // already set, so host and port are set already.
+    SpectrumFeed_create(tag, null/*host*/, null/*port*/,
+        null/*uhd_args*/, onupdate, onset, ondestroy);
 }
 
 
@@ -552,7 +556,7 @@ function SpectrumDisplay_create(tag,
 //  https://stackoverflow.com/questions/3835785/why-has-corba-lost-popularity
 //  https://en.wikipedia.org/wiki/Common_Object_Request_Broker_Architecture
 //
-function SpectrumFeed_create(tag, host="", uhd_args="",
+function SpectrumFeed_create(tag, host="", port="", uhd_args="",
         // Different event handler functions that a "display implementation"
         // may set:
             onupdate=null, // called when spectrum data comes
@@ -561,7 +565,7 @@ function SpectrumFeed_create(tag, host="", uhd_args="",
             ) {
 
     CRTSClient(function(crts) {
-        crts.SpectrumFeed_create(tag, host, uhd_args,
+        crts.SpectrumFeed_create(tag, host, port, uhd_args,
                     onupdate, onset, ondestroy);
     });
 }

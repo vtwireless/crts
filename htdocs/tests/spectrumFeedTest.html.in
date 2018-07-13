@@ -47,8 +47,8 @@ var parameters = {
 
     hosts: {
 
-        description: "array of hosts as strings",
-        value: [ "" ]
+        description: "array of hosts as an array JSON",
+        value: @USRP_HOSTS@
     },
 
     USRPSelection: {
@@ -66,7 +66,7 @@ var parameters = {
         container: null
     },
 
-    spectrumKey: {
+    serial: {
 
         description: "unique ID for the USRP",
         value: "",
@@ -76,11 +76,20 @@ var parameters = {
 
     host: {
 
-        description: "USRP host computer",
+        description: "USRP host address computer",
         value: "",
         units: "from select host above",
         readonly: true
     },
+
+    port: {
+
+        description: "USRP computer ssh port",
+        value: "",
+        units: "from select port above",
+        readonly: true
+    },
+
 
     uhd_args: {
 
@@ -113,7 +122,7 @@ var parameters = {
 
     steps: {
 
-        description: "number of steps",
+        description: "number of steps displayed",
         value: 3,
         units: "for 3D display"
     },
@@ -138,33 +147,37 @@ function UpdateUSRPSelect(select, parameters) {
             return;
         }
 
-        Object.keys(hostUSRPs).forEach(function(host) {
-            var count = 0;
-            hostUSRPs[host].forEach(function(usrp) {
-                var option = document.createElement('OPTION');
-                option.text = ' type: ' + usrp.type +
-                    ' | host="' + host + '"' +
-                    ' | addr=' + usrp.addr +
-                    ' | Serial # ' + usrp.serial/*text*/;
-                option.Value = {
-                    spectrumKey: usrp.serial,
-                    host: host,
-                    uhd_args: 'addr=' + usrp.addr
-                };
-                option.value = (count++).toString();
+        var count = 0;
 
-                select.appendChild(option);
-            });
+        Object.keys(hostUSRPs).forEach(function(key) {
+            var usrp = hostUSRPs[key];
+            var option = document.createElement('OPTION');
+            option.text = ' type: ' + usrp.type +
+                ' | host="' + usrp.host + '"' +
+                ' | port="' + usrp.port + '"' +
+                ' | addr=' + usrp.addr +
+                ' | serial # ' + usrp.serial;
+            option.Value = {
+                serial: usrp.serial,
+                host: usrp.host,
+                port: usrp.port,
+                uhd_args: 'addr=' + usrp.addr
+            };
+
+            option.value = (count++).toString();
+           
+            select.appendChild(option);
         });
 
         select.onchange = function() {
 
             var value = this.options[this.selectedIndex].Value;
 
-            parameters.spectrumKey.setValue(value.spectrumKey);
+            parameters.serial.setValue(value.serial);
             parameters.host.setValue(value.host);
+            parameters.port.setValue(value.port);
             parameters.uhd_args.setValue(value.uhd_args);
-            //spew('selected ' + value.spectrumKey);
+            //spew('selected ' + value.serial);
         };
 
         // Select the first value.
@@ -247,12 +260,12 @@ function UpdateSelectWithUsrps(hosts) {
 
         <ul>
             <li><span class=functionButton>UpdateSelectWithUsrps(hosts)</span></li>
-            <li><span class=functionButton>SpectrumFeed_create(spectrumKey, host, uhd_args)</span></li>
-            <li><span class=functionButton>SpectrumFeed_set(spectrumKey, freq, bandwidth, bins, updateRate)</span></li>
-            <li><span class=functionButton>SpectrumFeed_start(spectrumKey)</span></li>
-            <li><span class=functionButton>SpectrumFeed_stop(spectrumKey)</span></li>
-            <li><span class=functionButton>SpectrumFeed_destroy(spectrumKey)</span></li>
-            <li><span class=functionButton>ThreeDSpectrumDisplay(spectrumKey, x3dContainer, steps)</span></li>
+            <li><span class=functionButton>SpectrumFeed_create(serial, host, port, uhd_args)</span></li>
+            <li><span class=functionButton>SpectrumFeed_set(serial, freq, bandwidth, bins, updateRate)</span></li>
+            <li><span class=functionButton>SpectrumFeed_start(serial)</span></li>
+            <li><span class=functionButton>SpectrumFeed_stop(serial)</span></li>
+            <li><span class=functionButton>SpectrumFeed_destroy(serial)</span></li>
+            <li><span class=functionButton>ThreeDSpectrumDisplay(serial, x3dContainer, steps)</span></li>
         </ul>
 
  
