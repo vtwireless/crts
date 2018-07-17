@@ -19,6 +19,14 @@ GStreamer WebRTC demos
 refers to most of the gstreamer codes.
 https://github.com/centricular/gstwebrtc-demos
 
+3D graphing browser javaScript API
+https://github.com/almende/vis
+
+
+C library for encoding, decoding and manipulating JSON data
+https://github.com/akheron/jansson
+
+
 
 TODO:
 
