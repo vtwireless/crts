@@ -438,6 +438,40 @@ function CRTSClient(onInit=function(){}) {
     };
 
 
+    /////////////////////////////////////////////////////////////////////
+    //   BEGIN: All the Launch stuff
+    /////////////////////////////////////////////////////////////////////
+
+    var launchCount = 0;
+    var launches = {};
+
+    crts.Launch = function(program, args, host, port, handler) {
+
+        var launchId = launchCount++;
+
+        Emit('launch', launchId, program, args, host, port, launchId);
+        launches[launchId] = {
+            handler: handler
+        };
+    };
+
+    // Feedback from a launched program that finished.
+    On('launch', function(launchId, status, feedbackStr) {
+
+        if(launches[launchId] === undefined) {
+            spew("got unknown launch reply");
+            return;
+        }
+        launches[launchId].handler(status,feedbackStr);
+        delete launches[launchId];
+    });
+
+    /////////////////////////////////////////////////////////////////////
+    //   END: All the Launch stuff
+    /////////////////////////////////////////////////////////////////////
+
+
+
     crts.USRPs_getList = function(hosts, handler) {
 
         // We stop the race of having crts.USRPs_getList()
@@ -496,6 +530,35 @@ function CRTSClient(onInit=function(){}) {
 // need to know what spectrum displays are present.
 //
 ///////////////////////////////////////////////////////////////////////////
+//
+// The API of functions below are wrappers that delay the calling of the
+// webSocket send until there is a webSocket connection.  Without this
+// "delay" none of these functions could be called at start up, they would
+// just fail due to trying to write to an invalid webSocket.  This beats
+// the pain of using javaScript Promises.
+//
+///////////////////////////////////////////////////////////////////////////
+
+
+
+function Launch(program, args, host='', port='', closeHandler=null) {
+
+    var close = closeHandler;
+
+    if(close === null) {
+        close = function(status, feedback) {
+            spew("Lanuching: " + program +
+                " returned status: " + status +
+                " : " + feedback);
+        };
+    }
+
+    CRTSClient(function(crts) {
+        crts.Launch(program, args, host, port, close);
+    });
+}
+
+
 
 
 function USRPs_getList(hosts/*array of strings of hostnames*/,
