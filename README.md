@@ -25,6 +25,7 @@ apt-get install\
  build-essential\
  patchelf\
  libreadline-dev\
+ libjansson-dev\
  graphviz\
  imagemagick\
  joystick\
