@@ -148,7 +148,7 @@ function CRTSClient(onInit=function(){}) {
 
     ws.onmessage = function(e) {
 
-        //spew("got message: " + e.data);
+        spew("got message: " + e.data);
 
         var obj = JSON.parse(e.data);
         var name = obj.name; // callback name (not subscription name)
@@ -445,25 +445,43 @@ function CRTSClient(onInit=function(){}) {
     var launchCount = 0;
     var launches = {};
 
-    crts.Launch = function(program, args, host, port, handler) {
+    crts.Launch = function(program, args, host, port, exitHandler, msgHandler) {
 
-        var launchId = launchCount++;
+        var clientLaunchId = launchCount++;
 
-        Emit('launch', launchId, program, args, host, port, launchId);
-        launches[launchId] = {
-            handler: handler
-        };
+        Emit('launch', clientLaunchId, program, args, host, port, clientLaunchId);
+        launches[clientLaunchId] = {
+            exitHandler: exitHandler,
+            msgHandler: msgHandler,
+        }
     };
 
     // Feedback from a launched program that finished.
-    On('launch', function(launchId, status, feedbackStr) {
+    On('launch', function(clientLaunchId, status, feedbackStr) {
 
-        if(launches[launchId] === undefined) {
+        if(launches[clientLaunchId] === undefined) {
             spew("got unknown launch reply");
             return;
         }
-        launches[launchId].handler(status,feedbackStr);
-        delete launches[launchId];
+        launches[clientLaunchId].exitHandler(status,feedbackStr);
+        delete launches[clientLaunchId];
+    });
+
+    On('launchMessage', function(clientLaunchId, msg) {
+
+        var launch = launches[clientLaunchId];
+
+        if(launch === undefined) {
+            spew("got unknown 'launchMessage' [id=" + clientLaunchId + "]");
+            return;
+        }
+
+        // Call the users launch message handler for this particular
+        // program launch.
+        launch.msgHandler(msg);
+
+        spew("GOT and handled launchMessage [id=" + clientLaunchId +
+            "] with msg=" + JSON.stringify(msg));
     });
 
     /////////////////////////////////////////////////////////////////////
@@ -540,21 +558,29 @@ function CRTSClient(onInit=function(){}) {
 ///////////////////////////////////////////////////////////////////////////
 
 
+function Launch(program, args, host='', port='',
+        exitHandler=null, msgHandler=null) {
 
-function Launch(program, args, host='', port='', closeHandler=null) {
+    var exitH = exitHandler;
+    var msgH = msgHandler;
 
-    var close = closeHandler;
-
-    if(close === null) {
-        close = function(status, feedback) {
+    if(exitH === null) {
+        exitH = function(status, feedback) {
             spew("Lanuching: " + program +
                 " returned status: " + status +
                 " : " + feedback);
         };
     }
 
+    if(msgH === null) {
+        msgH = function(msgObj) {
+            spew("Running program: " + program +
+                " got \"launch program\" message=" + JSON.stringify(msgObj));
+        };
+    }
+
     CRTSClient(function(crts) {
-        crts.Launch(program, args, host, port, close);
+        crts.Launch(program, args, host, port, exitH, msgH);
     });
 }
 

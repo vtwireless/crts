@@ -304,4 +304,41 @@ class CRTSModuleOptions
 
 
 
+// The small crappy TCP/IP socket wrapper that sends a very limited form
+// of JSON to and from the server that it connects to.
+//
+// We assume that messages are small BUFSIZE so that no memory allocation
+// is necessary.
+//
+// CRTSTcpConnection::CRTSTcpConnection() will throw an exception if it
+// fails.
+//
+class CRTSTcpConnection
+{
+    public:
+
+
+        CRTSTcpConnection(const char *firstMessage, const char *toAddress,
+                int port);
+        virtual ~CRTSTcpConnection(void);
+
+        bool load(const char *key, double value);
+        bool send(const char *buf = 0); // like flush
+
+        char *receive(void);
+
+    private:
+
+        int fd; // socket file descriptor.
+
+        // fixed size of send and recv buffer.
+        static const size_t BUFSIZE = (1024 * 2); 
+
+        char recvBuffer[BUFSIZE];
+        char sendBuffer[BUFSIZE];
+};
+
+
+
+
 #endif //#ifndef __crts_hpp__
