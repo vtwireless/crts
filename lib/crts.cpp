@@ -28,6 +28,8 @@ CRTSTcpConnection::CRTSTcpConnection(const char *firstMessage,
     memset(&addr, '0', sizeof(addr));
     addr.sin_family = AF_INET;
     addr.sin_port = htons(port);
+    if(strcmp(address, "localhost") == 0)
+        address = "127.0.0.1";
     if(inet_pton(AF_INET, address, &addr.sin_addr) <= 0)
     {
         close(fd);
@@ -44,14 +46,10 @@ CRTSTcpConnection::CRTSTcpConnection(const char *firstMessage,
         throw "connect() failed";
     }
 
-    DSPEW("connected to %s:%hu\n", address, port);
+    DSPEW("connected to %s:%hu", address, port);
 
-    if(firstMessage && firstMessage[0] != '\0')
-        if(send(firstMessage))
-        {
-            throw "Failed to send first message";
-        }
-
+    if(firstMessage && firstMessage[0] != '\0' && send(firstMessage))
+        throw "Failed to send first message";
 }
 
 CRTSTcpConnection::~CRTSTcpConnection(void)

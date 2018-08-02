@@ -317,7 +317,6 @@ class CRTSTcpConnection
 {
     public:
 
-
         CRTSTcpConnection(const char *firstMessage, const char *toAddress,
                 int port);
         virtual ~CRTSTcpConnection(void);

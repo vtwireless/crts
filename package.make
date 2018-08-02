@@ -10,7 +10,8 @@ IN_VARS :=\
  UHD_TAG\
  GNURADIO_TAG\
  VOLK_TAG\
- USRP_HOSTS
+ USRP_HOSTS\
+ DEFAULT_RADIO_PORT
 
 # What to call a tarball file name prefix TAR_NAME-VERSION.tar.gz
 TAR_NAME := crts
@@ -24,6 +25,11 @@ CXXFLAGS := -std=c++11
 # Default JSON array list of USRP host computers.
 # Empty string is localhost.
 USRP_HOSTS ?= [ \"\"]
+
+# Default TCP/IP PORT used to connect crts_radio controller module to the
+# crts_server (web server).
+#
+DEFAULT_RADIO_PORT ?= 9383
 
 
 # Export some additional make variable to the spawned make scripts

@@ -110,7 +110,7 @@ var options = {
     radio_port: {
 
         type: 'integer',
-        default_value: 9283,
+        default_value: @DEFAULT_RADIO_PORT@,
         argument: 'PORT',
         help: 'set the CRTS_radio server port to PORT. ' +
             ' Yet another stupid lessoning port, for connecting to' +
@@ -122,7 +122,7 @@ var options = {
             'TODO: Really this communication channel should be using ' +
             'WebRTC, but building the WebRTC C++ API is a total pain ' +
             'in the ass; time is money.' +
-            'TODO: Can WebRTC use the same lessoning port as HTTP; ' +
+            'TODO: Can WebRTC use the same listening port as HTTP; ' +
             'then we could run this server with just two ports total: ' +
             'the HTTP port, behind the firewall, backend, and the HTTPS port, ' +
             'on the Internet.'

@@ -6,7 +6,10 @@ CPPFLAGS := -I$(ROOT)include -I$(ROOT)lib
 INSTALL_DIR = $(PREFIX)/share/crts/plugins/Controllers/network
 
 
-srcs := $(patsubst %.cpp,%,$(wildcard *.cpp))
+srcs :=\
+ $(sort \
+ $(patsubst %.cpp,%,$(wildcard *.cpp))\
+ $(patsubst %.cpp.in,%,$(wildcard *.cpp.in)))
 
 
 define MkSource

@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <inttypes.h>
 
 #include <values.h>
 #include <jansson.h>
@@ -35,11 +36,13 @@ class UhdTx: public CRTSController
 };
 
 
-// in mega-herz (M Hz)
+// in mega-herz (MHz)
 #define DEFAULT_MAXFREQ (915.5)
 #define DEFAULT_MINFREQ (914.5)
-#define DEFAULT_PORT ((uint32_t) 6523)
+
+#define DEFAULT_PORT ((uint32_t) @DEFAULT_RADIO_PORT@)
 #define DEFAULT_ADDRESS "localhost"
+
 
 
 static void usage(void)
@@ -83,7 +86,7 @@ static void usage(void)
 "                      restriction.\n"
 "\n"
 "\n"
-"   --port PORT        set the TCP/IP port to PORT.  The default port is %d\n"
+"   --port PORT        set the TCP/IP port to PORT.  The default port is %" PRIu32 "\n"
 "\n",
 
     name, DEFAULT_MAXFREQ, DEFAULT_MINFREQ, DEFAULT_PORT);
@@ -143,13 +146,13 @@ void UhdTx::stop(CRTSControl *c)
 void UhdTx::execute(CRTSControl *c, const void *buffer,
         size_t len, uint32_t channelNum)
 {
-    // We only use the "tx" control
+    // We only use the "tx" control in this controller
     //
     DASSERT(c->getId() == tx->getId(), "");
 
     // Check if we have a request.
 
-
+#if 0
     {
         fprintf(stderr, "Setting TX carrier frequency to  %lg Hz\n", txFreq);
         tx->usrp->set_tx_freq(txFreq);
@@ -157,6 +160,7 @@ void UhdTx::execute(CRTSControl *c, const void *buffer,
 
         return;
     }
+#endif
 }
 
 
