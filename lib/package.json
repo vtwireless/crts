@@ -5,6 +5,7 @@
   "main": "crts_server.js",
   "dependencies": {
     "express": "4.16.3",
+    "mosca": "",
     "ws": "5.2.0",
     "wrtc": "0.1.5"
   },

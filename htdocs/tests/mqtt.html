@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang=en>
+<head>
+    <meta charset="utf-8"></meta>
+
+    <style>
+        body {
+            background-color: #999;
+        }
+    </style>
+
+    <script>
+
+var mqtt = require('mqtt');
+var client  = mqtt.connect('mqtt://your_ip_address_of_pc');
+
+client.on('connect', function () {
+
+setInterval(function() {
+client.publish('myTopic', 'Hello mqtt');
+console.log('Message Sent');
+}, 5000);
+
+});
+
+    </script>
+
+    <title>MQTT Test</title>
+</head>
+<body>
+
+    <h5>
+        Return to <a href="index.html">CRTS Development Tests index</a>
+    </h5>
+
+
+    <h1>MQTT Test</h1>
+
+
+    <footer>
+        Return to <a href="index.html">CRTS Development Tests index</a>
+    </footer>
+
+</body>
+</html>

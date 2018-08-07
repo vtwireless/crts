@@ -56,6 +56,15 @@ var options = {
             'disable this HTTPS service.'
     },
 
+    mqtt_port: {
+
+        type: 'integer',
+        default_value: 7111,
+        argument: 'PORT',
+        help: 'run a MQTT broker server using port PORT.  Setting PORT to ' +
+            '0 will make it not run a MQTT broker server.'
+    },
+
     server_address: {
 
         type: 'string',
