@@ -5,8 +5,8 @@
 #include <arpa/inet.h>
 #include <unistd.h>
 
-#include "crts/crts.hpp"
 #include "crts/debug.h"
+#include "crts/crts.hpp"
 
 // The small crappy TCP/IP socket wrapper that sends a very limited form
 // of JSON to and from the server that it connects to.  See crts.hpp.
@@ -63,9 +63,12 @@ bool CRTSTcpConnection::load(const char *key, double value)
     return false; // success
 }
 
-
+// Sends a null ('\0') terminated string with the null.
 bool CRTSTcpConnection::send(const char *buf)
 {
+    size_t n = strlen(buf) + 1;
+
+    DSPEW("buf=%s  size=%zu", buf, n);
 
     return false; // success
 }

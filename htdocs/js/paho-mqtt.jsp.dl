@@ -1,0 +1,20 @@
+#!/bin/bash
+
+set -ex
+
+#https://github.com/eclipse/paho.mqtt.javascript.git
+
+# from tag v1.0.3
+
+wget\
+ https://raw.githubusercontent.com/eclipse/paho.mqtt.javascript/1fa2333485c3f928cbb6f9c6ea41a102c1990501/src/paho-mqtt.js\
+ -O paho-mqtt.jsp
+
+
+# See if we got this file as it looked before:
+#
+echo "811d47a3ffcabf083d41ee78e67423bd7f378894\
+9f232ee98bfd463d3ac96b59cb1b38dbce0166acf119f2\
+c001b0b53b72895b91b4b1d8499cf34e407bb1be15\
+  paho-mqtt.jsp" | sha512sum -c
+
