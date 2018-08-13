@@ -1,9 +1,6 @@
 #!/usr/bin/env bash
 
-set -e
-
-git clone git@github.com:vtwireless/crts.git
-#: << 'END'
+set -ex
 
 printf "\nCRTS dependencies...\n"
 
@@ -77,32 +74,24 @@ fi
 printf "\nInstalling crts packages\n"
 for i in "${crts_pkg[@]}"
 do
-    trap "rm -rf crts; exit" INT TERM EXIT
     sudo apt-get install "$i"
     #echo "$i"
-    trap - INT TERM EXIT
 done
 
 printf "\nInstalling UHD dependencies to install UHD from source"
 for i in "${uhd_pkg[@]}"
 do
-    trap "rm -rf crts; exit" INT TERM EXIT
     sudo apt-get install "$i"
-    trap - INT TERM EXIT
     #echo "$i"
 done
 
 printf "\nInstalling gnuradio dependencies to install from source"
 for i in "${gnuradio_pkg[@]}"
 do
-    trap "rm -rf crts; exit" INT TERM EXIT
     sudo apt-get install "$i"
     #echo "$i"
-    trap - INT TERM EXIT
 done
-#END
 
-trap "rm quickbuild.make; exit" INT TERM EXIT
 cd crts
 ./bootstrap
 ./Devel_Configure
@@ -119,6 +108,5 @@ make install
 cd ..
 make
 make install
-trap - INT TERM EXIT
 
 exit 0
