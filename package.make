@@ -1,4 +1,4 @@
-# Define package specific GNU make variables in here.
+# Define CRTS package specific GNU make variables in here.
 
 IN_VARS :=\
  SPEW_LEVEL\
@@ -7,9 +7,12 @@ IN_VARS :=\
  VERSION\
  UHD_PREFIX\
  GNURADIO_PREFIX\
+ LIBWEBSOCKETS_PREFIX\
+ NOPOLL_PREFIX\
  UHD_TAG\
  GNURADIO_TAG\
  VOLK_TAG\
+ LIBWEBSOCKETS_TAG\
  USRP_HOSTS\
  DEFAULT_RADIO_PORT
 
@@ -32,11 +35,14 @@ USRP_HOSTS ?= [ \"\"]
 DEFAULT_RADIO_PORT ?= 9383
 
 
-# Export some additional make variable to the spawned make scripts
+# Export some additional make variables to the spawned make scripts
 export\
  PREFIX\
  UHD_PREFIX\
  GNURADIO_PREFIX\
+ LIBWEBSOCKETS_PREFIX\
+ NOPOLL_PREFIX\
  UHD_TAG\
  GNURADIO_TAG\
- VOLK_TAG
+ VOLK_TAG\
+ LIBWEBSOCKETS_TAG

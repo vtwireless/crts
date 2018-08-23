@@ -1,0 +1,26 @@
+#!/bin/bash
+
+set -ex
+
+topdir=$PWD
+
+# Do not run this if we already did.
+[ -f $topdir/src/SUCCESS ] && exit 0
+
+rm -rf src
+
+tar -xzmf nopoll.tar.gz
+
+mv ASPLes-nopoll-* src
+
+cd src
+
+./autogen.sh
+
+./configure --prefix=${NOPOLL_PREFIX}
+
+make
+
+# We really need to know: Did we succeed and make it this far in this
+# script?
+echo "The script ../$0 ran SUCCESSFULLY" > $topdir/src/SUCCESS

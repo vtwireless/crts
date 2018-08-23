@@ -9,21 +9,42 @@
         }
     </style>
 
+    <script src="/js/paho-mqtt.js"></script>
     <script>
 
-var mqtt = require('mqtt');
-var client  = mqtt.connect('mqtt://your_ip_address_of_pc');
+onload = function() {
 
-client.on('connect', function () {
+    var client = new Paho.MQTT.Client(
 
-setInterval(function() {
-client.publish('myTopic', 'Hello mqtt');
-console.log('Message Sent');
-}, 5000);
+        location.hostname,
+        Number(location.port),
+        "/",
+        "clientId" // MQTT service session ID
+    );
+ 
+    // set callback handlers
+    client.onConnectionLost = function (responseObject) {
+        console.log("Connection Lost: "+responseObject.errorMessage);
+    };
+ 
+    client.onMessageArrived = function (message) {
+        console.log("Message Arrived: "+ message.payloadString);
+    };
+ 
 
-});
+    // Connect the client, providing an onConnect callback
+    client.connect({
+        onSuccess: function() {
+            console.log("Connected!");
+        },
+
+        useSSL: true
+    });
+};
 
     </script>
+
+
 
     <title>MQTT Test</title>
 </head>

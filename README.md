@@ -4,6 +4,11 @@ The Cognitive Radio Test System (CRTS) provides a framework for software
 defined radios (SDRs).
 
 
+# Development Status
+
+This software package is not ready for general public use.
+
+
 ## Ports
 
 Currently developing on: 
@@ -12,11 +17,10 @@ Currently developing on:
 
 ## Dependencies
 
-Included in CRTS are scripts that build and install the libuhd and
-GNUradio from the latest tagged GitHub source files.  To change the
-repository release tags you can edit uhd/uhd.tar.gz.dl and
-gnuradio/gnuradio.tar.gz.dl.
-
+Included in CRTS are scripts that build and install libwebsocket, libuhd
+and GNUradio from the latest tagged GitHub source files (as of Aug 2018).
+At this time debian APT packages of libwebsocket, libuhd and GNUradio
+there not new enough.
 
 Building and installing CRTS requires: 
 

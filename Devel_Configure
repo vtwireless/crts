@@ -62,8 +62,14 @@ GNURADIO_TAG = v3.7.12.0
 VOLK_TAG = v1.4
 
 
-UHD_PREFIX = $root/uhd_\$(UHD_TAG)_03
-GNURADIO_PREFIX = $root/gnuradio_\$(GNURADIO_TAG)_03
+UHD_PREFIX = $root/uhd_\$(UHD_TAG)
+GNURADIO_PREFIX = $root/gnuradio_\$(GNURADIO_TAG)
+
+LIBWEBSOCKETS_TAG = v3.0.0
+LIBWEBSOCKETS_PREFIX = $root/libwebsockets_\$(LIBWEBSOCKETS_TAG)
+
+NOPOLL_TAG = 0.4.6
+NOPOLL_PREFIX = $root/nopoll_\$(NOPOLL_TAG)
 
 
 # CRTS prefix
@@ -90,6 +96,11 @@ DEBUG := \#define DEBUG
 #SPEW_LEVEL := \#define SPEW_LEVEL_NOTICE
 #SPEW_LEVEL := \#define SPEW_LEVEL_INFO
 SPEW_LEVEL  := \#define SPEW_LEVEL_DEBUG
+
+
+# A JSON array of objects that list computers and port numbers:
+#USRP_HOSTS := [\"\",{\"host\":\"198.82.18.140\",\"port\":\"7000\"}]
+USRP_HOSTS := [\"\"]
 
 
 EOF

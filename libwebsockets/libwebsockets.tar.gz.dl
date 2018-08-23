@@ -1,0 +1,17 @@
+#!/bin/bash
+
+##############################################################
+# configure here
+tag=${LIBWEBSOCKETS_TAG:-v3.0.0}
+
+# sha512sum is optional
+sha512sum=16e857addb74964ee66c57a7bf\
+f257d54276888809cc8abc495ee175c979df\
+3ac2aed0953784d2e8cc6d5f29564db80feab\
+7d116d9eb9bbbba28b9382e7b2c48
+
+source ../GetSrcFromGithub.bash
+
+#Usage: GetSrcFromGithub user package tag tarname [sha512sum]
+
+GetSrcFromGithub warmcat libwebsockets $tag libwebsockets $sha512sum

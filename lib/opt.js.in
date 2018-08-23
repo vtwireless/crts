@@ -5,14 +5,14 @@
 // the default_value by default.  For example:
 /*
 
-  var opt = require('./opt').opt;
+  var opt = require('./opt');
 
   console.log( "http port = " + opt.http_port );
 
 */
 
-
 console.log('loading "opt.js"');
+
 
 var options = {
 
@@ -22,8 +22,12 @@ var options = {
     debug: {
 
         type: 'bool',
-        default_value: true,
-        help: "Ran with more debugging spew",
+        // We get the DEBUG CPP macro value and test if it's
+        // defining DEBUG as a CPP macro.  If it is that overrides this
+        // option as being set where-by making this "on" whither the
+        // argument was set of not.  We call it a debug build.
+        default_value: ("@DEBUG@".substr(0,7) === '#define'),
+        help: "Ran with more debugging spew."
     },
 
     help: {
@@ -91,10 +95,10 @@ var options = {
         argument: 'PORT',
         help: 'set the spectrum reciever lessoning port to PORT.' +
             ' Setting the spectrum reciever server to "0" will ' +
-            'disable this spectrum reciever service.\n\n' +
+            'disable this spectrum reciever service.  ' +
             'TODO: This serivce should have the client ' +
             'and this server running together behind the same firewall and ' +
-            'otherwise this code should ride on a TLS layer. \n\n' +
+            'otherwise this code should ride on a TLS layer.  ' +
             'TODO: Really this communication channel should be using ' +
             'WebRTC, but building the WebRTC C++ API is a total pain ' +
             'in the ass; time is money.'
@@ -119,18 +123,19 @@ var options = {
     radio_port: {
 
         type: 'integer',
-        default_value: @DEFAULT_RADIO_PORT@,
+        default_value: 9383,
         argument: 'PORT',
-        help: 'set the CRTS_radio server port to PORT. ' +
+        help: 
+            'THIS OPTION IS GOING AWAY.  IT IS DEPRECIATED. ' +
+            'set the CRTS_radio server port to PORT. ' +
             ' Yet another stupid lessoning port, for connecting to' +
-            ' crts_radio programs.\n' +
-            '\n' +
+            ' crts_radio programs. ' +
             'TODO: This serivce should have the client ' +
             'and this server running together behind the same firewall and ' +
-            'otherwise this code should ride on a TLS layer. \n\n' +
+            'otherwise this code should ride on a TLS layer. ' +
             'TODO: Really this communication channel should be using ' +
             'WebRTC, but building the WebRTC C++ API is a total pain ' +
-            'in the ass; time is money.' +
+            'in the ass; time is money.  ' +
             'TODO: Can WebRTC use the same listening port as HTTP; ' +
             'then we could run this server with just two ports total: ' +
             'the HTTP port, behind the firewall, backend, and the HTTPS port, ' +
@@ -249,8 +254,18 @@ function usage() {
             else if(opt.type === 'regexp')
                 var default_value = ' The default value of ' +
                     opt.argument + ' is /' + opt.default_value + '/.';
-            else // if(opt.type === 'bool')
-                var default_value = ' This is not set by default.';
+            else // if(opt.type === 'bool') {
+
+                // bool argument options just turn thing on unless they
+                // are set to being on already which beats the point of it
+                // being an option.
+                //
+                if(opt.default_value !== undefined && opt.default_value) {
+                    var default_value = ' This is set in opt.js.  ' +
+                        'You need to edit opt.js to change that.';
+                } else {
+                    var default_value = ' This is not set by default.';
+                }
         } else {
             var default_value = '';
         }
@@ -341,7 +356,7 @@ if(error.length)
 // Get what the user needs from options.  The rest of the objects in this
 // file will disappear.
 //
-var opt = new Object;
+opt = new Object;
 
 keys.forEach(function(key) {
     var option = options[key];
@@ -360,6 +375,29 @@ keys.forEach(function(key) {
 
 
 printOptions(opt);
+
+
+// TODO: Change this if you add TLS key setting options.
+opt.tls = {
+    key : path.join(path.join(__dirname, "..", "etc"), 'private_key.pem'),
+    cert: path.join(path.join(__dirname, "..", "etc"), 'public_cert.pem')
+};
+
+
+// Check that options are consistent and add some optional flags in the
+// environment.
+//
+if(opt.debug && process.env.DEBUG === undefined)
+    process.env.DEBUG = "express:*";
+
+
+if(opt.http_port === opt.https_port) {
+    console.log("Failed start: both the http and the https ports are " +
+            opt.https_port);
+    process.exit(1);
+}
+
+
 
 
 // Let the module user see opt and that is all.
