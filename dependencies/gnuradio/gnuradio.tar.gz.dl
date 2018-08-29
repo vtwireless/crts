@@ -1,13 +1,12 @@
 #!/bin/bash
 
-##############################################################
-# configure here
-gnuradio_tag=${GNURADIO_TAG:-v3.7.11}
+
+source ../common.bash
 
 # sha512sum is optional
 sha512sum=
 
-case "$gnuradio_tag" in
+case "$GNURADIO_TAG" in
 
     "v3.7.11")
         sha512sum=d7b97c9ff738cb980ffa14bd431566de7ce0d\
@@ -19,6 +18,8 @@ c0312a031a0beceb9dea982008256dcc919d714fc13e
 23047e4134b90f0773035578f3ea0325f66e7a9588b7739eccc553a0\
 7c78bcbd94f19969599eeee59f67d3a28c
         ;;
+
+    # this version did not install the uhd_fft program
     "v3.7.13.4")
         sha512sum=3b829af0cded82d78bce33d3fd33f73935bf9e\
 ccc023d454e792f4e2d7971191c697be3a6f98b5246a0e5b03929776\
@@ -27,8 +28,8 @@ ccc023d454e792f4e2d7971191c697be3a6f98b5246a0e5b03929776\
 esac
 
 
-source ../GetSrcFromGithub.bash
+source ../../GetSrcFromGithub.bash
 
 #Usage: GetSrcFromGithub user package tag tarname [sha512sum]
 
-GetSrcFromGithub gnuradio gnuradio $gnuradio_tag gnuradio $sha512sum
+GetSrcFromGithub gnuradio gnuradio $GNURADIO_TAG gnuradio $sha512sum

@@ -1,7 +1,7 @@
 # CRTS
 
 The Cognitive Radio Test System (CRTS) provides a framework for software
-defined radios (SDRs).
+defined radios (SDRs) with interfaces from the web.
 
 
 # Development Status
@@ -17,191 +17,127 @@ Currently developing on:
 
 ## Dependencies
 
-Included in CRTS are scripts that build and install libwebsocket, libuhd
-and GNUradio from the latest tagged GitHub source files (as of Aug 2018).
-At this time debian APT packages of libwebsocket, libuhd and GNUradio
-there not new enough.
-
-Building and installing CRTS requires: 
-
+The script
 ```
-apt-get install\
- build-essential\
- patchelf\
- libreadline-dev\
- libjansson-dev\
- graphviz\
- imagemagick\
- joystick\
- doxygen\
- dia\
- wget\
- libgtk-3-dev\
- git\
- yui-compressor\
- patchelf\
- python-netifaces
+dependencies/apt-getDependencies.bash
 ```
+keeps in it the running list of dependencies that can be installed via
+apt-get.  You can install them yourself or run the script which will run
+sudo apt-get install for you.
 
+At the time of this writing the debian/ubuntu packages "libuhd-dev" and
+"gnuradio-dev" are not current enough to be used.  Also the node JS
+package is not current enough, so we provide scripts to build and install
+them from git tagged github.com repositories.
 
-If you are not building and installing libuhd and GNUradio from the CRTS
-scripts and you wish to use the versions installed by the Debian system
-software package manager run: 
-
-```
-apt-get install\
- libuhd-dev\
- gnuradio-dev
-```
-
-If we do not use package deb package "libuhd-dev" and you want to build
-libuhd from the GitHub source using scripts included in this CRTS package
-in uhd/, you need in addition:
-
-```
-apt-get install\
- libboost-all-dev\
- python-mako\
- libqt4-dev\
- qt4-dev-tools\
- libqwt5-qt4-dev\
- swig\
- libfftw3-dev\
- texlive\
- cmake
-```
-
-
-If we do not use package deb package "gnuradio-dev" and you want to build
-GNUradio from the GitHub source using scripts included in this CRTS package
-in gnuradio/, you need in addition:
-
-```
-apt-get install\
- python-bs4\
- python-cheetah\
- python-cycler\
- python-dateutil\
- python-decorator\
- python-functools32\
- python-glade2\
- python-html5lib\
- python-imaging\
- python-lxml\
- python-matplotlib\
- python-matplotlib-data\
- python-networkx\
- python-opengl\
- python-pygraphviz\
- python-pyparsing\
- python-qt4\
- python-qwt5-qt4\
- python-scipy\
- python-sip\
- python-subprocess32\
- python-tz\
- python-wxgtk3.0\
- python-wxversion\
- python-yaml\
- python-zmq
-```
-
-and on Debain systems:
-
-```
-apt-get install python-webencodings
-```
-
-and on Ubuntu systems:
-
-```
-apt-get install python-weblib
-```
-
-
-
-## Installing CRTS from git cloned source
-
-In the top source directory run
-
+These installation scripts depend on running
 ```
 ./bootstrap
 ```
-which will download the file quickbuild.make which is a GNU makefile.
+This bootstrap downloads the GNU make file, quickbuild.make, which is used
+in downloading, building, and installing these dependencies, and is used in
+building and installing CRTS.  quickbuild.make is just one small make file.
+
+The downloading, building and installing of Node JS, UHD (libUHD), and GNU
+Radio may be done using scripts in this directory tree in the
+sub-directory.  All of these packages we download, build and install using
+particular tagged releases from github.com.  You may for-go using these
+scripts and install them yourself.  The building and installing of CRTS
+will use pkg-conf and the installed programs in your path to find the
+installed files on your system.  Where these scripts install Node JS,
+UHD, and GNU Radio can be changed by
+```
+cp dependencies/default_prefixes dependencies/prefixes
+gedit dependencies/prefixes # of other editor
+```
+or used another test editor (gedit) then the values you put in prefixes
+will be used when the installation scripts install node JS, UHD, and GNU
+Radio.  Also this file has the git tags (version tag) of the packages that
+are will be installed via these scripts.  This prefixes (or
+default_prefix) file is only accessed by the optional node JS, UHD, and
+GNU Radio installation scripts, and is not used by this CRTS package.
 
 
-Then edit the file Devel_Configure, making sure you set PREFIX (the
-installation prefix) to the directory that you would like.  If you are
-building and installing libuhd from GitHub source using the included
-scripts edit the value of UHD_PREFIX.  If you are building and installing
-GNUradio from GitHub source using the included scripts edit the value of
-GNURADIO__PREFIX.
+### Building and Installing NodeJS
+
+If you choose to you may have the following script install nodeJS from
+the github.com tagged source
 
 ```
-./Devel_Configure
+cd depenences/node
+make download
+make
+make install
+cd -
 ```
-which will generate the one file config.make.
+Now you need to put node in your PATH.
 
+Test that node is installed in your path:
+```
+node --version
+```
+
+
+### Building and Installing UHD
+
+If you choose to you may have the following script install UHD from
+the github.com tagged source:
+
+```
+cd depenences/uhd
+make download
+make
+make install
+cd -
+```
+
+Now you may want to test that this UHD installation is accessible via the
+pkg-config system:
+```
+pkg-config --modversion uhd
+```
+
+
+### Building and Installing GNU Radio
+
+If you choose to you may have the following script install GNU Radio from
+the github.com tagged source:
+
+```
+cd depenences/gnuradio
+make download
+make
+make install
+cd -
+```
+
+Now you may want to test that this GNU Radio installation is accessible
+via the pkg-config system:
+```
+pkg-config --modversion gnuradio-blocks
+```
+
+
+## Building and Installing CRTS (this package)
 
 
 Then run
-
 ```
-./Install_NodeJS
-```
-
-or
-
-
-```
-./Install_NodeJS -prefix MY_PREFIX
-```
-where MY_PREFIX is the node JS installation prefix directory,
-or install node JS your own way.
-
-
-Then run
-```
-make download
-```
-which will download some files using node JS's npm, the liquid-dsp and
-libfec package tarballs and a few more files.
-
-
-If you are building and installing libUHD from GitHub source using
-the scripts provided by CRTS run:
-```
-cd uhd
+./configure
 make download
 make
 make install
-cd ..
 ```
 
-
-If you are building and installing GNUradio from GitHub source using
-the scripts provided by CRTS run:
+You may want to run the configure script with the --prefix option like so:
 ```
-cd gnuradio
+./configure --prefix /usr/local/my_CRTS
 make download
 make
 make install
-cd ..
 ```
+where you pick a better prefix than /usr/local/my_CRTS.
 
-
-To build and install CRTS, then run
-```
-make
-```
-and then run
-```
-make install
-```
-
-You could run all these commands in one line, but things can
-happen, like not having a dependency installed, or a server
-is not serving a downloaded file.
 
 
 ## Up grading Firmware and FPGA Images with Pre-built Images
@@ -245,9 +181,9 @@ FPGA image: /usr/local/encap/uhd/share/uhd/images/usrp_n210_r4_fpga.bin
 
 For the X310
 
-/usr/local/encap/uhd/lib/uhd/utils/uhd_images_downloader.py
+$UHD_PREFIX/utils/uhd_images_downloader.py
 
-/usr/local/encap/uhd/bin/uhd_image_loader" --args="type=x300,addr=192.168.12.2"
+$UHD_PREFIX//bin/uhd_image_loader" --args="type=x300,addr=192.168.12.2"
 
 
 ## Tests
@@ -262,6 +198,6 @@ and look at and run test programs in that directory.
 ## Running the CRTS server
 
 ```
-DEBUG=express:* crts_server
+crts_server
 ```
 

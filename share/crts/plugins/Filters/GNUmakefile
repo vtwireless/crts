@@ -8,6 +8,9 @@ QS_CPPFLAGS := $(shell pkg-config --cflags quickscope)
 #QS_CPPFLAGS := -I$(shell pkg-config --variable=includedir quickscope)
 QS_LDFLAGS := $(shell pkg-config --libs quickscope) -lm
 
+UHD_CFLAGS := $(shell pkg-config uhd --cflags)
+UHD_LIBS := $(shell pkg-config uhd --libs)
+
 
 CPPFLAGS := -I$(ROOT)/include -I$(ROOT)/lib -I$(ROOT)/liquid-dsp/src/include
 
@@ -88,8 +91,14 @@ undefine s
 
 readline.so_LDFLAGS := -lreadline
 
-rx.so_LDFLAGS = -L$(UHD_PREFIX)/lib -luhd -Wl,-rpath,$(UHD_PREFIX)/lib
-tx.so_LDFLAGS = -L$(UHD_PREFIX)/lib -luhd -Wl,-rpath,$(UHD_PREFIX)/lib
+UHD_PREFIX = $(shell pkg-config uhd --variable=prefix)
+
+rx.so_CPPFLAGS := $(UHD_CFLAGS)
+tx.so_CPPFLAGS := $(UHD_CFLAGS)
+
+rx.so_LDFLAGS := $(UHD_LIBS)
+tx.so_LDFLAGS := $(UHD_LIBS)
+
 
 
 quickscope.so_CPPFLAGS := $(QS_CPPFLAGS)

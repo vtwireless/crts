@@ -1,10 +1,7 @@
 #!/bin/bash
 
-##############################################################
-# configure here
 
-# The git repository tag
-uhd_tag=${UHD_TAG:-v3.11.0.1}
+source ../common.bash
 
 
 # The sha512sum is optional.  Get its value by running:
@@ -12,7 +9,7 @@ uhd_tag=${UHD_TAG:-v3.11.0.1}
 
 sha512sum=
 
-case "$uhd_tag" in
+case "$UHD_TAG" in
 
     "v3.11.0.1")
         sha512sum=cd54135ea2edc1dc25ad7d4998793c9c0990020aa\
@@ -24,14 +21,19 @@ fd367f9c0cd9b3d2f06b90e9cb7f909ce08c3ea701ceb58bf4a\
 aa96cd9dd39c4209e64ea382b85d0960881009269a91c296876be4fc5\
 4c880be3646f7b4eb7fd6171c0948c273
         ;;
+    "v3.13.0.1")
+        sha512sum=75b65c2af62f71d62e5c8b1c7ef998df5b1425\
+5ec5bf82b275c4787c040c160c904cdec08f56754755bb852c617d65f\
+827817f171fd6e5dce1c756eab25acc43
+        ;;
 esac
 
 
 ##############################################################
 
 
-source ../GetSrcFromGithub.bash
+source ../../GetSrcFromGithub.bash
 
 #Usage: GetSrcFromGithub user package tag tarname [sha512sum]
 
-GetSrcFromGithub EttusResearch uhd $uhd_tag uhd $sha512sum
+GetSrcFromGithub EttusResearch uhd $UHD_TAG uhd $sha512sum

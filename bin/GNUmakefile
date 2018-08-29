@@ -8,7 +8,6 @@ BIN = $(PREFIX)/bin
 INSTALL_DIR = $(BIN)
 
 
-
 BUILD_NO_INSTALL := mkTUN udpTunnelServer testSuidMkTUN mapTest
 
 
@@ -26,6 +25,7 @@ mapTest_SOURCES := mapTest.cpp debug.c makeRingBuffer.cpp
 mapTest_LDFLAGS := -lrt
 
 crts_findUSRPs_SOURCES := crts_findUSRPs.cpp
+UHD_PREFIX := $(shell pkg-config uhd --variable=prefix)
 crts_findUSRPs_LDFLAGS := -L$(UHD_PREFIX)/lib -luhd -Wl,-rpath,$(UHD_PREFIX)/lib
 
 crts_radio_SOURCES :=\
@@ -77,15 +77,6 @@ crts_mkTUN_SOURCES :=\
 
 # Install crts_server and crts_spectrumFeed too.
 INSTALLED := crts_server crts_spectrumFeed
-
-# TODO: make quickbuild.make do this patchelf thing:
-#
-# After we install the programs we reset the RPATH so that the programs
-# can find the installed libliquid and libfec shared libraries at run-time.
-INSTALL_RPATH = patchelf --set-rpath '$(PREFIX)/lib'
-
-POST_INSTALL_COMMAND =\
- $(INSTALL_RPATH) $(BIN)/crts_radio
 
 
 include ../quickbuild.make

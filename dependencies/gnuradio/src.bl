@@ -2,7 +2,11 @@
 
 set -ex
 
+
 topdir=$PWD
+
+# Get the configured PREFIXes and so on.
+source ../common.bash
 
 # Do not run this if we already did.
 [ -f $topdir/src/SUCCESS ] && exit 0
@@ -41,6 +45,7 @@ cmake .. -G"Unix Makefiles"\
  -DCMAKE_INSTALL_PREFIX:PATH="${GNURADIO_PREFIX}"\
  -DCMAKE_INSTALL_RPATH:PATH="${GNURADIO_PREFIX}/lib:${UHD_PREFIX}/lib"\
  -DGNURADIO_RUNTIME_PYTHONPATH="${GNURADIO_PREFIX}/lib/python2.7/dist-packages/gnuradio/gr:${GNURADIO_PREFIX}/lib/python2.7/dist-packages/gnuradio/uhd"\
+ -DENABLE_GR_PYTHON_INSTALL_PROGRAMS=true\
  -DENABLE_PYTHON=true\
  -DENABLE_GR_FFT=true\
  -DENABLE_GRC=true\
@@ -49,6 +54,7 @@ cmake .. -G"Unix Makefiles"\
  -DENABLE_GR_QTGUI=true\
  -DENABLE_GR_UTILS=true\
  -DENABLE_GR_UHD=true\
+ -DENABLE_GR_WXGUI=true\
  -DENABLE_DEFAULT=true\
  -DENABLE_DOXYGEN:BOOL=true
 

@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Running this script generates the one file config.make
+# Running this script generates the one file: config.make
 
 # This script sets up the software for a typical development
 # configuration.  You are not necessarily encouraged to use this, but
@@ -27,7 +27,7 @@
 # generated files that depend on these make configuration variables.
 
 
-root=/usr/local/encap
+PREFIX=/usr/local/crts
 
 
 set -e
@@ -47,33 +47,8 @@ cat > config.make << EOF
 DOC := doc
 
 
-# Where and what version of UHD and GUNradio to install
-
-# These git TAGS are optional:
-# If not set then the tags will be gotten from those set
-# in uhd/ and gnuradio/
-#
-UHD_TAG = v3.12.0.0-rc1
-#UHD_TAG = release_003_010_003_000
-#UHD_TAG = v3.11.1.0
-
-GNURADIO_TAG = v3.7.12.0
-# volk is a git submodule that is needed by GNUradio
-VOLK_TAG = v1.4
-
-
-UHD_PREFIX = $root/uhd_\$(UHD_TAG)
-GNURADIO_PREFIX = $root/gnuradio_\$(GNURADIO_TAG)
-
-LIBWEBSOCKETS_TAG = v3.0.0
-LIBWEBSOCKETS_PREFIX = $root/libwebsockets_\$(LIBWEBSOCKETS_TAG)
-
-NOPOLL_TAG = 0.4.6
-NOPOLL_PREFIX = $root/nopoll_\$(NOPOLL_TAG)
-
-
 # CRTS prefix
-PREFIX = $root/crts
+PREFIX = $PREFIX
 
 
 # compiler options

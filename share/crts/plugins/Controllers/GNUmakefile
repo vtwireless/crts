@@ -3,6 +3,9 @@
 
 ROOT := ../../../../
 
+UHD_CFLAGS := $(shell pkg-config uhd --cflags)
+UHD_LIBS := $(shell pkg-config uhd --libs)
+
 
 CPPFLAGS := -I$(ROOT)include -I$(ROOT)lib
 
@@ -23,8 +26,12 @@ undefine MkSource
 undefine s
 
 
-dualTx.so_LDFLAGS := -luhd
-joystickTx.so_LDFLAGS := -luhd
+
+dualTx.so_CPPFLAGS := $(UHD_CFLAGS)
+joystickTx.so_CPPFLAGS := $(UHD_CFLAGS)
+
+dualTx.so_LDFLAGS := $(UHD_LIBS)
+joystickTx.so_LDFLAGS := $(UHD_LIBS)
 
 
 include $(ROOT)quickbuild.make

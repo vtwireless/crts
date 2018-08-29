@@ -1,0 +1,29 @@
+#!/bin/bash
+
+
+source ../common.bash
+
+
+# The sha512sum is optional.  Get its value by running:
+#    sha512sum uhd.tar.gz
+
+sha512sum=
+
+case "$NODE_TAG" in
+
+    "v10.3.0")
+        sha512sum=c5c1f5b647d03ef77793cec5bb5ead72d223c6\
+21e7f8b3757175543cc6d32ebe17c816ca26857c1c95bab2d2c4fe5f\
+d61f257bf4ae11ecc229271a39c4fb4b7c
+        ;;
+esac
+
+
+##############################################################
+
+
+source ../../GetSrcFromGithub.bash
+
+#Usage: GetSrcFromGithub user package tag tarname [sha512sum]
+
+GetSrcFromGithub nodejs node $NODE_TAG node $sha512sum

@@ -2,18 +2,21 @@
 
 set -ex
 
+
 topdir=$PWD
+
+# Get the configured PREFIXes and so on.
+source ../common.bash
 
 # Do not run this if we already did.
 [ -f $topdir/src/SUCCESS ] && exit 0
 
 rm -rf src
 
-#sha512sum -c uhd.tar.gz.sha512sum
-
 tar -xzmf uhd.tar.gz
 
 mv EttusResearch-uhd-* src
+
 
 cd src/host
 

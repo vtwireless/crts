@@ -1,10 +1,13 @@
-#!/usr/bin/env bash
+#!/bin/bash
+
+# This script installs system managed packages that CRTS depends on.
+# This script runs "sudo apt-get install ..."
 
 set -ex
 
-printf "\nCRTS dependencies...\n"
+#Dependencies for CRTS
 
-declare -a crts_pkg=(
+declare -a crts_dep=(
  "build-essential"
  "patchelf"
  "libreadline-dev"
@@ -20,9 +23,9 @@ declare -a crts_pkg=(
  "patchelf"
  "python-netifaces")
 
+#Dependencies for installing libuhd from source
 
-printf "\nDependencies for libuhd...\n"
-declare -a uhd_pkg=(
+declare -a uhd_dep=(
  "libboost-all-dev"
  "python-mako"
  "libqt4-dev"
@@ -33,8 +36,9 @@ declare -a uhd_pkg=(
  "texlive"
  "cmake")
 
-printf "\nDependencies for gnuradio...\n"
-declare -a gnuradio_pkg=( 
+#Dependencies for installing gnuradio from source
+
+declare -a gnuradio_dep=( 
  "python-bs4"
  "python-cheetah"
  "python-cycler"
@@ -65,48 +69,18 @@ declare -a gnuradio_pkg=(
 
 if(grep -q 'Debian' /etc/os-release); then
     printf "is debian\n"
-    gnuradio_pkg+=('python-webencodings')
+    gnuradio_dep+=('python-webencodings')
 else
-    printf "is ubuntu\n"
-    gnuradio_pkg+=('python-weblib');
+    printf "assuming that your system is like Ubuntu\n"
+    gnuradio_dep+=('python-weblib')
 fi
 
+
 printf "\nInstalling crts packages\n"
-for i in "${crts_pkg[@]}"
-do
-    sudo apt-get install "$i"
-    #echo "$i"
-done
+sudo apt-get install ${crts_dep[@]}
 
-printf "\nInstalling UHD dependencies to install UHD from source"
-for i in "${uhd_pkg[@]}"
-do
-    sudo apt-get install "$i"
-    #echo "$i"
-done
+printf "\nInstalling UHD dependencies\n"
+sudo apt-get install ${uhd_dep[@]}
 
-printf "\nInstalling gnuradio dependencies to install from source"
-for i in "${gnuradio_pkg[@]}"
-do
-    sudo apt-get install "$i"
-    #echo "$i"
-done
-
-cd crts
-./bootstrap
-./Devel_Configure
-./Install_NodeJS
-make download
-cd uhd
-make download
-make
-make install
-cd ../gnuradio
-make download
-make 
-make install
-cd ..
-make
-make install
-
-exit 0
+printf "\nInstalling GNU Radio dependencies\n"
+sudo apt-get install ${gnuradio_dep[@]}
