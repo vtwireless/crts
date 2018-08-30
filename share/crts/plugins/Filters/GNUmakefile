@@ -17,13 +17,10 @@ CPPFLAGS := -I$(ROOT)/include -I$(ROOT)/lib -I$(ROOT)/liquid-dsp/src/include
 INSTALL_DIR = $(PREFIX)/share/crts/plugins/$(notdir $(CURDIR))
 
 
-LIQUID_SRC := $(abspath $(ROOT)/liquid-dsp/src)
-LIBFEC_SRC := $(abspath $(ROOT)/liquid-dsp/libfec/src)
+RPATH := -Wl,-rpath=\$$ORIGIN/$(ROOT)/lib
 
-SRC_RPATH := -Wl,-rpath,$(LIQUID_SRC):$(LIBFEC_SRC)
-
-LIQUID_LDFLAGS := -L$(LIQUID_SRC) -lliquid
-LIBFEC_LDFLAGS := -L$(LIBFEC_SRC) -lfec
+LIQUID_LDFLAGS := -L$(ROOT)/lib -lliquid 
+LIBFEC_LDFLAGS := -L$(ROOT)/lib -lfec
 
 # uncomment to build quickscope.so
 #BUILD_QUICKSCOPE := yes
@@ -108,24 +105,14 @@ quickscope.so_LDFLAGS := $(QS_LDFLAGS)
 liquidSync.so_LDFLAGS :=\
  $(LIQUID_LDFLAGS)\
  $(LIBFEC_LDFLAGS)\
- $(SRC_RPATH)
+ $(RPATH)
 
 liquidFrame.so_LDFLAGS :=\
  $(LIQUID_LDFLAGS)\
  $(LIBFEC_LDFLAGS)\
- $(SRC_RPATH)
+ $(RPATH)
 
 
-
-# TODO: make quickbuild.make do this patchelf thing:
-#
-# After we install the programs we reset the RPATH so that the programs
-# can find the installed libliquid and libfec shared libraries at run-time.
-INSTALL_RPATH = patchelf --set-rpath '$(PREFIX)/lib'
-
-POST_INSTALL_COMMAND =\
- $(INSTALL_RPATH) $(INSTALL_DIR)/liquidFrame.so &&\
- $(INSTALL_RPATH) $(INSTALL_DIR)/liquidSync.so
 
 
 # above we auto generate lines like this:

@@ -5,7 +5,7 @@ source ../common.bash
 
 
 # The sha512sum is optional.  Get its value by running:
-#    sha512sum uhd.tar.gz
+#    sha512sum node.tar.gz
 
 sha512sum=
 

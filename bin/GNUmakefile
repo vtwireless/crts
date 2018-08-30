@@ -25,8 +25,8 @@ mapTest_SOURCES := mapTest.cpp debug.c makeRingBuffer.cpp
 mapTest_LDFLAGS := -lrt
 
 crts_findUSRPs_SOURCES := crts_findUSRPs.cpp
-UHD_PREFIX := $(shell pkg-config uhd --variable=prefix)
-crts_findUSRPs_LDFLAGS := -L$(UHD_PREFIX)/lib -luhd -Wl,-rpath,$(UHD_PREFIX)/lib
+UHD_LIBS := $(shell pkg-config uhd --libs)
+crts_findUSRPs_LDFLAGS := $(UHD_LIBS)
 
 crts_radio_SOURCES :=\
  crts_radio.cpp\

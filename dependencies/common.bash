@@ -7,3 +7,9 @@ source $currentDir/default_prefixes
 if [ -f $currentDir/prefixes ] ; then
     source $currentDir/prefixes
 fi
+
+[ -z "$*" ] && return
+
+for i in "$*" ; do
+    echo "${!i}"
+done

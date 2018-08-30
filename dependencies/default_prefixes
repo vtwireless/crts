@@ -8,16 +8,27 @@
 # Just copy this file to ./prefixes and then change the values to what you
 # like.
 #
-# You need to check the github.com repos for what tags are available.
+# You need to check the github.com repos for what tags are available
+# if you wish to change to a different release.
+
+
+root=/usr/local
+
 
 # download, build, and install scripts in uhd/
 UHD_TAG=v3.13.0.1
-UHD_PREFIX=/usr/local/uhd-${UHD_TAG}
+UHD_PREFIX=$root/uhd-$UHD_TAG
 
 # download, build, and install scripts in gnuradio/
 GNURADIO_TAG=v3.7.12.0
-GNURADIO_PREFIX=/usr/local/gnuradio-${GNURADIO_TAG}
+GNURADIO_PREFIX=$root/gnuradio-$GNURADIO_TAG
 
-# download, build, and install 
+# download, build, and install node JS 
 NODE_TAG=v10.3.0
-NODE_PREFIX=/usr/local/node-${NODE_TAG}
+NODE_PREFIX=$root/node-$NODE_TAG
+
+# download, build, and install mosquitto the MQTT server
+MOSQUITTO_TAG=v1.5.1
+MOSQUITTO_PREFIX=$root/mosquitto-$MOSQUITTO_TAG
+
+unset root

@@ -1,0 +1,29 @@
+#!/bin/bash
+
+
+source ../common.bash
+
+
+# The sha512sum is optional.  Get its value by running:
+#    sha512sum mosquitto.tar.gz
+
+sha512sum=
+
+case "$MOSQUITTO_TAG" in
+
+    "v1.5.1")
+        sha512sum=2bd4373b8befd75e58b5725532c377abe20e35f\
+1d1ed25cbf4574fdd2ff5ce9f734efe46e6732c1bc52074f6ed8aeb04\
+cf90437240c360a27e4ea5f396854157
+        ;;
+esac
+
+
+##############################################################
+
+
+source ../../GetSrcFromGithub.bash
+
+#Usage: GetSrcFromGithub user package tag tarname [sha512sum]
+
+GetSrcFromGithub eclipse mosquitto $MOSQUITTO_TAG mosquitto $sha512sum

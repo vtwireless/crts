@@ -9,7 +9,6 @@ set -ex
 
 declare -a crts_dep=(
  "build-essential"
- "patchelf"
  "libreadline-dev"
  "graphviz"
  "imagemagick"
@@ -20,8 +19,10 @@ declare -a crts_dep=(
  "libgtk-3-dev"
  "git"
  "yui-compressor"
- "patchelf"
- "python-netifaces")
+ "python-netifaces"
+ "libwebsockets")
+# libwebsockets is needed for mosquitto
+
 
 #Dependencies for installing libuhd from source
 

@@ -1,0 +1,56 @@
+#!/bin/bash
+
+set -ex
+
+
+topdir=$PWD
+
+# Get the configured PREFIXes and so on.
+source ../common.bash
+
+# Do not run this if we already did.
+[ -f $topdir/src/SUCCESS ] && exit 0
+
+rm -rf src
+
+tar -xzmf mosquitto.tar.gz
+
+mv eclipse-mosquitto-* src
+
+
+cd src/
+
+
+
+# This is how we configure it.  mosquitto does not follow any standard
+# configuration build scheme. This patch/sed works for git mosquitto tag
+# v1.5.1 (MOSQUITTO_TAG=v1.5.1) but could brake in the future if they make
+# enough changes to config.mk.  The (current Aug 2018) patch.diff only
+# changes config.mk.
+#
+# We created a patch with a diff from two directories and you want src to
+# be almost the same as A, you want src to look like A when you patch src.
+#
+#run:
+# diff -ur src A > patch.diff
+#last time I ran:
+# diff -ur src eclipse-mosquitto-061c60e > patch.diff
+
+
+patch -p1 < ../patch.diff
+mv config.mk config.mk.in
+sed "s!@PREFIX@!${MOSQUITTO_PREFIX}!g" config.mk.in > config.mk
+mv Makefile Makefile.org
+sed "s%\${DESTDIR}%${MOSQUITTO_PREFIX}%g"  Makefile.org > Makefile
+
+
+# I doubt parallel make will work for the mosquitto build system
+# make -j $(nproc || echo '3')
+
+export DESTDIR=${MOSQUITTO_PREFIX}
+make
+
+
+# We really need to know: Did we succeed and make it this far in this
+# script?
+echo "The script ../$0 ran SUCCESSFULLY" > $topdir/src/SUCCESS

@@ -18,7 +18,7 @@ mv jgaeddert-liquid-dsp* src
 cd src
 
 # We created a patch with a diff from two directories
-# and you want src to be the same as A
+# and you want src to be almost the same as A
 # diff -ur src A > patch.diff
 
 patch -p1 < ../patch.diff
