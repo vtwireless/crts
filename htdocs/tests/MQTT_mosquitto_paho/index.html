@@ -10,15 +10,51 @@
 
 onload = function() {
 
-    client = new Paho.MQTT.Client(location.hostname, 9945, "clientId");
+    var clientId = "client" + Math.floor(Math.random() * 100) + 1;
+
+    client = new Paho.MQTT.Client(location.hostname, 9945, clientId);
+
     client.connect({
         onSuccess: function() {
-            console.log('connected to MQTT server');
+            console.log('connected to MQTT server as: ' + clientId);
+
+            client.send('world', "hello send() from: " + clientId,
+                    0/*qos*/, true /*retained*/);
+
+            var message = new Paho.MQTT.Message("Hello from " + clientId);
+            message.destinationName = "world";
+            message.retained = true;
+
+            client.send(message);
+
+            client.subscribe("world", {
+                qos:  0 /* Best effort (default).*/,
+                onSuccess: function() {
+                console.log('subscribe("world") happend');
+            }
+    });
+
         },
         useSSL: false
     });
 
-    console.log("hello");
+
+    client.onConnectionLost = function(obj) {
+        console.log("ConnectionLost errorCode=" + obj.errorCode +
+                "  errorMessage=" + obj.errorMessage);
+    };
+
+
+    client.onMessageArrived = function (message) {
+        console.log("RECIEVING MESSAGE:");
+        console.log("  Topic:           " + message.destinationName);
+        console.log("  Message Arrived: " + message.payloadString);
+        console.log("  QoS:             " + message.qos);
+        console.log("  Retained:        " + message.retained);
+        // Read Only, set if message might be a duplicate sent from broker
+        console.log("  Duplicate: " + message.duplicate);
+    };
+
 };
 
 

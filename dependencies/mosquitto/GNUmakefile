@@ -10,7 +10,12 @@ MOSQUITTO_PREFIX := $(shell /bin/bash ../common.bash MOSQUITTO_PREFIX)
 # After we install nothing here, we do this to install mosquitto using the build
 # system in the mosquitto package.
 #
-POST_INSTALL_COMMAND = cd src && $(MAKE) install
+# Note: we put mosquitto as a relative symlink in the bin/
+#
+POST_INSTALL_COMMAND =\
+ cd src &&\
+ $(MAKE) install &&\
+ ln -sr $(MOSQUITTO_PREFIX)/sbin/mosquitto $(MOSQUITTO_PREFIX)/bin
 
 
 include ../../quickbuild.make
