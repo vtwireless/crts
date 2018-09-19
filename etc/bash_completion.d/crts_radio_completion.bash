@@ -158,7 +158,7 @@ function _crts_radio_complete()
 
     if [[ ${prev_word} == -f ]] || [[ ${prev_word} == "--filter" ]] ; then
         modtype=Filters
-    elif [[ ${prev_word} != -C ]] || [[ ${prev_word} != "--controller" ]] ; then
+    elif [[ ${prev_word} == -C ]] || [[ ${prev_word} == "--controller" ]] ; then
         modtype=Controllers
     else
         # it must be a -l | --load

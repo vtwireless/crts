@@ -9,4 +9,4 @@ simple_parse_SOURCES := simple_parse.c
 
 simple_parse_LDFLAGS := -ljansson
 
-include ../quickbuild.make
+include ../../quickbuild.make

@@ -36,7 +36,7 @@ class TxControl: public CRTSControl
         ~TxControl(void) { DSPEW(); };
 
 
-    // The Tx is the only object that can make an TxControl given the
+    // The Tx is the only object that can make a TxControl given the
     // private constructor that only Tx can access.
     friend Tx;
 };

@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang=en>
+    <head>
+        <meta charset="utf-8"/>
+        <title>MQTT test</title>
+
+        <script src=/js/paho-mqtt.js></script>
+
+        <script>
+
+onload = function() {
+
+    client = new Paho.MQTT.Client(location.hostname, 9945, "clientId");
+    client.connect({
+        onSuccess: function() {
+            console.log('connected to MQTT server');
+        },
+        useSSL: false
+    });
+
+    console.log("hello");
+};
+
+
+        </script>
+
+    </head>
+    <body>
+
+        <h1>Hello</h1>
+
+    </body>
+</html>

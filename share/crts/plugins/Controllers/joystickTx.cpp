@@ -147,6 +147,9 @@ void JoystickTx::execute(CRTSControl *c, const void *buffer,
 
     //DSPEW("got joystick input");
 
+    // In this case we are getting the joystick event data from the
+    // stream.  That may not be the only and best way to do this.
+
     struct js_event *e = (struct js_event *) buffer;
 
     DASSERT(len % sizeof(struct js_event) == 0, "");

@@ -1,0 +1,38 @@
+#!/bin/bash
+
+set -ex
+
+
+topdir=$PWD
+
+# Get the configured PREFIXes and so on.
+source ../common.bash
+
+# Do not run this if we already did.
+[ -f $topdir/src/SUCCESS ] && exit 0
+
+rm -rf src
+
+tar -xzmf libwebsockets.tar.gz
+
+mv warmcat-libwebsockets-* src
+
+cd src
+
+mkdir BUILD
+
+cd BUILD
+
+
+cmake .. -G"Unix Makefiles"\
+ -DCMAKE_VERBOSE_MAKEFILE:BOOL=TRUE\
+ -DCMAKE_INSTALL_PREFIX:PATH="${LIBWEBSOCKETS_PREFIX}"\
+ -DCMAKE_INSTALL_RPATH:PATH="${LIBWEBSOCKETS_PREFIX}/lib"\
+ -DCMAKE_BUILD_WITH_INSTALL_RPATH:BOOL=TRUE
+
+make -j $(nproc || echo '3')
+
+
+# We really need to know: Did we succeed and make it this far in this
+# script?
+echo "The script ../$0 ran SUCCESSFULLY" > $topdir/src/SUCCESS

@@ -20,8 +20,15 @@ declare -a crts_dep=(
  "git"
  "yui-compressor"
  "python-netifaces"
- "libwebsockets")
+ "libev-dev"
+ "libuv1-dev")
 # libwebsockets is needed for mosquitto
+
+# Wed Sep 19 2018, libwebsockets is broken
+# and lws_service_fd_tsi () from /usr/lib/x86_64-linux-gnu/libwebsockets.so.8
+# just seg-faults, so we add a build and install of libwebsockets
+# from source.  This adds a need for libev-dev and libuv1-dev which
+# automatically came with libwebsockets.
 
 
 #Dependencies for installing libuhd from source
@@ -78,10 +85,10 @@ fi
 
 
 printf "\nInstalling crts packages\n"
-sudo apt-get install ${crts_dep[@]}
+apt-get install ${crts_dep[@]}
 
 printf "\nInstalling UHD dependencies\n"
-sudo apt-get install ${uhd_dep[@]}
+apt-get install ${uhd_dep[@]}
 
 printf "\nInstalling GNU Radio dependencies\n"
-sudo apt-get install ${gnuradio_dep[@]}
+apt-get install ${gnuradio_dep[@]}

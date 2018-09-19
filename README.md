@@ -17,13 +17,13 @@ Currently developing on:
 
 ## Dependencies
 
-The script
+You can run the script
 ```
-dependencies/apt-getDependencies.bash
+sudo dependencies/apt-getDependencies.bash
 ```
-keeps in it the running list of dependencies that can be installed via
-apt-get.  You can install them yourself or run the script which will run
-sudo apt-get install for you.
+In this script we keep a running list of dependencies that can be
+installed via apt-get.  You can install them yourself or run the script
+which will run apt-get install for you.
 
 At the time of this writing the debian/ubuntu packages "libuhd-dev" and
 "gnuradio-dev" are not current enough to be used.  Also the node JS

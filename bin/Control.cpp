@@ -40,6 +40,7 @@ CRTSControl::CRTSControl(CRTSFilter *filter_in, std::string name_in):
         throw str;
     }
 
+
     // Add this to the list of all controls.
     controls[name] = this;
 
@@ -55,6 +56,13 @@ CRTSControl::~CRTSControl(void)
 {
     DASSERT(name, "");
     DASSERT(name[0], "");
+
+    // Delete all CRTSParameters in this CRTSControl
+    while(parameters.size())
+        // The  CRTSParameter base class Parameter::~Parameter(void) will
+        // remove it.
+        delete parameters.rbegin()->second;
+
 
     // Remove this from the list of controls for this filter.
     filter->controls.erase(name);
