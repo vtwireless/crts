@@ -12,18 +12,18 @@ topdir=$PWD
 
 rm -rf src
 
-tar -xzmf node.tar.gz
+tar -xzmf slurm.tar.gz
 
-mv nodejs-node-* src
+mv SchedMD-slurm-* src
 
 cd src
 
 
-./configure --prefix=$NODE_PREFIX
+./configure --prefix=$SLURM_PREFIX --with-munge --with-ssl
 make -j$(nproc||4)
 
 set +x
-echo "SUCCESSFULLY installed nodeJS $NODE_TAG in prefix=$NODE_PREFIX"
+echo "SUCCESSFULLY installed slurm $SLURM_TAG in prefix=$SLURM_PREFIX"
 
 # We really need to know: Did we succeed and make it this far in this
 # script?

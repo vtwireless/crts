@@ -21,8 +21,12 @@ declare -a crts_dep=(
  "yui-compressor"
  "python-netifaces"
  "libev-dev"
- "libuv1-dev")
+ "libuv1-dev"
+ "libmunge-dev")
+
 # libwebsockets is needed for mosquitto
+
+# netloc lua man2html munge libcurl-dev may be needed by slurm
 
 # Wed Sep 19 2018, libwebsockets is broken
 # and lws_service_fd_tsi () from /usr/lib/x86_64-linux-gnu/libwebsockets.so.8
