@@ -13,9 +13,9 @@ source ../common.bash
 
 rm -rf src
 
-tar -xzmf paho_mqtt_embedded-c.tar.gz
+tar -xzmf paho_mqtt-c.tar.gz
 
-mv eclipse-paho.mqtt.embedded-c-* src
+mv eclipse-paho.mqtt.c-* src
 
 cd src
 
@@ -27,7 +27,7 @@ cd src
 
 # Apply the patch
 # This patch.diff may be only good for a partiular github tagged version.
-patch -p1 < ../patch.diff
+#patch -p1 < ../patch.diff
 
 
 mkdir BUILD
@@ -39,7 +39,8 @@ cmake .. -G"Unix Makefiles"\
  -DCMAKE_VERBOSE_MAKEFILE:BOOL=TRUE\
  -DCMAKE_INSTALL_PREFIX:PATH="${MQTTC_PREFIX}"\
  -DCMAKE_INSTALL_RPATH:PATH="${MQTTC_PREFIX}/lib"\
- -DCMAKE_BUILD_WITH_INSTALL_RPATH:BOOL=TRUE
+ -DCMAKE_BUILD_WITH_INSTALL_RPATH:BOOL=TRUE\
+ -DPAHO_BUILD_DOCUMENTATION:BOOL=TRUE
 
 make -j $(nproc || echo '3')
 
