@@ -5,17 +5,17 @@ source ../common.bash
 
 
 # The sha512sum is optional.  Get its value by running:
-#    sha512sum libwebsockets.tar.gz
+#    sha512sum paho_mqtt_embedded-c.tar.gz
 
 sha512sum=
 
-case "$LIBWEBSOCKETS_TAG" in
+case "$MQTTC_TAG" in
 
-    "v3.0.1")
+    "v1.1.0")
         sha512sum=\
-fb959db7721725000b18696493459c6c984c8884a1dcf8e7dadf280c1\
-46332a31a27c822cb6a5b0aa3e1705cdd19fcbaa5015b04d881d28e11\
-1d54237841def8
+20f86bdf5a8a41f1dec4a9202038595e93c4881e03b465f44c3bd4709805\
+d376b20616684c8056c0847a9220e6a7eaa9780a78573dec3044b6289480\
+be2d778e
         ;;
 esac
 
@@ -27,4 +27,4 @@ source ../../GetSrcFromGithub.bash
 
 #Usage: GetSrcFromGithub user package tag tarname [sha512sum]
 
-GetSrcFromGithub warmcat libwebsockets $LIBWEBSOCKETS_TAG libwebsockets $sha512sum
+GetSrcFromGithub eclipse paho.mqtt.embedded-c $MQTTC_TAG paho_mqtt_embedded-c $sha512sum
