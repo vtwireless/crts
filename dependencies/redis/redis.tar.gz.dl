@@ -1,0 +1,30 @@
+#!/bin/bash
+
+
+source ../common.bash
+
+
+# The sha512sum is optional.  Get its value by running:
+#    sha512sum redis.tar.gz
+
+sha512sum=
+
+case "$REDIS_TAG" in
+
+    "5.0-rc5")
+        sha512sum=\
+149c8efaba5032554ed18d4b01910bf696e93f212d9aac90748d32b7d4a5\
+b3709b7bd17fd432033dda296ed8ee450eafd6d723e27b77454e997a0149\
+11b8270a
+        ;;
+esac
+
+
+##############################################################
+
+
+source ../../GetSrcFromGithub.bash
+
+#Usage: GetSrcFromGithub user package tag tarname [sha512sum]
+
+GetSrcFromGithub antirez redis $REDIS_TAG redis $sha512sum

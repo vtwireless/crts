@@ -1,0 +1,60 @@
+This directory provides scripts that install software packages that CRTS
+depends on.  You need to run ../bootstrap before using these scripts.
+
+Each package is in a different directory.  We made an effort to configure
+all of the packages for use by CRTS.  All of these packages are can by
+built and installed from GitHub source with the git tags that are listed
+in default_prefixes, or (overridden) in prefixes if found.
+
+Some of the package versions may be newer than what is available from APT
+(the Debian package management system) repositories.  Hence this directory
+exists.
+
+
+
+
+
+Directories (PACKAGE_DIR):
+
+
+  gnuradio            - https://github.com/gnuradio/gnuradio
+
+  hiredis             - https://github.com/redis/hiredis
+
+  libwebsockets       - https://github.com/warmcat/libwebsockets
+
+  mosquitto           - https://github.com/eclipse/mosquitto
+
+  mosquitto-auth-plug - https://github.com/jpmens/mosquitto-auth-plug
+
+  mqttc (paho.mqtt.c) - https://github.com/eclipse/paho.mqtt.c
+
+  node                - https://github.com/nodejs/node
+
+  redis               - https://github.com/antirez/redis
+
+  slurm               - https://github.com/SchedMD/slurm
+
+  uhd                 - https://github.com/EttusResearch/uhd
+
+
+
+
+Instructions: 
+
+  cp default_prefixes prefixes
+  
+  Edit the file prefixes to set your installation prefix directories to
+  suit your preferences.
+
+  For each package:
+
+  cd PACKAGE_DIR && make && make install && cd ..
+
+      or
+
+  Just run make from this directory (this may take a while):
+
+    make download && make && make install
+
+

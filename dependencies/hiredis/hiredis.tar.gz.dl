@@ -1,0 +1,30 @@
+#!/bin/bash
+
+
+source ../common.bash
+
+
+# The sha512sum is optional.  Get its value by running:
+#    sha512sum hiredis.tar.gz
+
+sha512sum=
+
+case "$HIREDIS_TAG" in
+
+    "v0.13.3")
+        sha512sum=\
+91c7a03c5e4568c687378396b90ee624c19537fb93c4e4eef82131c\
+dc7ebc16dc57e521442b7d67251f452f43433699c3f7454df3c059b\
+da5bdfb81ece4c2b12
+        ;;
+esac
+
+
+##############################################################
+
+
+source ../../GetSrcFromGithub.bash
+
+#Usage: GetSrcFromGithub user package tag tarname [sha512sum]
+
+GetSrcFromGithub redis hiredis $HIREDIS_TAG hiredis $sha512sum

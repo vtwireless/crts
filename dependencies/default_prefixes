@@ -1,7 +1,7 @@
 # This is a sourced bash file
 
-
 # Installation prefixes and git tag releases
+
 
 # These values may be over ridden in ./prefixes
 # 
@@ -9,37 +9,56 @@
 # like.
 #
 # You need to check the github.com repos for what tags are available
-# if you wish to change to a different release.
+# if you wish to change to a different release.  You may see a list of
+# git tags in the corresponding download (dl) file in */*.tar.gz.dl
 
 
 root=/usr/local
 
+# Download, build, and install all these packages.
+# The GitHub URLs are gotten in the files */*.tar.gz.dl also there
+# are sha512 hashes that are checked for the downloaded tarball files.
+# There will be a different sha512 hash for a given git tag tarball.
+#
+# The files in the subdirectories depend on these bash variables, and will
+# source this file to get these values.  Use the file ./prefix to make
+# edits that override any of these values.
+#
+# If you change any tags you'll need to test that all your tags have
+# compatible versions of the packages.
 
-# download, build, and install scripts in uhd/
-UHD_TAG=v3.13.0.1
-UHD_PREFIX=$root/uhd-$UHD_TAG
 
-# download, build, and install scripts in gnuradio/
 GNURADIO_TAG=v3.7.12.0
 GNURADIO_PREFIX=$root/gnuradio-$GNURADIO_TAG
 
-# download, build, and install node JS 
+HIREDIS_TAG=v0.13.3
+HIREDIS_PREFIX=$root/hiredis-$HIREDIS_TAG
+
 NODE_TAG=v10.3.0
 NODE_PREFIX=$root/node-$NODE_TAG
-
-# download, build, and install mosquitto the MQTT server
-MOSQUITTO_TAG=v1.5.1
-MOSQUITTO_PREFIX=$root/mosquitto-$MOSQUITTO_TAG
-
 
 LIBWEBSOCKETS_TAG=v3.0.1
 LIBWEBSOCKETS_PREFIX=$root/libwebsockets-$LIBWEBSOCKETS_TAG
 
+# MOSQUITTOAUTHPLUG_TAG=0.1.2  is not compatible with MOSQUITTO_TAG=v1.5
+MOSQUITTO_TAG=v1.4.15
+MOSQUITTO_PREFIX=$root/mosquitto-$MOSQUITTO_TAG
+
+# MOSQUITTOAUTHPLUG_TAG=0.1.2  is not compatible with MOSQUITTO_TAG=v1.5
+MOSQUITTOAUTHPLUG_TAG=0.1.2
+MOSQUITTOAUTHPLUG_PREFIX=$root/mosquitto-auth-plug-$MOSQUITTOAUTHPLUG_TAG
+
 MQTTC_TAG=v1.2.1
 MQTTC_PREFIX=$root/mqttc-$MQTTC_TAG
 
+REDIS_TAG=5.0-rc5
+REDIS_PREFIX=$root/redis-$REDIS_TAG
+
 SLURM_TAG=slurm-18-08-0-1
 SLURM_PREFIX=$root/$SLURM_TAG
+
+UHD_TAG=v3.13.0.1
+UHD_PREFIX=$root/uhd-$UHD_TAG
 
 
 unset root

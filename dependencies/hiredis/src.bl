@@ -1,9 +1,11 @@
 #!/bin/bash
 
-set -ex
-
+set -e
 
 source ../common.bash
+
+set -x
+
 
 topdir=$PWD
 
@@ -12,15 +14,14 @@ topdir=$PWD
 
 rm -rf src
 
-tar -xzmf node.tar.gz
+tar -xzmf hiredis.tar.gz
 
-mv nodejs-node-* src
+mv redis-hiredis-* src
 
 cd src
 
 
-./configure --prefix=$NODE_PREFIX
-make -j$(nproc||4)
+make PREFIX=$HIREDIS_PREFIX -j$(nproc||4)
 
 set +x
 

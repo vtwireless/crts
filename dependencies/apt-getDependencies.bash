@@ -22,7 +22,8 @@ declare -a crts_dep=(
  "python-netifaces"
  "libev-dev"
  "libuv1-dev"
- "libmunge-dev")
+ "libmunge-dev"
+ "libc-ares-dev")
 
 # libwebsockets is needed for mosquitto
 
