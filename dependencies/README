@@ -11,6 +11,9 @@ Some of the package versions may be newer than what is available from APT
 exists.
 
 
+run: "sudo ./apt-getDependencies.bash" to install packages that are
+requirements on Debian or Ubuntu systems.
+
 
 
 
