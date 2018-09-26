@@ -60,4 +60,15 @@ Instructions:
 
     make download && make && make install
 
+  For example if you need to run a script (SCRIPT) between each package
+  installation, you could run:
+
+        SCRIPT="sudo encap"
+        PACKAGES="uhd gnuradio libwebsockets mosquitto mqttc node redis\
+ slurm hiredis mosquitto-auth-plug"
+
+        for d in $PACKAGES ; do make -C $d && make -C $d install &&\
+ $SCRIPT ; done 
+
+
 
