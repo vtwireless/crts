@@ -5,9 +5,7 @@
 CLEANDIRS := src
 
 
-# After we install nothing here, we do this to install redid using the build
-# system in the redid package.
-POST_INSTALL_COMMAND = cd src && make install
+POST_INSTALL_COMMAND := ./install.bash
 
 
 include ../../quickbuild.make
