@@ -42,8 +42,18 @@ Directories (PACKAGE_DIR):
 
 
 
+The order of things:
+
+  gnuradio depends on uhd
+
+  mosquitto depends on libwebsockets
+
+  mosquitto-auth-plug depends on mosquitto, redis, and hiredis
+
 
 Instructions: 
+
+  mosquitto depends on libwebsockets
 
   cp default_prefixes prefixes
   
@@ -66,7 +76,7 @@ Instructions:
         SCRIPT="sudo encap"
         PACKAGES="uhd gnuradio libwebsockets mosquitto mqttc node redis\
  slurm hiredis mosquitto-auth-plug"
-
+        make download
         for d in $PACKAGES ; do make -C $d && make -C $d install &&\
  $SCRIPT ; done 
 
