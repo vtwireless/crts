@@ -61,7 +61,7 @@ Instructions:
     make download && make && make install
 
   For example if you need to run a script (SCRIPT) between each package
-  installation, you could run:
+  installation, you could run something like:
 
         SCRIPT="sudo encap"
         PACKAGES="uhd gnuradio libwebsockets mosquitto mqttc node redis\
