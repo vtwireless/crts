@@ -228,28 +228,25 @@ bool Stream::printGraph(FILE *f)
                 FilterModule *filterModule = pair.second;
 
                 if(dynamic_cast<Feed *>(filterModule->filter))
-                // Skip displaying the Feed filters
-                continue;
+                    // Skip displaying the Feed filters
+                    continue;
 
                 char filterName[64]; // writer node name
 
                 snprintf(filterName, 64, "f%" PRIu32 "_%" PRIu32,
                         n, filterModule->loadIndex);
 
-                for(auto const &control: filterModule->filter->controls)
+                for(auto const &controller: filterModule->filter->control->controllers)
                 {
-                    for(auto const &controller: control.second->controllers)
-                    {
-                        fprintf(f, "    controller_%"
+                    fprintf(f, "    controller_%"
                                 PRIu32 " [label=\"%s\(%"
                                 PRIu32 ")\"];\n",
                                 controller->getId(),
                                 controller->getName(),
                                 controller->getId());
-                        fprintf(f, "    controller_%"
+                    fprintf(f, "    controller_%"
                                 PRIu32 " -> %s [color=\"brown1\"];\n",
                                 controller->getId(), filterName);
-                    }
                 }
             }
             ++n; // next filter number.

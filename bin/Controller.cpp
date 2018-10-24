@@ -26,6 +26,11 @@ CRTSController::CRTSController(void):
 {
     DSPEW();
     controllers.push_back(this);
+    
+    // initialize the getControlIt iterator so that the
+    // CRTSController::superclass constructor may iterate through the map
+    // list of controls using CRTSController::getControl<>()
+    getControlIt = CRTSControl::controls.begin();
 }
 
 

@@ -421,7 +421,7 @@ bool Stream::load(const char *name, int argc, const char **argv)
     // If there was no CRTSControl for this CRTS Filter we will add
     // a default CRTSControl.
     //
-    if(m->getControls().size() == 0 && !m->makeControl(argc, argv))
+    if(m->filter->control == 0 && !m->makeControl(argc, argv))
         return true; // fail
 
     return false; // success

@@ -1,4 +1,0 @@
-This directory is to just download and install the nopoll websockets C
-API/library in NOPOLL_PREFIX, as set in ../config.make
-
-nopoll may become a dependency of CRTS.

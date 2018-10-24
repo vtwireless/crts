@@ -1,12 +1,14 @@
 #ifndef __Filter_h__
 #define __Filter_h__
 
+#include <math.h>
 #include <inttypes.h>
 #include <pthread.h>
 #include <list>
 #include <map>
 #include <atomic>
 #include <string>
+#include <functional>
 
 #include <crts/MakeModule.hpp>
 
@@ -36,9 +38,15 @@ class FilterModule;
 class CRTSController;
 class CRTSControl;
 class CRTSFilter;
-class Parameter;
 class Stream;
-template <class T> class CRTSParameter;
+
+
+struct Parameter
+{
+    std::function<bool (double)> set;
+    std::function<double (void)> get;
+};
+
 
 
 // CRTSStream is a user interface to set and get attributes of the Stream
@@ -58,6 +66,12 @@ class CRTSStream
         // The CRTSFilter user does not make a CRTSStream.  It gets made
         // for them, hence this constructor is private so they can't
         // make one.
+        //
+        // TODO: This may not need to be atomic, just volatile, because
+        // it only gets unset and read in the many threads.  It never gets
+        // set to true in the many threaded running case, only read and
+        // set to false.  It gets set to true only before start when there
+        // is just the main thread running.
         CRTSStream(std::atomic<bool> &isRunning);
 
     // The CRTSFilter/FilterModule needs to be able to set up access to the
@@ -267,8 +281,13 @@ class CRTSFilter
          * stays the same between the call of CRTSFilter start() and
          * stop().  After the constructor is called and after stop(), but
          * before start() the topology may change.
+         *
+         * /param controlName sets the name of the filter control.  This
+         * name can be used by a CRTSController to get control of this
+         * filter.  If \c name is an empty string a name will be generated
+         * based on the filename of the filter module plugin.
          */
-        CRTSFilter(void);
+        CRTSFilter(std::string controlName="");
 
         // The stream that this filter object is in.
         CRTSStream *stream;
@@ -498,6 +517,46 @@ class CRTSFilter
             return makeControl(controlName, false);
         };
 
+
+        /** Add a controllable parameter to this filter.
+         *
+         * This will make a parameter that is accessible by CRTSController
+         * modules.
+         *
+         * Provides seamless parameterization.
+         *
+         * This adds an interface of setting and getting parameter values
+         * for modular CRTSController objects.  The CRTSControllers only
+         * have to know the /c name of the parameter to set and get its'
+         * value, they do not need more intimate knowledge about
+         * parameters to set and get them.  In this way we say that we
+         * have a seamless interface to controlling the filters.  This
+         * seamless interface enables use to make a generic shell
+         * controller that can control any and all of the filters without
+         * even knowing what the filters are, it just knows that it can
+         * set and get parameter values and the filter handles the detail.
+         *
+         * /todo doubles can be converted to many other types, but a
+         * double can't be made into any type.  If we template out
+         * the double we'll lose the seamless nature of this control
+         * interface, or will we.
+         *
+         * /param name the name of the parameter that CRTSControllers will
+         * be setting and getting.
+         *
+         * /param set a function that is called to set the parameter
+         * in whatever way it sees fit.
+         *
+         * /param get a function that returns the current parameter value,
+         * as the filter defines it.
+         *
+         * /param overWrite if false this will not throw an exception
+         */
+        void addParameter(std::string name,
+                std::function<bool (const double &)> set,
+                std::function<double (void)> get,
+                bool overWrite=false);
+
  
     friend FilterModule; // The rest of the filter code and data.
     friend CRTSControl;
@@ -506,11 +565,19 @@ class CRTSFilter
 
     private:
 
+
+        // List of all Parameters for this filter:
+        std::map<std::string, Parameter> parameters;
+
+
         // TODO: It'd be nice to hide this list in filterModule but
         // it's a major pain, and I give up; time is money.
+        //
+        // Why you say: hiding data structure would keep the ABI
+        // constant when the hidden data structure changes.
 
-        // This is the list of controls that this filter as created.
-        std::map<std::string, CRTSControl *>controls;
+        // The one control that this filter as created.
+        CRTSControl *control;
 
 
         // Needed by the plug-in loader to make a default CRTSControl.
@@ -527,12 +594,11 @@ class CRTSFilter
 
         // These counters wrap at 2^64 ~ 1.7x10^10 GB ~ 16 exabytes. At a
         // rate of 10 GBits/s it will take 435 years, so higher rates may
-        // be a problem.  A rate of 1000 GBits/s will wrap in 4 years,
-        // and this would not be a good design.  In 10 years this counter
-        // will need to be of type uint128_t, or it needs to be made
-        // a circular counter, whatever that is, or just add an additional
-        // counter to count the number of 16 exabytes chucks, like the
-        // time structures do.  Good enough to now (September 2018).
+        // be a problem.  A rate of 1000 GBits/s will wrap in 4 years, and
+        // this would not be a good design.  In 10 years this counter will
+        // need to be of type uint128_t, or just add an additional counter
+        // to count the number of 16 exabytes chucks, like the time
+        // structures do.  Good enough to now (September 2018).
         //
         uint64_t _totalBytesIn, _totalBytesOut;
 };
@@ -599,6 +665,8 @@ class CRTSController
         * that this points to.  It is managed by the associated CRTSFilter
         * object.
         *
+        * This must be called in the main thread in start() or stop().
+        *
         * The CRTSController implementation must include the particular
         * CRTSFilter interface header file to get access to the control
         * methods that are implemented.
@@ -606,12 +674,14 @@ class CRTSController
         * \todo add example code.
         *
         * \param name the unique (across the CRTSStream) name of this
-        * CRTSControl.
+        * CRTSControl.  If name is an empty string than this will iterate
+        * through all controls returning them in std::map iterated order
+        * and return 0 at the end.
         *
         * \return a CRTSControl object pointer.
         */
         template <class C>
-        C getControl(const std::string name) const;
+        C getControl(const std::string name = "", bool addController=true);
 
 
     private:
@@ -619,6 +689,7 @@ class CRTSController
 
         // TODO: Ya, this is ugly.  It'd be nice to not expose these
         // things to the module writer; even if they are private.
+        // Not exposing this would make the ABI more stable.
         //
         friend CRTSControl;
         friend int LoadCRTSController(const char *name,
@@ -629,6 +700,11 @@ class CRTSController
 
         // Global list of all loaded CRTSController plug-ins:
         static std::list<CRTSController *> controllers;
+
+        // getControlIt is used to iterate through the list of controls
+        // in the method CRTSController::getControl().  This gets
+        // initialized before each CRTSController::start() call.
+        std::map<std::string, CRTSControl *>::iterator getControlIt;
 
         // Used to destroy this object because CRTS Controllers are loaded
         // as C++ plugins and destroyController must not be C++ name
@@ -650,10 +726,7 @@ class CRTSController
 /** The CRTSControls should be accessed in the CRTSFilter thread
  * that it is associated with or in the main thread in a constructor.
  *
- * CRTSControls is a factory of any number of CRTSParameters.
- *
- * The super class of CRTSControl should public in header files all the
- * CRTSParameter classes that it creates.
+ * CRTSControls is a factory of any number of Parameters.
  *
  */
 class CRTSControl
@@ -699,54 +772,98 @@ class CRTSControl
         };
 
 
+        /** Get information
+         */
+
+        std::string getNextParameterName(bool start = false, bool *hasSet=0, bool *hasGet=0)
+        {
+            if(start || getNextParameterNameIt == filter->parameters.end())
+                getNextParameterNameIt = filter->parameters.begin();
+            else
+                ++getNextParameterNameIt;
+
+            if(getNextParameterNameIt == filter->parameters.end())
+                return "";
+
+            if(hasSet)
+                *hasSet = (getNextParameterNameIt->second.set ? true : false);
+            if(hasGet)
+                *hasGet = (getNextParameterNameIt->second.get ? true : false);
+
+            return getNextParameterNameIt->first;
+        }
+
+
+        /** Get a parameter value from the CRTSFilter that this
+         * CRTSControl is associated with.
+         *
+         * /param pname the name of the parameter that we seek.
+         *
+         * /return the value of the parameter as a double.  If the
+         * parameter with the name \c pname was not found, \e NAN
+         * is returned.
+         */
+        double getParameter(std::string pname)
+        {
+            DASSERT(filter, "");
+            DASSERT(pname.length(), "");
+
+            try
+            {
+                return filter->parameters[pname].get();
+            }
+            catch(...)
+            {
+                WARN("Control \"%s\" does not have a parameter named \"%s\"",
+                        name, pname);
+                return NAN;
+            }
+        };
+
+
+        /** Set a parameter value from the CRTSFilter that this
+         * CRTSControl is associated with.
+         *
+         * /todo make a object set(pname) with method that uses operator '='.
+         *
+         * /param pname the name of the parameter that we seek to set.
+         *
+         * /param val the value we wish to set the parameter to.
+         *
+         * /return true is this call affected the parameter.
+         */
+        bool setParameter(std::string pname, const double &val)
+        {
+            DASSERT(filter, "");
+            DASSERT(pname.length(), "");
+
+            try
+            {
+                return filter->parameters[pname].set(val);
+            }
+            catch(...)
+            {
+                WARN("Control \"%s\" does not have a parameter named \"%s\"",
+                        name, pname);
+                return false;
+            }
+        };
+
+
         const char *getName(void) const;
 
+        /** /return unique ID that can be quickly used to distinguish
+         * this CRTSControl from other CRTSControls in this CRTSFilter.
+         */
         uint32_t getId(void) const { return id; };
 
 
-        /** The CRTSController uses this to access CRTSParameter objects.
-         *
-         * Get a CRTSParameter by searching only CRTSParameters that this
-         * CRTSControl made.
-         *
-         * The templated parameter type could be for example
-         * CRTSParameter<double> which there is a parameter like a
-         * floating point number like the center transmission frequency.
-         * Then you could use the CRTSParameter<double>::set(freq) and
-         * freq = CRTSParameter<double>::get() methods.
-         *
-         * /param name the unique name of this control for the associated
-         * CRTSFilter.
-         *
-         *  /return the CRTSParameter template object pointer.  You do not
-         *  want to delete the object.  It will automatically by managed
-         *  by the CRTSFilter base class object.
-         */
-        template <class T>
-        CRTSParameter<T> *getParameter(std::string name)
-        {
-            auto search = parameters.find(name);
-            DASSERT(search, "");
-            if(search == parameters.end())
-            {
-                DSPEW("Parameter named \"%s\" was not found", name.c_str());
-                return 0;
-            }
-
-            Parameter *parameter = search->second;
-            DASSERT(parameter, "");
-
-            T t = dynamic_cast<T *>(parameter);
-            DASSERT(t, "dynamic_cast<CRTSParameter super class>"
-                    " failed for parameter named \"%s\"", name.c_str());
-            DSPEW("got CRTSControl parameter named \"%s\"=%p", name.c_str(), t);
-
-            // We return the type of the template which should be a
-            // pointer like for example a pointer like the type:
-            // CRTSParameter<float> *
-            return t;
-        }
-
+        // The filter associated with this control.
+        // TODO: make this const??
+        //
+        // TODO: don't make this public.
+        //
+        CRTSFilter *filter;
 
     protected:
 
@@ -758,6 +875,7 @@ class CRTSControl
 
     private:
 
+
         char *name;
 
         // List of loaded CRTSController plug-ins that access
@@ -767,129 +885,62 @@ class CRTSControl
         // Global list of all CRTSControl objects:
         static std::map<std::string, CRTSControl *> controls;
 
-
-        // List CRTSParameter objects:
-        //
-        std::map<std::string, Parameter *> parameters;
-
-        // The filter associated with this control.
-        CRTSFilter *filter;
+        std::map<std::string, Parameter> ::iterator getNextParameterNameIt;
 
         uint32_t id; // unique ID from all CRTSControl objects
 
+        // TODO: cleanup this crap.
         friend CRTSFilter;
         friend CRTSController;
         friend FilterModule;
         friend Stream;
-        friend Parameter;
 };
 
-
-// Parameter provides a un-templated type we can store in a std::map list of
-// the templated CRTSParameter class that inherits this class.
-//
-// This is very much a hidden dummy storage class type so that we may put
-// it in a std::map in the CRTSControl.  The super class is class
-// CRTSParameter<> that has the set() and get() methods.
-//
-class Parameter
-{
-
-    public:
-
-        Parameter(CRTSControl *c, const std::string name_in) : name(name_in)
-        {
-            DSPEW();
-            control = c;
-            c->parameters[name] = this;
-        };
-
-        virtual ~Parameter(void)
-        {
-            DASSERT(control->parameters.find(name) != control->parameters.end(), "");
-            control->parameters.erase(name);
-            DSPEW("removed parameter named \"%s\"", name.c_str());
-        };
-
-
-    private:
-
-        CRTSControl *control; // managing control object
-
-        const std::string name; // map key in the CRTSControl
-};
-
-
-
-/** CRTSParameter is the base class for a single parameter value that
- * can be set() and got via get().
- *
- * CRTSParameter is a template base class for providing an interface to
- * get() and set() parameters that are part of a CRTSControl.  The
- * CRTSParameter is accessed in a CRTSContorller.
- *
- * This is a base class for controlling a single parameter.  A common
- * template type would be a float or a double; for example a double which
- * is the transmitter frequency.
- */
-template <class T>
-class CRTSParameter : public Parameter
-{
-
-    public:
-
-        /** /return the value of the parameter.  For example: T is a float
-         * or int value.
-         */
-        virtual T get(void) = 0;
-
-        /**
-         * /param t the value we try to set the parameter to.
-         *
-         * /return true if this call effected the value of the parameter
-         * and false otherwise.  What the value is may be determined from
-         * get() which may not return the same value you tried to set.
-         */
-        virtual bool set(const T &t) = 0;
-
-    private:
-
-        CRTSParameter(CRTSControl *c, std::string name) : Parameter(c, name)
-        {
-            DSPEW();
-        };
-
-
-        virtual ~CRTSParameter(void) { DSPEW(); };
-
-        friend CRTSControl;
-};
 
 
 template <class C>
-C CRTSController::getControl(const std::string name) const
+C CRTSController::getControl(const std::string name, bool addController)
 {
-    DASSERT(name.length(), "");
     CRTSControl *crtsControl = 0;
     C c = 0;
 
-    auto search = CRTSControl::controls.find(name);
-    if(search != CRTSControl::controls.end())
+    if(name.length() == 0)
     {
-        crtsControl = search->second;
-        DASSERT(crtsControl, "");
-        c = dynamic_cast<C>(crtsControl);
-        DASSERT(c, "dynamic_cast<CRTSControl super class>"
-                " failed for control named \"%s\"", name.c_str());
-        DSPEW("got control \"%s\"=%p", name.c_str(), c);
-
-        // Add this CRTS Controller to the CRTS Filter's
-        // execute() callback list.
-        crtsControl->controllers.push_back(
-                (CRTSController *) this);
+        if(getControlIt != CRTSControl::controls.end())
+        {
+            crtsControl = getControlIt->second;
+            ++getControlIt;
+            c = dynamic_cast<C>(crtsControl);
+            DASSERT(c, "dynamic_cast<CRTSControl super class>"
+                " failed for control named \"%s\"", crtsControl->name);
+            DSPEW("got control \"%s\"=%p", crtsControl->name, c);
+            // Add this CRTS Controller to the CRTS Filter's
+            // execute() callback list.
+            if(addController)
+                crtsControl->controllers.push_back((CRTSController *) this);
+        }
+        return c;
     }
-    else
+
+    auto search = CRTSControl::controls.find(name);
+    if(search == CRTSControl::controls.end())
+    {
         WARN("Did not find CRTS control named \"%s\"", name.c_str());
+        return c;
+    }
+        
+    crtsControl = search->second;
+    DASSERT(crtsControl, "");
+    c = dynamic_cast<C>(crtsControl);
+    DASSERT(c, "dynamic_cast<CRTSControl super class>"
+                " failed for control named \"%s\"", name.c_str());
+    DSPEW("got control \"%s\"=%p", name.c_str(), c);
+
+    // Add this CRTS Controller to the CRTS Filter's
+    // execute() callback list.
+    if(addController)
+        crtsControl->controllers.push_back(
+            (CRTSController *) this);
 
     return c;
 }

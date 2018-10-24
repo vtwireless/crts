@@ -44,8 +44,8 @@ CRTSControl::CRTSControl(CRTSFilter *filter_in, std::string name_in):
     // Add this to the list of all controls.
     controls[name] = this;
 
-    // Add to the list of controls for this filter.
-    filter->controls[name] = this;
+    // Add control for this filter.
+    filter->control = this;
 
     id = createCount++;
 
@@ -57,17 +57,12 @@ CRTSControl::~CRTSControl(void)
     DASSERT(name, "");
     DASSERT(name[0], "");
 
-    // Delete all CRTSParameters in this CRTSControl
-    while(parameters.size())
-        // The  CRTSParameter base class Parameter::~Parameter(void) will
-        // remove it.
-        delete parameters.rbegin()->second;
+    // Remove this pointer from the filter, so the filter will not
+    // think it needs to delete this control.  Very important if this
+    // is a statically declared object the filter writer made.
+    filter->control = 0;
 
-
-    // Remove this from the list of controls for this filter.
-    filter->controls.erase(name);
-
-    // Remove this from the list of all controls.
+    // Remove this from the list of all controls in all streams.
     CRTSControl::controls.erase(name);
 
     DSPEW("Removing CRTS control named \"%s\"", name);

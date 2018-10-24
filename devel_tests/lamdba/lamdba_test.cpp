@@ -1,3 +1,15 @@
+// This is the best interface I've come up with, so that a CRTSFilter
+// (Filter) super class (Speed) can add parameters, and the controller can
+// then set and get these parameter values without having anything but the
+// string name of the parameter.  The particular filter knows how to set
+// and get it's parameter and the controller (filter user) only knows the
+// string name of the parameter and can set and get it will generic set()
+// and get() functions.   These generic set() and get() will be a control
+// that is set up by the filter and is accessible by the Controller.  In
+// this example the Filter is the Control, but in CRTS the Control is
+// managed by the Filter base class.
+
+
 #include <stdio.h>
 
 #include <string>
@@ -14,19 +26,10 @@ class Filter
         virtual ~Filter(void) { SPEW(); };
 
 
-        void addParameter(std::string name, std::function<bool (const double &)> set, std::function<double (void)> get)
-        {
-            Parameter p;
-            p.set = set;
-            p.get = get;
-            // We store a copy of this parameter.
-            Parameters[name] = p;
-        };
-
         bool set(const std::string name, const double &val)
         {
             SPEW();
-            bool ret = Parameters[name].set(val);
+            bool ret = parameters[name].set(val);
             SPEW();
             return ret;
         };
@@ -34,25 +37,32 @@ class Filter
         double get(const std::string name)
         {
             SPEW();
-            double x = Parameters[name].get();
+            double x = parameters[name].get();
             SPEW();
             return x;
+        };
+
+    protected:
+
+        void addParameter(std::string name, std::function<bool (const double &)> set, std::function<double (void)> get)
+        {
+            Parameter p;
+            p.set = set;
+            p.get = get;
+            // We store a copy of this parameter.
+            parameters[name] = p;
         };
 
     private:
 
         struct Parameter
         {
-            public:
-
-                std::function<bool (double)> set;
-                std::function<double (void)> get;
+            std::function<bool (double)> set;
+            std::function<double (void)> get;
         };
 
 
-        std::map<std::string, Parameter> Parameters;
-
-
+        std::map<std::string, Parameter> parameters;
 };
 
 
@@ -70,12 +80,7 @@ static double getSpeed(void);
 Speed *s = 0;
 
 
-// This is the best interface I've come up with so that a CRTSFilter
-// (Filter) super class (Speed) can add parameters and the controller can
-// than set and get these parameter values without having anything but the
-// string name of the parameter.  The particular filter knows how to set
-// and get it's parameter and the controller (filter user) only knows to
-// set and get using the string name of the parameter.
+
 
 class Speed : public Filter
 {
@@ -84,11 +89,15 @@ class Speed : public Filter
 
         Speed()
         {
-            s = this;
+            // Here's two examples of using addParameter() with a lambda
+            // function:
             addParameter("speed", [&](double x) { return setMySpeed(x); }, [&]() { return getMySpeed(); });
             addParameter("double_speed", [&](double x) { return setMySpeed(x); }, [&]() { return 2.0*getMySpeed(); });
+            // Now try using a std::bind thingy with addParameter():
             addParameter("bind_speed",  std::bind(&Speed::setMySpeed, this, std::placeholders::_1), std::bind(&Speed::getMySpeed, this));
-            addParameter("global_speed",  setSpeed, getSpeed);
+            // Now try using a global functions setSpeed(), getSpeed().
+            s = this;
+            addParameter("global_speed", setSpeed, getSpeed);
         };
 
         ~Speed()
@@ -138,16 +147,21 @@ static double getSpeed(void)
 
 int main(void)
 {
+
     Speed speed;
 
     Filter &f = speed;
 
 
+    // In this case main() is my controller code starts here:
+    //
     const char *names[] = { "speed", "double_speed", "bind_speed", "global_speed", 0 };
     double val = 3.0;
 
     for(const char **name = names; *name; ++name)
     {
+        // Here we can think of f as the control.
+        //
         f.set(*name, val);
         SPEW("%s=%g", *name, f.get(*name));
         val += 1.01;

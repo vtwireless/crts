@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <unistd.h>
 
 #include "crts/crts.hpp"
 #include "crts/debug.h"
@@ -48,6 +49,11 @@ static void usage(void)
 "                        Keep in mind, that the adjacent filters may have a different\n"
 "                        thresholds.\n"
 "\n"
+"   --usleep USECS       call usleep(USECS) at every input() call.  This is just a very\n"
+"                        crude and simple way to throttle the rate at which data is\n"
+"                        flowing.  See 'man usleep'.  Use the \"throttle\" filter for\n"
+"                        better control.\n"
+"\n"
 "\n",
     name, DEFAULT_THRESHOLD);
 
@@ -75,6 +81,8 @@ class PassThrough : public CRTSFilter
         uint32_t *outputChannel; // keyed by input channel number.
         uint32_t *nullOutputChannels;
         uint32_t startingSinkInputChannel;
+        useconds_t usec;
+
 };
 
 
@@ -86,6 +94,7 @@ PassThrough::PassThrough(int argc, const char **argv):
     CRTSModuleOptions opt(argc, argv, usage);
 
     threshold = opt.get("--threshold", DEFAULT_THRESHOLD);
+    usec = opt.get("--usleep", (long) 0);
 
     DSPEW();
 }
@@ -173,6 +182,9 @@ bool PassThrough::stop(uint32_t numInChannels, uint32_t numOutChannels)
 
 void PassThrough::input(void *buffer, size_t len, uint32_t inChannelNum)
 {
+    if(usec)
+        usleep(usec);
+
     if(nullOutputChannels)
     {
         // We have unpaired output channels that become source triggers.

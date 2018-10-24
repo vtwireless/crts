@@ -89,37 +89,42 @@ bool Stream::start(void)
     //
     for(auto it : map)
     {
+        if(dynamic_cast<Feed *>(it.second->filter))
+            // Skip the Feed filter.
+            continue;
+
+        DASSERT(it.second->filter->control,
+                "Filter \"%s\" missing a control",
+                it.second->filter->filterModule->name);
+
         // it.second is a FilterModule pointer
-        for(auto const &controlIt: it.second->filter->controls)
-            for(auto const &controller: controlIt.second->controllers)
+        for(auto const &controller: it.second->filter->control->controllers)
+        {
+            try
             {
-                // This is why I hate C++.  What a f---ing mess.
-                //
-                try
-                {
-                    controller->start(controlIt.second);
-                }
-                catch(std::string str)
-                {
-                    // The offending filter start() will likely spew too.
-                    //
-                    WARN("Controller \"%s\" start() through an"
-                        " exception and failed:\n%s",
-                        controller->getName(), str.c_str());
-                    // We do not call the rest of them.
-                    return true; // One filter start() failed, we are screwed.
-                }
-                catch(...)
-                {
-                    // The offending will likely spew too.
-                    //
-                    WARN("Controller \"%s\" start() through an"
-                        " exception and failed",
-                        controller->getName());
-                    // We do not call the rest of them.
-                    return true; // One filter start() failed, we are screwed.
-                }
+                controller->start(it.second->filter->control);
             }
+            catch(std::string str)
+            {
+                // The offending filter start() will likely spew too.
+                //
+                WARN("Controller \"%s\" start() through an"
+                    " exception and failed:\n%s",
+                    controller->getName(), str.c_str());
+                // We do not call the rest of them.
+                return true; // One filter start() failed, we are screwed.
+            }
+            catch(...)
+            {
+                // The offending will likely spew too.
+                //
+                WARN("Controller \"%s\" start() through an"
+                    " exception and failed",
+                    controller->getName());
+                // We do not call the rest of them.
+                return true; // One filter start() failed, we are screwed.
+            }
+        }
     }
 
 

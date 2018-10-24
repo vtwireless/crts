@@ -134,14 +134,17 @@ CRTSFilter::~CRTSFilter(void)
     //controllers.clear();
     DASSERT(pthread_equal(Thread::mainThread, pthread_self()), "");
 
-    while(controls.size())
-        delete controls.rbegin()->second;
+    // Any statically declared CRTSControl object will have been removed
+    // in their destructor, so we will not call delete on them here:
+    if(control)
+        delete control;
 
     DSPEW();
 }
 
 
-CRTSFilter::CRTSFilter(void):
+CRTSFilter::CRTSFilter(std::string controlName):
+    control(0),
     // We use this pointer variable as a flag before we use it to be the
     // pointer to the Filtermodule, just so we do not have to declare
     // another variable in CRTSFilter.  See FilterModule::FilterModule().
@@ -150,6 +153,27 @@ CRTSFilter::CRTSFilter(void):
     DASSERT(pthread_equal(Thread::mainThread, pthread_self()), "");
     DSPEW();
 }
+
+
+void CRTSFilter::addParameter(std::string name,
+                std::function<bool (const double &)> set,
+                std::function<double (void)> get,
+                bool overWrite)
+{
+    if(!overWrite && parameters.find(name) != parameters.end())
+    {
+        ERROR("You already have a parameter named \"%s\"",
+                name.c_str());
+        std::string s("You already have a parameter named \"");
+        s += name + "\"";
+        throw s;
+    }
+
+    // We store a copy of a struct Parameter
+    //
+    parameters[name] = { set, get };
+}
+
 
 uint64_t CRTSFilter::totalBytesIn(uint32_t inChannelNum) const
 {
@@ -536,6 +560,8 @@ void FilterModule::InputOutputReport(FILE *file)
 
 bool FilterModule::callStopForEachOutput(void)
 {
+    DASSERT(filter->control, "");
+
     if(stopped)
         // We have been here before, so we do not call stop() again.
         return false;
@@ -543,32 +569,31 @@ bool FilterModule::callStopForEachOutput(void)
     bool ret = filter->stop(numInputs, numOutputs);
 
     // Call all the Controller stop() functions for this filter.
-    for(auto const &controlIt: filter->controls)
-        for(auto const &controller: controlIt.second->controllers)
+    for(auto const &controller: filter->control->controllers)
+    {
+        try
         {
-            try
-            {
-                controller->stop(controlIt.second);
-            }
-            catch(std::string str)
-            {
-                // The offending filter start() will likely spew too.
-                //
-                WARN("Controller \"%s\" stop() through an"
-                        " exception and failed:\n%s",
-                        controller->getName(), str.c_str());
-                ret = true; // One or more filter stop() failed
-            }
-            catch(...)
-            {
-                // The offending will likely spew too.
-                //
-                WARN("Controller \"%s\" stop() through an"
-                        " exception and failed",
-                        controller->getName());
-                ret =  true; // One or more filter stop() failed
-            }
+            controller->stop(filter->control);
         }
+        catch(std::string str)
+        {
+            // The offending filter start() will likely spew too.
+            //
+            WARN("Controller \"%s\" stop() through an"
+                    " exception and failed:\n%s",
+                    controller->getName(), str.c_str());
+            ret = true; // One or more filter stop() failed
+        }
+        catch(...)
+        {
+            // The offending will likely spew too.
+            //
+            WARN("Controller \"%s\" stop() through an"
+                " exception and failed",
+                controller->getName());
+            ret =  true; // One or more filter stop() failed
+        }
+    }
 
     // If any stop() call fails (returns true) we have it all return true
     // (fail).

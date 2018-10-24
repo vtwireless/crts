@@ -235,8 +235,8 @@ class CRTSModuleOptions
                 str += std::to_string(ret[i]) + ",";
             str += "]";
 
-            DSPEW("Got option vector \"%s\" from arg=\"%s\"",
-                    str.c_str(), arg);
+            DSPEW("Got option vector \"%s\" for arg=\"%s\"",
+                    str.c_str(), optName);
 
             return ret;
         };

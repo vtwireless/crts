@@ -28,7 +28,7 @@ crts_findUSRPs_SOURCES := crts_findUSRPs.cpp
 UHD_LIBS := $(shell pkg-config uhd --libs)
 crts_findUSRPs_LDFLAGS := $(UHD_LIBS)
 
-crts_shell_SOURCES := crts_shell.c debug.c
+crts_shell_SOURCES := crts_shell.cpp debug.c
 crts_shell_LDFLAGS := -lreadline
 
 crts_radio_SOURCES :=\

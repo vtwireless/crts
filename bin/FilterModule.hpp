@@ -257,6 +257,7 @@ class FilterModule
         bool advancedInput;
 
 
+        // This is not the control name.
         std::string name; // name from program crts_radio command line argv[]
 
 
@@ -351,13 +352,6 @@ class FilterModule
         //
         void runUsersActions(size_t len, Input *input);
 
-        // So we may access the map (list) of controls for this filter
-        // internally.  Since CRTSFilter::controls must be private, so
-        // the user does not directly access it.
-        std::map<std::string, CRTSControl *> &getControls()
-        {
-            return filter->controls;
-        };
 
         // Needed by the plug-in loader to make a default CRTSControl.
         CRTSControl *makeControl(int argc, const char **argv)
@@ -421,22 +415,24 @@ inline void
 FilterModule::ControlActions(const void *buffer, 
         size_t len, uint32_t inputChannelNum)
 {
-    // If there are any users CRTS Controllers that "attached" to any
-    // of the CRTSControl objects in this CRTS filter we call their
+    if(!filter->control)
+        // This filter has no control.
+        return;
+
+    // If there are any users CRTS Controllers that "attached" to
+    // the CRTSControl object in this CRTS filter we call their
     // CRTSContollers::execute() like so:
-    for(auto const &controlIt: filter->controls)
-        for(auto const &controller: controlIt.second->controllers)
-            // Let the CRTSController do its' thing.
-            //
-            // TODO: CHECK THIS CODE:  The controller may even
-            // change the buffer and len in the up-comming
-            // filter->write();  buffer and len are non-constant
-            // references.
-            //
-            controller->execute(controlIt.second,
-                        buffer, len, inputChannelNum);
+    for(auto const &controller: filter->control->controllers)
+        // Let the CRTSController do its' thing.
+        //
+        // TODO: CHECK THIS CODE:  The controller may even
+        // change the buffer and len in the up-comming
+        // filter->write();  buffer and len are non-constant
+        // references.
+        //
+        controller->execute(filter->control, buffer, len, inputChannelNum);
 }
-        
+
 
 // CRTSFilter::output() helper function.  It's called twice in
 // CRTSFilter::output() in Filter_write.cpp.  So we write the code once
