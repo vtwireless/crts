@@ -210,7 +210,7 @@ class Input
 
         // The input channel number that we call
         // CRTSFilter::write(,,inputChannelNum) with.  It's the input
-        // channel number that the CRTSFilter write() sees.
+        // channel number that the CRTSFilter input() sees.
         //
         uint32_t inputChannelNum;
 };

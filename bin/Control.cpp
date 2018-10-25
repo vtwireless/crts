@@ -28,6 +28,8 @@ CRTSControl::CRTSControl(CRTSFilter *filter_in, std::string name_in):
     ASSERT(name, "strdup() failed");
     DASSERT(filter, "");
 
+    getNextParameterNameIt = filter->parameters.end();
+
     auto &controls = CRTSControl::controls;
 
     if(controls.find(name) != controls.end())
@@ -39,7 +41,6 @@ CRTSControl::CRTSControl(CRTSFilter *filter_in, std::string name_in):
         free(name);
         throw str;
     }
-
 
     // Add this to the list of all controls.
     controls[name] = this;

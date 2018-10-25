@@ -75,6 +75,8 @@ class Shell: public CRTSController
         FILE *fifoReply;
 
         std::string fifoDirPath;
+
+        bool started;
 };
 
 /* Find the path to the program "crts_shell" by assuming that it is in the
@@ -269,8 +271,16 @@ static void *shellReceiver(Shell *shell)
 
         if(strcmp(line, "exit") == 0)
         {
-            auto control = shell->commands.begin()->first;
-            control->filter->stream->isRunning = false;
+            for(auto it = shell->commands.begin();
+                    it!=shell->commands.end(); ++it)
+            {
+                // it->first is a CRTSControl
+                //
+                // TODO: We should not have access to filter from
+                // a CRTSControl.
+                //
+                it->first->filter->stream->isRunning = false;
+            }
 
             break;
         }
@@ -361,9 +371,43 @@ static void usage(void)
 
 
 Shell::Shell(int argc, const char **argv):
-    mutex(PTHREAD_MUTEX_INITIALIZER), fifoReply(0)
+    mutex(PTHREAD_MUTEX_INITIALIZER), fifoReply(0), started(false)
 {
     CRTSModuleOptions opt(argc, argv, usage);
+
+    // We must add this CRTSController to all filter controller callbacks
+    // so that Shell::start(c), Shell::execute(c) and Shell::stop(c) get
+    // called, where c is the CRTSControl for each CRTSFilter.
+    //
+    getControl<CRTSControl*>("", true/*add this controller*/,
+            true/*start iterating all controls*/);
+    //
+    while(getControl<CRTSControl*>("",true,false));
+
+    DSPEW();
+}
+
+
+Shell::~Shell(void)
+{
+    if(fifoReply) fclose(fifoReply);
+
+    DSPEW();
+};
+
+
+void Shell::start(CRTSControl *c)
+{
+    // This function will get called once for each filter/control
+    // but we just need it to do anything once, so we use this
+    // started flag to not do this stuff again.
+    //
+    if(started) return;
+
+    started = true;
+
+    // There may be controls added after the filters are connected so
+    // most things happen here:
 
     // This Controller should be loaded after all Filters that you wish to
     // control.
@@ -390,26 +434,93 @@ Shell::Shell(int argc, const char **argv):
             throw s + controlListPath + "\", \"w\") failed";
         }
 
-        CRTSControl *c;
-        while((c = getControl<CRTSControl *>()))
+        CRTSControl *c = getControl<CRTSControl*>("",
+                false/*add controller*/,
+                true/*start iteration*/);
+        while(c)
         {
-            std::list<std::string> list;
-            commands[c] = list;
+            DSPEW("control %s", c->getName());
+            // Create a command list for this control:
+            //
+            commands[c] = std::list<std::string>();
 
-            int i = 0;
-            std::string name = c->getNextParameterName(true/*start*/);
+            int count = 0;
+            bool haveSetter, haveGetter;
+
+            // We go through the list of parameters in this control twice
+            // once for setters and once for getters.
+            //
+            //
+            //  a setters line looks like:
+            //
+            //      set filterName freq gain foo bar baz
+            //
+            //
+            // Now Setters
+            //
+            std::string name = c->getNextParameterName(true/*start*/,
+                    &haveSetter, &haveGetter);
             while(name.length())
             {
-                if(i++ == 0) fprintf(controlList, "%s", c->getName());
-                fprintf(controlList, " %s", name.c_str());
-                name = c->getNextParameterName();
+                if(!count && haveSetter)
+                {
+                    fprintf(controlList, "set %s", c->getName());
+                }
+                if(haveSetter)
+                {
+                    ++count;
+                    fprintf(controlList, " %s", name.c_str());
+                }
+
+                // go to next Parameter
+                name = c->getNextParameterName(false, &haveSetter, &haveGetter);
             }
-            if(i)
+            if(count)
             {
+                // We got at least one.
                 putc('\n', controlList);
-                DSPEW("added shell command interface for control: %s with %d parameters",
-                        c->getName(), i);
+                DSPEW("added shell command interface for control: %s with %d set parameters",
+                        c->getName(), count);
             }
+
+
+            // Now Getters
+            //
+            //  a getters line looks like:
+            //
+            //      get filterName freq gain foo bar baz
+            //
+            //
+            count = 0;
+
+            name = c->getNextParameterName(true/*start*/,
+                    &haveSetter, &haveGetter);
+            while(name.length())
+            {
+                if(!count && haveGetter)
+                {
+                    fprintf(controlList, "get %s", c->getName());
+                }
+                if(haveGetter)
+                {
+                    ++count;
+                    fprintf(controlList, " %s", name.c_str());
+                }
+
+                // go to next Parameter
+                name = c->getNextParameterName(false, &haveSetter, &haveGetter);
+            }
+            if(count)
+            {
+                // We got at least one.
+                putc('\n', controlList);
+                DSPEW("added shell command interface for control: %s with %d get parameters",
+                        c->getName(), count);
+            }
+
+            // Goto next CRTSControl
+            //
+            c = getControl<CRTSControl*>("", false, false);
         }
 
         fclose(controlList);
@@ -434,38 +545,20 @@ Shell::Shell(int argc, const char **argv):
     }
     setlinebuf(fifoReply);
 
-
-
-
     pthread_t thread;
-
     ASSERT(pthread_create(&thread, 0,
                 (void *(*) (void *)) shellReceiver,
                 (void *) this) == 0, "pthread_create() failed");
     ASSERT(pthread_detach(thread) == 0, "pthread_detach() failed");
 
-    DSPEW();
-}
-
-
-Shell::~Shell(void)
-{
-
-    // This hangs forever??
-    if(fifoReply) fclose(fifoReply);
-
-    DSPEW();
-};
-
-
-void Shell::start(CRTSControl *c)
-{
     DSPEW("Shell::start(%s)", c->getName());
 }
 
 
 void Shell::stop(CRTSControl *c)
 {
+    // TODO: more code here.
+    started = false;
     DSPEW("Shell::start(%s)", c->getName());
 }
 

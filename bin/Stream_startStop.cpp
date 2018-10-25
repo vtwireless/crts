@@ -8,6 +8,7 @@
 #include <signal.h>
 #include <map>
 #include <list>
+#include <string>
 
 #include "crts/debug.h"
 #include "crts/crts.hpp"
@@ -22,9 +23,9 @@
 #include "makeRingBuffer.hpp"
 
 
-// Call filter start() for just this one stream.
+// Call filter start1() for just this one stream.
 //
-bool Stream::start(void)
+bool Stream::start1(void)
 {
     // At this time the connections between the filters is set and the so
     // is the thread partitioning, so we know what all the input and
@@ -32,6 +33,12 @@ bool Stream::start(void)
     // functions telling the filters what the connections are and in turn
     // the CRTSFilter::start() functions will tell us how to buffer the
     // channels.
+    //
+    // We needed to run the CRTSFilter::start() functions for all streams
+    // (and filters) before calling Stream::start2() for any stream;
+    // because any CRTSControllers may access any filter control in any
+    // stream, and so all the filters must be initialized via
+    // CRTSFilter::start() before calling any CRTSController.
 
     // TODO: We need to add the finding of stream sources and the creation
     // of feed filters here.  For now that is done in crts_radio.cpp at
@@ -39,10 +46,10 @@ bool Stream::start(void)
 
 
     ///////////////////////////////////////////////////////////////////////
-    // 1: First call the filter start() functions.  The
-    //    CRTSFilter::start() functions will set parameters via
-    //    CRTSFilter::createOutputBuffer() and
-    //    CRTSFilter::creatPassThroughBuffer()
+    // 1.  Call the filter start() functions.  The
+    //     CRTSFilter::start() functions will set parameters via
+    //     CRTSFilter::createOutputBuffer() and
+    //     CRTSFilter::creatPassThroughBuffer()
     //
     //    This will create the RingBuffer objects and
     //    set filterModule->output[]->ringBuffer
@@ -85,12 +92,78 @@ bool Stream::start(void)
 
 
     ///////////////////////////////////////////////////////////////////////
-    // 2:  Call the Controller start() functions
+    // 2:  Add totalBytesIn() and totalBytesOut() parameter getters for
+    //     all filter connections.
+    //
+    //
+    //     TODO: This will break on restart.  We need to add a
+    //     CRTSFilter::removeParameter() and call it in stop.
+    //
     //
     for(auto it : map)
     {
         if(dynamic_cast<Feed *>(it.second->filter))
-            // Skip the Feed filter.
+            // Skip the Feed filters.
+            continue;
+
+        FilterModule *fm = it.second;
+        CRTSControl *c = fm->filter->control;
+
+        if(fm->numOutputs)
+            fm->filter->addParameter("totalBytesOut", 0/*no set()*/,
+                    [c]() { return c->totalBytesOut(); }
+            );
+
+        if(fm->numOutputs > 1)
+            // This is for each output channel
+            for(uint32_t i=0; i < fm->numOutputs; ++i)
+            {
+                std::string s = "totalBytesOut";
+                s += std::to_string(i);
+                fm->filter->addParameter(s, 0/*no set()*/,
+                        [c,i]() { return c->totalBytesOut(i); }
+                );
+            }
+
+        if(fm->numInputs)
+        {
+            // ignore input from Feed
+            //
+            if(!fm->filter->isSource())
+                fm->filter->addParameter("totalBytesIn", 0/*no set()*/,
+                        [c]() { return c->totalBytesIn(); }
+                );
+        }
+
+        if(fm->numInputs > 1)
+            // This is for each input channel
+            for(uint32_t i=0; i < fm->numInputs; ++i)
+            {
+                std::string s = "totalBytesIn";
+                s += std::to_string(i);
+                fm->filter->addParameter(s, 0/*no set()*/,
+                        [c,i]() { return c->totalBytesIn(i); }
+                );
+            }
+
+    }
+
+    return false;
+}
+
+
+// Call filter start2() for just this one stream.
+//
+bool Stream::start2(void)
+{
+
+    ///////////////////////////////////////////////////////////////////////
+    // 1:  Call the Controller start() functions
+    //
+    for(auto it : map)
+    {
+        if(dynamic_cast<Feed *>(it.second->filter))
+            // Skip the Feed filters.
             continue;
 
         DASSERT(it.second->filter->control,
@@ -129,7 +202,7 @@ bool Stream::start(void)
 
 
     ///////////////////////////////////////////////////////////////////////
-    // 3: Check that all outputs will have a ring buffer.  If a filter
+    // 2: Check that all outputs will have a ring buffer.  If a filter
     //    module did not call createOutputBuffer() or
     //    createPassThroughBuffer() for a output channel than there will
     //    be no ring buffer for that output.
@@ -184,7 +257,7 @@ bool Stream::start(void)
 
 
     ///////////////////////////////////////////////////////////////////////
-    // 4: Now we set up all the ring buffers, creating the memory
+    // 3: Now we set up all the ring buffers, creating the memory
     //    mappings.
     //
     for(auto it : map)
@@ -384,11 +457,16 @@ bool Stream::startAll(void)
                 return true; // fail
         }
 
-
-    // 2. Now call all the different stream start()s.
+    // 2. Now call all the different stream start1()s.
     //
     for(auto stream : streams)
-        if(stream->start())
+        if(stream->start1())
+            return true; // failed
+
+    // 3. Now call all the different stream start2()s.
+    //
+    for(auto stream : streams)
+        if(stream->start2())
             return true; // failed
 
     for(auto stream : streams)

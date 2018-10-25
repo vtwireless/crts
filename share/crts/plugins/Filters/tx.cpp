@@ -298,7 +298,7 @@ Tx::Tx(int argc, const char **argv):
     }
     else
     {
-        // More complex case where we have more than one USRP channel
+        // The more complex case where we have more than one USRP channel
         // making more than one freq, rate, and gain parameters, so we
         // must generate names like: freq0, freq1, freq2, ... one for each
         // USRP channel:
@@ -307,19 +307,19 @@ Tx::Tx(int argc, const char **argv):
         {
             std::string s;
             s = "freq";
-            s += i; // freq0, freq1, freq2, freq3, ...
+            s += std::to_string(i); // freq0, freq1, freq2, freq3, ...
             addParameter(s,
                 [&](double x) { return setFreq(x, channels[i]); },
                 [&]() { return getFreq(channels[i]); }
             );
             s = "rate";
-            s += i; // rate0, rate1, rate2, rate3, ...
+            s += std::to_string(i); // rate0, rate1, rate2, rate3, ...
             addParameter(s,
                 [&](double x) { return setRate(x, channels[i]); },
                 [&]() { return getRate(channels[i]); }
             );
             s = "gain";
-            s += i; // gain0, gain1, gain2, gain3, ...
+            s += std::to_string(i); // gain0, gain1, gain2, gain3, ...
             addParameter(s, 
                 [&](double x) { return setGain(x, channels[i]); },
                 [&]() { return getGain(channels[i]); }

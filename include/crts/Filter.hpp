@@ -681,7 +681,7 @@ class CRTSController
         * \return a CRTSControl object pointer.
         */
         template <class C>
-        C getControl(const std::string name = "", bool addController=true);
+        C getControl(const std::string name = "", bool addController=true, bool start=false);
 
 
     private:
@@ -772,9 +772,28 @@ class CRTSControl
         };
 
 
-        /** Get information
+        /** Get information about parameters in this CRTSControl
+         *
+         * Iterates through all the parameters in this control getting
+         * the name and optionally whither there is a setter and a getter
+         * function for this parameter.
+         *
+         * \param start if set this will start at the beginning of the
+         * list of parameters in this CRTSControl.  The first time this is
+         * called by a CRTSController \e start should be true.
+         *
+         * \param hasSet if set the value that this points to will get set
+         * to true if there is a setter function for this parameter, or it
+         * will get set to false otherwise.
+         *
+         * \param hasGet if set the value that this points to will get set
+         * to true if there is a getter function for this parameter, or it
+         * will get set to false otherwise.
+         *
+         * \return a std::string that is the name of this parameter.  If
+         * the returned string is empty than we are at the end of the list
+         * of parameters.
          */
-
         std::string getNextParameterName(bool start = false, bool *hasSet=0, bool *hasGet=0)
         {
             if(start || getNextParameterNameIt == filter->parameters.end())
@@ -849,6 +868,27 @@ class CRTSControl
             }
         };
 
+        /** Add a controller to a filter control callback list.
+         *
+         * This will cause the CRTSController::execute() to be
+         * called before every CRTSFilter::input().
+         *
+         * /param controller a pointer to the CRTSController object.
+         */
+        void addController(CRTSController *controller)
+        {
+            // TODO: In the Controller constructor the controller has
+            // a name of 0.  The controller name gets set after the
+            // Controller constructor is called.
+            //
+            DSPEW("controller %s adding control %s", controller->name, getName());
+
+            // TODO: That would suck if we add this controller more than
+            // once.  We need to check for that case.
+
+            controllers.push_back(controller);
+        }
+
 
         const char *getName(void) const;
 
@@ -899,10 +939,13 @@ class CRTSControl
 
 
 template <class C>
-C CRTSController::getControl(const std::string name, bool addController)
+C CRTSController::getControl(const std::string name, bool addController, bool start)
 {
     CRTSControl *crtsControl = 0;
     C c = 0;
+
+    if(start)
+        getControlIt = CRTSControl::controls.begin();
 
     if(name.length() == 0)
     {
@@ -913,11 +956,11 @@ C CRTSController::getControl(const std::string name, bool addController)
             c = dynamic_cast<C>(crtsControl);
             DASSERT(c, "dynamic_cast<CRTSControl super class>"
                 " failed for control named \"%s\"", crtsControl->name);
-            DSPEW("got control \"%s\"=%p", crtsControl->name, c);
+            //DSPEW("got control \"%s\"=%p", crtsControl->name, c);
             // Add this CRTS Controller to the CRTS Filter's
             // execute() callback list.
             if(addController)
-                crtsControl->controllers.push_back((CRTSController *) this);
+                crtsControl->addController(this);
         }
         return c;
     }
@@ -928,19 +971,18 @@ C CRTSController::getControl(const std::string name, bool addController)
         WARN("Did not find CRTS control named \"%s\"", name.c_str());
         return c;
     }
-        
+
     crtsControl = search->second;
     DASSERT(crtsControl, "");
     c = dynamic_cast<C>(crtsControl);
     DASSERT(c, "dynamic_cast<CRTSControl super class>"
                 " failed for control named \"%s\"", name.c_str());
-    DSPEW("got control \"%s\"=%p", name.c_str(), c);
+    //DSPEW("got control \"%s\"=%p", name.c_str(), c);
 
     // Add this CRTS Controller to the CRTS Filter's
     // execute() callback list.
     if(addController)
-        crtsControl->controllers.push_back(
-            (CRTSController *) this);
+        crtsControl->addController(this);
 
     return c;
 }

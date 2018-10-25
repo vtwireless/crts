@@ -184,11 +184,11 @@ static inline int checkForQuit(const char *line)
 
 static const char **commands;
 
-static size_t numControlNames = 0;
-static const char **controlNames = 0;
+static const char **setControlNames = 0;
+static const char **getControlNames = 0;
 
-
-static const char *commands0[] = {
+static const char *commands0[] =
+{
     "set",
     "get",
     "help",
@@ -242,7 +242,6 @@ static char *generator(const char *text, int state)
 {
     static int list_index, len;
 
-        //printf("controlNames[0] = %s\n", controlNames[0]);
 #if 0
     int nargs = 0;
     char **command = get_args(rl_line_buffer, &nargs);
@@ -273,19 +272,34 @@ static char *generator(const char *text, int state)
                 break;
     
             case 1:
-                if(strcmp(argv[0],"set") == 0 || strcmp(argv[0],"get") == 0)
-                    commands = controlNames;
+                if(strcmp(argv[0],"set") == 0)
+                    commands = setControlNames;
+                else if(strcmp(argv[0],"get") == 0)
+                    commands = getControlNames;
                 else
                     commands = 0;
                 break;
 
             case 2: // example:  set controlName
 
-                if(strcmp(argv[0],"set") == 0 || strcmp(argv[0],"get") == 0)
+                if(strcmp(argv[0],"set") == 0)
                 {
                     auto it = setParameters.find(argv[1]);
 
                     if(it != setParameters.end())
+                    {
+                        commands = it->second;
+                    }
+                    else
+                    {
+                        commands = 0;
+                    }
+                }
+                else if(strcmp(argv[0],"get") == 0)
+                {
+                    auto it = getParameters.find(argv[1]);
+
+                    if(it != getParameters.end())
                     {
                         commands = it->second;
                     }
@@ -387,36 +401,78 @@ int main (int argc, char **argv)
         return 5;
     }
 
+    size_t numSetControlNames = 0, numGetControlNames = 0;
 
+    // The lines should be like:
+    //
+    //    set filterName freq gain rate
+    //
+    //          or
+    //
+    //    get filterName freq gain rate
+    //
     while(getline(&line, &user_len, controlList) != -1)
     {
         const char **argV;
         int argC = 0;
         char *buf;
         argV = get_args(line, &argC, &buf);
-        ASSERT(argC >= 1, "");
+        ASSERT(argC >= 2, "");
 
-        controlNames = (const char **) realloc(controlNames,
-                sizeof(const char *)*((++numControlNames)+1));
-        ASSERT(controlNames, "realloc() failed");
-        controlNames[numControlNames-1] = strdup(argV[0]);
-        ASSERT(controlNames[numControlNames-1], "strdup() failed");
-        controlNames[numControlNames] = 0;
+        if(strcmp(argV[0],"set") == 0)
+        {
+            // We have a parameter we can set
+            //
+            // like:  set filterName freq gain rate
+            //
+            setControlNames = (const char **) realloc(setControlNames,
+                    sizeof(const char *)*((++numSetControlNames)+1));
+            ASSERT(setControlNames, "realloc() failed");
+            setControlNames[numSetControlNames-1] = argV[1];
+            ASSERT(setControlNames[numSetControlNames-1], "strdup() failed");
+            setControlNames[numSetControlNames] = 0;
 
-        setParameters[argV[0]] = &argV[1];
+            setParameters[argV[1]] = &argV[2];
+        }
+        else if(strcmp(argV[0],"get") == 0)
+        {
+            // We have a parameter we can get
+            //
+            // like:  get filterName freq gain rate
+            //
+            getControlNames = (const char **) realloc(getControlNames,
+                    sizeof(const char *)*((++numGetControlNames)+1));
+            ASSERT(getControlNames, "realloc() failed");
+            getControlNames[numGetControlNames-1] = argV[1];
+            ASSERT(getControlNames[numGetControlNames-1], "strdup() failed");
+            getControlNames[numGetControlNames] = 0;
+
+            getParameters[argV[1]] = &argV[2];
+        }
+        else
+        {
+            // This should not happen
+            WARN("Bad Control List line: %s", line);
+        }
     }
-    if(numControlNames == 0)
-        controlNames = 0;
 
     fclose(controlList);
 
     for(auto it = setParameters.begin(); it != setParameters.end(); ++it)
     {
-        printf("Control: %s  Parameters:", it->first.c_str());
+        printf("Control: %s Set Parameters:", it->first.c_str());
         for(const char **s = it->second; *s; ++s)
             printf(" %s", *s);
         printf("\n");
     }
+    for(auto it = getParameters.begin(); it != getParameters.end(); ++it)
+    {
+        printf("Control: %s Get Parameters:", it->first.c_str());
+        for(const char **s = it->second; *s; ++s)
+            printf(" %s", *s);
+        printf("\n");
+    }
+
 
     sendCommand("start");
 

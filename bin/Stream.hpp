@@ -119,7 +119,17 @@ class Stream
         // Call filter start() for just this one stream.
         //
         // Returns true on error.
-        bool start(void);
+        //bool start(void);
+        //
+        //
+        // It needed to be broken into two functions for each stream so
+        // that we can call start1() for all streams and then start2() for
+        // all streams, which is not the same as calling start1() and
+        // start2() together on each stream.
+        //
+        // Returns true on error.
+        bool start1(void);
+        bool start2(void);
 
         // Call filter stop() for just this one stream.
         //
