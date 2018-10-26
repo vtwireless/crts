@@ -29,6 +29,8 @@ class Rx : public CRTSFilter
 
     private:
 
+        // This rxControl is here-by depreciated.  It adds access to the
+        // usrp for the CRTSControllers.
         RxControl rxControl;
 
         std::string uhd_args, subdev;
@@ -40,6 +42,65 @@ class Rx : public CRTSFilter
 
         // Related to output buffer size.
         size_t max_num_samps, numRxChannels;
+
+        
+        ////////////////////////////////////////////////////////////////
+        // Inline helper/wrapper utilities to set and get parameters
+        // for this filter.
+        ////////////////////////////////////////////////////////////////
+
+        bool setFreq(const double &f, size_t chan=0)
+        {
+            uhd::tune_request_t tune;
+            tune.rf_freq_policy = uhd::tune_request_t::POLICY_MANUAL;
+            tune.dsp_freq_policy = uhd::tune_request_t::POLICY_MANUAL;
+            tune.rf_freq = f;
+            tune.dsp_freq = 0;
+
+            // TODO: check the return value???
+            //uhd::tune_result_t result =
+            //
+            usrp->set_rx_freq(tune, chan);
+            return true;
+        };
+
+        bool setRate(const double &r, size_t chan=0)
+        {
+            // TODO: check return?
+            //
+            usrp->set_rx_rate(r, chan);
+            return true;
+        };
+
+        bool setGain(const double &g, size_t chan=0)
+        {
+            // TODO: check return?
+            //
+            usrp->set_rx_gain(g, chan);
+            return true;
+        };
+
+        double getFreq(size_t chan=0)
+        {
+            // TODO: error check??
+            //
+            return usrp->get_rx_freq(chan);
+        };
+
+        double getRate(size_t chan=0)
+        {
+            // TODO: error check??
+            //
+            return usrp->get_rx_rate(chan);
+        };
+
+        double getGain(size_t chan=0)
+        {
+            // TODO: error check??
+            //
+            return usrp->get_rx_gain(chan);
+        };
+
 };
 
 
@@ -152,6 +213,102 @@ Rx::Rx(int argc, const char **argv):
     for(size_t i=0; i<rate.size(); ++i)
         rate[i] *= 1.0e6;
 
+    ////////////////////////////////////////////////////////////////////////
+    // Check that USRP parameter vectors are consistent, that is, we have
+    // the same same number of freq, rate, gain as there are USRP
+    // channels.
+    ////////////////////////////////////////////////////////////////////////
+
+
+    if(channels.size() != freq.size())
+    {
+        ERROR("The number of frequencies, %zu, is "
+            "not the same as the number of channels, %zu",
+            channels.size(), freq.size());
+        throw "number of frequencies != number of channels";
+    }
+
+    DASSERT(rate.size() >= 1, "no rates");
+    ASSERT(rate.size() <= channels.size(), "more rates than channels");
+    DASSERT(gain.size() >= 1, "no gains");
+    ASSERT(gain.size() <= channels.size(), "more gains than channels");
+
+    if(channels.size() > rate.size())
+    {
+        INFO("The number of rates, %zu, is "
+            "not the same as the number of channels, %zu,"
+            " so we'll add some rates copying the last one",
+            channels.size(), rate.size());
+        size_t lastI = rate.size()-1;
+        for(size_t i=rate.size(); i<channels.size(); ++i)
+            rate[i] = rate[lastI];
+
+    }
+
+    if(channels.size() > gain.size())
+    {
+        INFO("The number of gains, %zu, is "
+            "not the same as the number of channels, %zu,"
+            " so we'll add some gains copying the last one",
+            channels.size(), gain.size());
+        size_t lastI = gain.size()-1;
+        for(size_t i=gain.size(); i<channels.size(); ++i)
+            gain[i] = gain[lastI];
+    }
+
+    /////////////////////////////////////////////////////////////////
+    // Setup parameters set and get callbacks for freq, rate, gain
+    /////////////////////////////////////////////////////////////////
+
+    if(channels.size() == 1)
+    {
+        // Simple case where we have just one freq, rate, and gain
+        // parameter.
+        //
+        addParameter("freq",
+                [&](double x) { return setFreq(x); },
+                [&]() { return getFreq(); }
+        );
+        addParameter("rate",
+                [&](double x) { return setRate(x); },
+                [&]() { return getRate(); }
+        );
+        addParameter("gain",
+                [&](double x) { return setGain(x); },
+                [&]() { return getGain(); }
+        );
+    }
+    else
+    {
+        // The more complex case where we have more than one USRP channel
+        // making more than one freq, rate, and gain parameters, so we
+        // must generate names like: freq0, freq1, freq2, ... one for each
+        // USRP channel:
+        //
+        for(size_t i=0; i<channels.size(); ++i)
+        {
+            std::string s;
+            s = "freq";
+            s += std::to_string(i); // freq0, freq1, freq2, freq3, ...
+            addParameter(s,
+                [&](double x) { return setFreq(x, channels[i]); },
+                [&]() { return getFreq(channels[i]); }
+            );
+            s = "rate";
+            s += std::to_string(i); // rate0, rate1, rate2, rate3, ...
+            addParameter(s,
+                [&](double x) { return setRate(x, channels[i]); },
+                [&]() { return getRate(channels[i]); }
+            );
+            s = "gain";
+            s += std::to_string(i); // gain0, gain1, gain2, gain3, ...
+            addParameter(s, 
+                [&](double x) { return setGain(x, channels[i]); },
+                [&]() { return getGain(channels[i]); }
+            );
+        }
+    }
+
     DSPEW();
 }
 
@@ -159,17 +316,6 @@ Rx::Rx(int argc, const char **argv):
 Rx::~Rx(void)
 {
     DSPEW();
-}
-
-static double getVal(std::vector<double> vec, size_t i)
-{
-    ASSERT(vec.size(), "");
-
-    if(vec.size() > i)
-        return vec[i];
-
-    // return the last element
-    return vec[vec.size() -1];
 }
 
 
@@ -212,9 +358,9 @@ bool Rx::start(uint32_t numInChannels, uint32_t numOutChannels)
 
         for(size_t i=0; i<channels.size(); ++i)
             if(crts_usrp_rx_set(usrp,
-                        getVal(freq,i),
-                        getVal(rate,i),
-                        getVal(gain,i), channels[i]))
+                        freq[i],
+                        rate[i],
+                        gain[i], channels[i]))
             {
                 stop(0,0);
                 return true; // fail

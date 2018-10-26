@@ -158,21 +158,154 @@ int Getline(char **line, size_t *len)
     }
 }
 
-static inline int checkForHelp(const char *line)
+
+static const char *commands0[] =
 {
-     while(isspace(*line)) ++line;
-     if(strncmp(line, "help", 4) == 0)
-     {
-         printf("This is your help, ya we need to write more code here.\n");
-         return 1;
-     }
-     return 0;
+    "detach",
+    "exit",
+    "get",
+    "help",
+    "set",
+    "sleep",
+    0
+};
+
+static inline int printHelp(void)
+{
+    // TODO: run a pager like "less" and then resume after it exits.
+
+    printf(
+        "--------------------------- HELP -----------------------------\n"
+        "--------------------------------------------------------------\n"
+        "The simple CRTS shell controller\n"
+        "\n"
+        "Enter commands that are applied to the CRTS flow stream.\n"
+        "The following commands are available:\n\n  ");
+    for(const char **com = commands0; *com; ++com)
+        printf(" %s", *com);
+    printf(
+        "\n"
+        "The main commands are \"set\" and \"get\" which are used to\n"
+        "set and get control parameters that are in the CRTS flow stream.\n"
+        "\n"
+        "   Pseudo Examples:\n"
+        "\n"
+        "        %sset FILTER_NAME PARAMETER_NAME VALUE\n"
+        "\n"
+        "where FILTER_NAME is the name of a filter (and control) name,\n"
+        "PARAMETER_NAME is the name of a parameter in that filter, and\n"
+        "VALUE is the floating point number that we are trying to set the\n"
+        "parameter with PARAMETER_NAME to (though it may be converted to\n"
+        "other types)\n"
+        "\n"
+        "        %sget FILTER_NAME PARAMETER_NAME\n"
+        "\n"
+        "can be used to print a filter parameter\n"
+        "\n"
+        "<TAB> completion is your friend.\n"
+        "\n"
+        "                        COMMANDS\n"
+        "   detach       will terminate the shell without effecting the stream\n"
+        "                flow.\n"
+        "\n"
+        "   exit         will terminate the shell and the CRTS stream.\n"
+        "\n"
+        "   get FN PN    will print the filter FN parameter named PN.\n"
+        "\n"
+        "   help         print this help\n"
+        "\n"
+        "   set FN PN VL will set the filter FN parameter named PN to VL.\n"
+        "\n"
+        "   sleep SEC    will pause this shell for SEC seconds.  This could\n"
+        "                be useful for non-interactive use were command lines\n"
+        "                are read from standard input.\n"
+        "\n"
+        "--------------------------------------------------------------\n"
+        "--------------------------------------------------------------\n"
+        "\n",
+        prompt, prompt
+    );
+
+    
+
+    return 1;
+}
+
+
+static inline bool isWhiteChar(const char c)
+{
+    // See 'man ascii'.
+    //
+    return (c > 0 && c <= ' ');
+}
+
+
+static inline int checkForLocalCommand(const char *line)
+{
+    // Strip leading white space.
+    while(isWhiteChar(*line)) ++line;
+
+    size_t llen = strlen(line);
+
+    if(strncasecmp(line, "help", 4) == 0 || *line == '?')
+        return printHelp(); // got it, stop parsing.
+
+    if(strncmp(line, "detach", 6) == 0)
+    {
+        printf("shell exiting while stream is left running\n");
+        sleep(4);
+        exit(0);
+    }
+
+    if(strncmp(line, "sleep", 5) == 0)
+    {
+        int argC = 0;
+        const char **argV = get_args(line, &argC);
+
+        if(argC < 2)
+        {
+            printf("missing arguement\n");
+            return 1;
+        }
+        char *endptr = 0;
+        double dsec = strtod(argV[1], &endptr);
+        if(endptr == argV[1] || dsec < 0.0)
+        {
+            printf("bad arguement: %s\n", argV[1]);
+            return 1;
+        }
+        printf("shell sleeping %g seconds\n", dsec);
+
+        // This is very crude, but is okay.
+        unsigned int sec = dsec;
+        useconds_t usec = (1000000 * (dsec - sec));
+        if(sec)
+            sleep(sec);
+        if(usec)
+            usleep(usec);
+        return 1;
+    }
+
+
+    for(const char **com = commands0; *com; ++com)
+    {
+        size_t clen = strlen(*com);
+        if(llen > clen && strncmp(*com, line, clen) == 0
+                && isWhiteChar(line[clen]))
+            // This may be a good command
+            return 0; // go to the next parsing thing.
+    }
+    
+    // They entered no valid command so we handle it here:
+    printf("type help for help\n");
+    return 1; // stop parsing.
 }
 
 
 static inline int checkForQuit(const char *line)
 {
-     while(isspace(*line)) ++line;
+     while(isWhiteChar(*line)) ++line;
+
      if(strncmp(line, "quit", 4) == 0 ||
             strncmp(line, "exit", 4) == 0)
      {
@@ -186,22 +319,6 @@ static const char **commands;
 
 static const char **setControlNames = 0;
 static const char **getControlNames = 0;
-
-static const char *commands0[] =
-{
-    "set",
-    "get",
-    "help",
-    0
-};
-
-
-static inline bool isWhiteChar(const char c)
-{
-    // See 'man ascii'.
-    //
-    return (c > 0 && c <= ' ');
-}
 
 
 // findWorkingArgIndex(() Examples:
@@ -458,21 +575,37 @@ int main (int argc, char **argv)
 
     fclose(controlList);
 
-    for(auto it = setParameters.begin(); it != setParameters.end(); ++it)
+    if(!setParameters.empty())
     {
-        printf("Control: %s Set Parameters:", it->first.c_str());
-        for(const char **s = it->second; *s; ++s)
-            printf(" %s", *s);
-        printf("\n");
-    }
-    for(auto it = getParameters.begin(); it != getParameters.end(); ++it)
-    {
-        printf("Control: %s Get Parameters:", it->first.c_str());
-        for(const char **s = it->second; *s; ++s)
-            printf(" %s", *s);
+        printf("\nParameters you can set\n"
+                "------------------------------------\n");
+
+        for(auto it = setParameters.begin(); it != setParameters.end(); ++it)
+        {
+            printf("%s:", it->first.c_str());
+            for(const char **s = it->second; *s; ++s)
+                printf(" %s", *s);
+            printf("\n");
+        }
         printf("\n");
     }
 
+    if(!getParameters.empty())
+    {
+        printf("\nParameters you can get\n"
+                "------------------------------------\n");
+
+        for(auto it = getParameters.begin(); it != getParameters.end(); ++it)
+        {
+            printf("%s:", it->first.c_str());
+            for(const char **s = it->second; *s; ++s)
+                printf(" %s", *s);
+            printf("\n");
+        }
+        printf("\n");
+    }
+
+    printf("Hit <TAB> for command line completion (like in a bash terminal)\n");
 
     sendCommand("start");
 
@@ -488,9 +621,8 @@ int main (int argc, char **argv)
 
         add_history(line);
         
-        if(checkForHelp(line))
+        if(checkForLocalCommand(line))
             continue;
-
 
         sendCommand(line);
         

@@ -1,0 +1,4 @@
+In this directory we put files that may not be useful to people not doing
+internal CRTS code development.  If files in here grow to become useful to
+others than they should be moved to another directory.  So most CRTS users
+can just ignore files in this directory.
