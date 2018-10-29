@@ -14,7 +14,6 @@
 #include "crts/crts.hpp"
 #include "crts/Filter.hpp"
 #include "crts/Controller.hpp"
-#include "../txControl.hpp"
 
 /* NOTES:
 
@@ -115,8 +114,6 @@ class JoystickReader : public CRTSFilter, public CRTSController
         const char *devicePath;
         struct js_event jsEvents[NUM_STRUCTS];
 
-        TxControl *tx;
-
         double maxFreq, minFreq, lastFreq;
 
         // freq is shared between this filters thread and the Tx filters
@@ -132,15 +129,13 @@ void JoystickReader::execute(CRTSControl *c, const void * buffer, size_t len,
 {
     // This call is from the CRTS Tx filters' thread
 
-    DASSERT(c->getId() == tx->getId(), "");
-
     // atomic get freq in this thread.
     double f = freq;
 
     if(f != lastFreq)
     {
         fprintf(stderr, "   Setting carrier frequency to  %lg Hz\n", f);
-        tx->usrp->set_tx_freq(f);
+        c->setParameter("freq", f);
         lastFreq = f;
     }
 }
@@ -153,7 +148,9 @@ JoystickReader::JoystickReader(int argc, const char **argv): fd(-1)
     devicePath = opt.get("--device", DEFAULT_DEVICE_PATH);
 
     const char *controlName = opt.get("--controlTx", DEFAULT_TXCONTROL_NAME);
-    tx = getControl<TxControl *>(controlName);
+    CRTSControl *c = getControl<CRTSControl *>(controlName);
+    if(!c)
+        throw "Cannot get Tx Control";
 
     maxFreq = opt.get("--maxFreq", DEFAULT_MAXFREQ) * 1.0e6;
     minFreq = opt.get("--minFreq", DEFAULT_MINFREQ) * 1.0e6;

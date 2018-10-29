@@ -8,7 +8,6 @@
 #include <linux/joystick.h>
 #include <atomic>
 
-#include "../Filters/txControl.hpp"
 
 class JoystickTx: public CRTSController
 {
@@ -26,7 +25,7 @@ class JoystickTx: public CRTSController
 
     private:
 
-        TxControl *tx;
+        CRTSControl *tx;
         CRTSControl *js;
 
         double maxFreq, minFreq, lastFreq;
@@ -86,7 +85,7 @@ JoystickTx::JoystickTx(int argc, const char **argv)
     const char *controlName;
 
     controlName = opt.get("--controlTx", DEFAULT_TXCONTROL_NAME);
-    tx = getControl<TxControl *>(controlName);
+    tx = getControl<CRTSControl *>(controlName);
     controlName = opt.get("--controlJs", DEFAULT_JSCONTROL_NAME);
     js = getControl<CRTSControl *>(controlName);
 
@@ -103,8 +102,7 @@ void JoystickTx::start(CRTSControl *c)
     if(c->getId() != js->getId())
     {
         // This call is from the CRTS Tx filter
-        DASSERT(tx->usrp, "");
-        tx->usrp->set_tx_freq(maxFreq);
+        tx->setParameter("freq", maxFreq);
         // TODO: check that the freq was really set.
     }
 
@@ -136,7 +134,7 @@ void JoystickTx::execute(CRTSControl *c, const void *buffer,
         if(f != lastFreq)
         {
             fprintf(stderr, "   Setting carrier frequency to  %lg Hz\n", f);
-            tx->usrp->set_tx_freq(f);
+            tx->setParameter("freq", f);
             lastFreq = f;
         }
 

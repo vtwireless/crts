@@ -5,8 +5,6 @@
 #include <crts/debug.h>
 #include <crts/Controller.hpp>
 
-#include "../Filters/txControl.hpp"
-
 class DualTx: public CRTSController
 {
     public:
@@ -21,11 +19,8 @@ class DualTx: public CRTSController
 
     private:
 
-        TxControl *tx;
-
         double maxFreq, minFreq;
         uint64_t nextBytesIn;
-        const char *controlName;
 };
 
 // In mega HZ
@@ -74,10 +69,10 @@ DualTx::DualTx(int argc, const char **argv): nextBytesIn(BYTES_PER_CHANGE)
 {
     CRTSModuleOptions opt(argc, argv, usage);
 
-    controlName = opt.get("--control", DEFAULT_TXCONTROL_NAME);
-    tx = getControl<TxControl *>(controlName);
+    const char *controlName = opt.get("--control", DEFAULT_TXCONTROL_NAME);
+    CRTSControl *c = getControl<CRTSControl *>(controlName);
 
-    if(tx == 0) throw "could not get TxControl";
+    if(c == 0) throw "could not get Tx Control";
 
     maxFreq = opt.get("--maxFreq", DEFAULT_MAXFREQ) * 1.0e6;
     minFreq = opt.get("--minFreq", DEFAULT_MINFREQ) * 1.0e6;
@@ -94,12 +89,9 @@ static inline double FartherFrom(double val, double x, double y)
 
 void DualTx::start(CRTSControl *c)
 {
-    DASSERT(tx && tx->usrp, "");
+    c->setParameter("freq", maxFreq);
 
-    tx->usrp->set_tx_freq(maxFreq);
-
-    DSPEW("controlName=\"%s\" maxFreq=%lg minFreq=%lg",
-            controlName, maxFreq, minFreq);
+    DSPEW("maxFreq=%lg minFreq=%lg", maxFreq, minFreq);
 }
 
 
@@ -118,22 +110,22 @@ void DualTx::execute(CRTSControl *c, const void *buffer, size_t len, uint32_t ch
     //
     // By taking a difference we can let the counters wrap through 0 and
     // not have a hick up.
-    if(tx->totalBytesIn() - nextBytesIn >= nextBytesIn) return;
+    if(c->totalBytesIn() - nextBytesIn >= nextBytesIn) return;
 
     nextBytesIn += BYTES_PER_CHANGE;
 
 
     // Set a different carrier frequency:
-    double freq = FartherFrom(tx->usrp->get_tx_freq(), maxFreq, minFreq);
-    tx->usrp->set_tx_freq(freq);
+    double freq = FartherFrom(c->getParameter("freq"), maxFreq, minFreq);
+    c->setParameter("freq", freq);
 
     // Or you could do:
     // nextBytesIn = BYTES_PER_CHANGE + tx->totalBytesIn();
 
     INFO("totalBytesIn=%" PRIu64
         " totalBytesOut=%" PRIu64 " freq=%lg",
-        tx->totalBytesIn(),
-        tx->totalBytesOut(), tx->usrp->get_tx_freq());
+        c->totalBytesIn(),
+        c->totalBytesOut(), c->getParameter("freq"));
 }
 
 

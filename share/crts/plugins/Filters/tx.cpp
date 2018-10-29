@@ -10,7 +10,6 @@
 #include "crts/usrp_set_parameters.hpp" // UHD usrp wrappers
 
 #include "defaultUSRP.hpp" // defaults: TX_FREQ, TX_RATE, TX_GAIN
-#include "txControl.hpp"
 
 #define DEFAULT_TXCONTROL_NAME  "tx"
 
@@ -28,17 +27,6 @@ class Tx : public CRTSFilter
         void input(void *buffer, size_t len, uint32_t inChannelNum);
 
     private:
-
-        // This txControl is here-by depreciated.  It adds access to the
-        // usrp for the CRTSControllers.  When all the CRTSControllers
-        // that use this are replaced we can just remove this:
-        //
-        //  TxControl txControl;
-        //
-        //  then a control will be made automatically in the filter module
-        //  loader code with no additional changes.
-        //
-        TxControl txControl;
 
         // These will store values from before start() to
         // initialize in start().  Not to be confused with
@@ -201,17 +189,8 @@ static void usage(void)
 }
 
 
-// This function can go away when txControl goes away.
-static const char *getControlName(int argc, const char **argv)
-{
-    CRTSModuleOptions opt(argc, argv, usage);
-
-    return opt.get("--control", DEFAULT_TXCONTROL_NAME);
-}
-
 
 Tx::Tx(int argc, const char **argv):
-    txControl(this, getControlName(argc, argv), usrp),
     usrp(0), tx_stream(0), numTxChannels(1)
 {
     CRTSModuleOptions opt(argc, argv, usage);

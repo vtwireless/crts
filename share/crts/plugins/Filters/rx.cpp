@@ -12,8 +12,7 @@
 
 #include "defaultUSRP.hpp" // defaults: RX_FREQ, RX_RATE, RX_GAIN
 
-#include "rxControl.hpp"
-
+#define DEFAULT_RXCONTROL_NAME "rx"
 
 
 class Rx : public CRTSFilter
@@ -28,10 +27,6 @@ class Rx : public CRTSFilter
         void input(void *buffer, size_t len, uint32_t inChannelNum);
 
     private:
-
-        // This rxControl is here-by depreciated.  It adds access to the
-        // usrp for the CRTSControllers.
-        RxControl rxControl;
 
         std::string uhd_args, subdev;
         std::vector<size_t> channels;
@@ -182,20 +177,11 @@ static void usage(void)
 }
 
 
-// Get the control name from the command line arguments.
-static const char *getControlName(int argc, const char **argv)
-{
-    CRTSModuleOptions opt(argc, argv, usage);
-    return opt.get("--control", DEFAULT_RXCONTROL_NAME);
-}
-
-
 // The constructor gets parameters but does not initialize
 // the hardware.  It provides a way to get --help without
 // initializing stuff.
 //
 Rx::Rx(int argc, const char **argv):
-    rxControl(this, getControlName(argc, argv), usrp),
     usrp(0), rx_stream(0), max_num_samps(0), numRxChannels(1)
 {
     CRTSModuleOptions opt(argc, argv, usage);

@@ -7,8 +7,9 @@
 #include <linux/input.h>
 #include <linux/joystick.h>
 
-#include "../../Filters/txControl.hpp"
-#include "../../Filters/rxControl.hpp"
+#define DEFAULT_TXCONTROL_NAME "tx"
+#define DEFAULT_RXCONTROL_NAME "rx"
+
 
 class JoystickTxRx: public CRTSController
 {
@@ -26,8 +27,8 @@ class JoystickTxRx: public CRTSController
 
     private:
 
-        TxControl *tx;
-        RxControl *rx;
+        CRTSControl *tx;
+        CRTSControl *rx;
         CRTSControl *js;
 
         double maxFreq, minFreq, rxFreq, lastRxFreq, txFreq, lastTxFreq;
@@ -89,9 +90,9 @@ JoystickTxRx::JoystickTxRx(int argc, const char **argv)
     const char *controlName;
 
     controlName = opt.get("--controlTx", DEFAULT_TXCONTROL_NAME);
-    tx = getControl<TxControl *>(controlName);
+    tx = getControl<CRTSControl *>(controlName);
     controlName = opt.get("--controlRx", DEFAULT_RXCONTROL_NAME);
-    rx = getControl<RxControl *>(controlName);
+    rx = getControl<CRTSControl *>(controlName);
     controlName = opt.get("--controlJs", DEFAULT_JSCONTROL_NAME);
     js = getControl<CRTSControl *>(controlName);
 
@@ -110,8 +111,7 @@ void JoystickTxRx::start(CRTSControl *c)
     if(c->getId() == tx->getId())
     {
         // This call is from the CRTS Tx filter
-        DASSERT(tx->usrp, "");
-        tx->usrp->set_tx_freq(txFreq);
+        tx->setParameter("freqi", txFreq);
         lastTxFreq = txFreq;
         // TODO: check that the freq was really set.
     }
@@ -119,8 +119,7 @@ void JoystickTxRx::start(CRTSControl *c)
     if(c->getId() == rx->getId())
     {
         // This call is from the CRTS Tx filter
-        DASSERT(tx->usrp, "");
-        rx->usrp->set_rx_freq(rxFreq);
+        rx->setParameter("freq", rxFreq);
         lastRxFreq = rxFreq;
         // TODO: check that the freq was really set.
     }
@@ -145,7 +144,7 @@ void JoystickTxRx::execute(CRTSControl *c, const void *buffer,
         if(txFreq != lastTxFreq)
         {
             fprintf(stderr, "   Setting TX carrier frequency to  %lg Hz\n", txFreq);
-            tx->usrp->set_tx_freq(txFreq);
+            tx->setParameter("freq", txFreq);
             lastTxFreq = txFreq;
         }
 
@@ -159,7 +158,7 @@ void JoystickTxRx::execute(CRTSControl *c, const void *buffer,
         if(rxFreq != lastRxFreq)
         {
             fprintf(stderr, "   Setting RX carrier frequency to  %lg Hz\n", rxFreq);
-            rx->usrp->set_rx_freq(rxFreq);
+            rx->setParameter("freq", rxFreq);
             lastRxFreq = rxFreq;
         }
 
