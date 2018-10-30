@@ -2,7 +2,7 @@ This directory provides scripts that install software packages that CRTS
 depends on.  You need to run ../bootstrap before using these scripts.
 
 Each package is in a different directory.  We made an effort to configure
-all of the packages for use by CRTS.  All of these packages are can by
+all of the packages for use by CRTS.  All of these packages are can be
 built and installed from GitHub source with the git tags that are listed
 in default_prefixes, or (overridden) in prefixes if found.
 
@@ -12,7 +12,8 @@ exists.
 
 
 run: "sudo ./apt-getDependencies.bash" to install packages that are
-requirements on Debian or Ubuntu systems.
+requirements on Debian or Ubuntu systems, or at you option look at the
+apt-getDependencies.bash script and install the packages yourself.
 
 
 
@@ -53,7 +54,6 @@ The order of things:
 
 Instructions: 
 
-  mosquitto depends on libwebsockets
 
   cp default_prefixes prefixes
   
@@ -79,6 +79,4 @@ Instructions:
         make download
         for d in $PACKAGES ; do make -C $d && make -C $d install &&\
  $SCRIPT ; done 
-
-
 
