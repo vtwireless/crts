@@ -1,6 +1,61 @@
 DEVELOPER NOTES:
 
 
+Latest thoughts (Mon Nov 5 2018):
+
+- The hardest part of the problem is contest account management.  We
+  handle this difficult problem by avoiding it, with the introduction of a
+  single scenario web server.  This scenario web server only runs while
+  the scenario is active.  The account management is handled by passing
+  out URLs with a query part that has a generated pass-codes.  After the
+  scenario is complete the pass-codes will no longer be valid.
+
+- Scenario Web Server - gets around account management on a central web
+  server by keeping history and pass-codes of only the current scenario.
+
+- Launch a node web server for each "Scenario", when the person with
+  the server computer account is the master of the scenario.
+
+- The URLs of the web server will have a pass-codes in them,
+  which passcode depends on what team user is in.
+     * We can have a special super-user passcode that
+       gives them more control.
+
+
+- (FUTURE) There may be more than one web server per scenario.
+     * This means we need to be able to remove and add controllers on
+       the fly, which means we need to have stream start and stop, and
+       effect a stream restart capability.
+
+- There will be an authenticated control group for each control parameter.
+    * This kind of fine grained authentication may be a pain.  So maybe
+      just having one authentication token per controller may be easiest.
+
+
+- The scenario controller is a node web server.
+- In the future a master web server can launch the scenario controller web
+  servers, for now we require that the person launching the scenario
+  controller have an account on the computer that runs it.
+
+- There is any number of Controllers in the stream that connected to the
+  scenario controller.
+
+     * This Controller has a controller group that is authenticated
+       and allowed to use it, that is set and get parameters.
+
+     * 
+
+
+- In the future we can make a Master web server that spawns "Scenario Web
+  Servers".  Such a master web server has to have account management,
+  where as the Scenario Web Servers will only keep a running
+  authentication data structure without any data base.  The master web
+  server would have an account management system with a data base.
+
+
+
+
+
 Collection of notes to study:
 
 WebRTC google talk
@@ -58,16 +113,20 @@ Classes internal to program crts_radio:
 
   FilterModule
 
+         the private part of CRTSFilter
+
          container for CRTSFilter
 
-         FilterModule::input()
+         
+         Data flowing from one filter to another there if switches:
 
-              1) if not different thread calls CRTSFilter::write()
+            1) if not different thread calls CRTSFilter::input()
 
             or
 
-              2) or signals cond to thread to call CRTSFilter::write()
+            2) or signals cond to thread to call CRTSFilter::input()
                  or blocks and ... if the queue is full
+
 
 
   Stream
@@ -76,9 +135,10 @@ Classes internal to program crts_radio:
          static mutex
          static cond
 
+
     each Stream
 
-         atomic bool isRunning
+         atomic bool isRunning (TODO: maybe just volatile)
 
          is a factory of FilterModule
 
