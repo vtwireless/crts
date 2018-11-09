@@ -2,7 +2,7 @@
 
 PATH=$(pwd)
 
-sudo dependencies/depend.sh
+sudo dependencies/apt-getDependencies.bash
 ./bootstrap
 
 #NODE install
