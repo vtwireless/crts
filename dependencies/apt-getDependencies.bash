@@ -18,6 +18,7 @@ declare -a crts_dep=(
  "wget"
  "libgtk-3-dev"
  "git"
+ "libjansson-dev"
  "yui-compressor"
  "python-netifaces"
  "libev-dev"
