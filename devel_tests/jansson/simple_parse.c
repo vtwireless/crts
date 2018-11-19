@@ -179,8 +179,8 @@ json_t *load_json(const char *text) {
  * text.  Returns NULL on eof or some error.
  */
 char *read_line(char *line, int max_chars) {
-    printf("Type some JSON > ");
-    fflush(stdout);
+    //printf("Type some JSON > ");
+    //fflush(stdout);
     return fgets(line, max_chars, stdin);
 }
 
@@ -194,7 +194,15 @@ int main(int argc, char *argv[]) {
     char line[MAX_CHARS];
 
     if (argc != 1) {
-        fprintf(stderr, "Usage: %s\n", argv[0]);
+        fprintf(stderr, "Usage: %s\n"
+            "\n"
+            "  Reads in JSON from stdin and writes stdout.\n"
+            "        For Example:\n"
+            "\n"
+            "echo -en \"{ \\\"animals\\\": [\\\"cat\\\", \\\"dog\\\"]}\" | %s\n"
+            "\n"
+            "\n"
+            , argv[0], argv[0]);
         exit(-1);
     }
 

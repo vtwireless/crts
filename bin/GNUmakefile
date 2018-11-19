@@ -78,8 +78,8 @@ crts_mkTUN_SOURCES :=\
  $(LIB)/tun_alloc.cpp\
  $(LIB)/getTunViaUSocket.cpp
 
-# Install crts_server and crts_spectrumFeed too.
-INSTALLED := crts_server crts_spectrumFeed
+# Install crts_scenarioWebServer and crts_spectrumFeed too.
+INSTALLED := crts_scenarioWebServer crts_spectrumFeed
 
 
 include ../quickbuild.make

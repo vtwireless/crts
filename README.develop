@@ -43,8 +43,6 @@ Latest thoughts (Mon Nov 5 2018):
      * This Controller has a controller group that is authenticated
        and allowed to use it, that is set and get parameters.
 
-     * 
-
 
 - In the future we can make a Master web server that spawns "Scenario Web
   Servers".  Such a master web server has to have account management,
@@ -52,6 +50,11 @@ Latest thoughts (Mon Nov 5 2018):
   authentication data structure without any data base.  The master web
   server would have an account management system with a data base.
 
+
+- It would be nice to have a CRTS controller that is a server too, in
+  addition to the  CRTS controller client.  Then we could make a more
+  interesting shell that would be a client.  It should replace the
+  FIFO based shell.
 
 
 

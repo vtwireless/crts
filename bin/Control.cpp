@@ -21,7 +21,7 @@ std::map<std::string, CRTSControl *> CRTSControl::controls;
 
 
 CRTSControl::CRTSControl(CRTSFilter *filter_in, std::string name_in):
-    filter(filter_in)
+    filter(filter_in), isRunning(filter->stream->isRunning)
 {
     ASSERT(name_in.length(), "");
     name = strdup(name_in.c_str());

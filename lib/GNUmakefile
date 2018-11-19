@@ -7,6 +7,8 @@ INSTALLED := node_modules
 
 libcrts.so_SOURCES := crts.cpp
 
+libcrts.so_LDFLAGS := -ljansson
+
 CPPFLAGS := -I../include
 
 

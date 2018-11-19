@@ -171,7 +171,7 @@ class CRTSFilter
     public:
 
         static const uint32_t 
-            
+
         /** A channel number used to refer to all channels by they input
          * or output.
          *
@@ -904,6 +904,9 @@ class CRTSControl
         // TODO: don't make this public.
         //
         CRTSFilter *filter;
+
+        // A reference to the assocated stream isRunning flag.
+        std::atomic<bool> &isRunning;
 
     protected:
 

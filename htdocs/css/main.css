@@ -1,3 +1,13 @@
 body {
-    background-color:#A9A9A9;
+    background-color:#C0D0E0;
 }
+
+a.nav {
+    color:#0000EE;
+    font-style: normal;
+    text-decoration: none;
+}
+span.login {
+    color:#203;
+}
+

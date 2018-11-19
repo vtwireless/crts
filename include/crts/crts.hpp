@@ -10,7 +10,9 @@
 #include <string>
 #include <typeinfo>
 #include <vector>
+#include <atomic>
 #include <gnu/lib-names.h>
+#include <jansson.h>
 
 #include <crts/debug.h>
 
@@ -304,37 +306,66 @@ class CRTSModuleOptions
 
 
 
-// The small crappy TCP/IP socket wrapper that sends a very limited form
-// of JSON to and from the server that it connects to.
-//
-// We assume that messages are small BUFSIZE so that no memory allocation
-// is necessary.
-//
-// CRTSTcpConnection::CRTSTcpConnection() will throw an exception if it
-// fails.
-//
-class CRTSTcpConnection
+/** A small TCP/IP socket wrapper that can write strings and read JSON.
+ *
+ * It seems everybody and their mother writes TCP wrapper code.  This just
+ * reduces the number of lines of code needed for a simple TCP client, and
+ * is not meant to save the world.
+ *
+ * We assume that messages are small, MAXREAD, so that no memory allocation
+ * is necessary.  If the messages need to be larger than don't use this
+ * code.
+ */
+class CRTSTcpClient
 {
     public:
 
-        CRTSTcpConnection(const char *firstMessage, const char *toAddress,
-                int port);
-        virtual ~CRTSTcpConnection(void);
+        /** Create a TCP/IP socket object.
+         *
+         *  Throws a C string if it fails
+         *
+         * \param firstMessage is a pointer to the first message to send.
+         * The user must manage this message memory.
+         *
+         * \param toAddress example "128.192.6.30"
+         *
+         * \param port number like 3482.
+         *
+         */
+        CRTSTcpClient(const char *toAddress, unsigned short port);
+        virtual ~CRTSTcpClient(void);
 
-        bool load(const char *key, double value);
-        bool send(const char *buf = 0); // like flush
+        /** Send a string.
+         *
+         * \return false on success and true on error.
+         */
+        bool send(const char *buf) const;
 
-        char *receive(void);
+        /** This will block on read(2) until a full JSON is received.
+         *
+         * \return a pointer to a jansson object or 0 on error.  The user
+         * must call json_decref(ret) with \e ret being the returned 
+         * non-zero value.  See https://jansson.readthedocs.io/en/2.2/
+         */
+        json_t *receiveJson(std::atomic<bool> &isRunning);
 
     private:
 
         int fd; // socket file descriptor.
 
         // fixed size of send and recv buffer.
-        static const size_t BUFSIZE = (1024 * 2); 
+        static const size_t MAXREAD = (1024 * 2); 
 
-        char recvBuffer[BUFSIZE];
-        char sendBuffer[BUFSIZE];
+        // TODO: use mmap() and make a circular buffer so that memory copy
+        // (memmove) is not necessary, but then again, most of the time
+        // there will be one JSON in the buffer.
+
+        char buf[MAXREAD + 1]; // read() buffer memory
+
+        // points to current read input string end point.
+        //
+        char *end; /* the char that has not been written to yet. */
+        char *current; // Where we are currently parsing.
 };
 
 

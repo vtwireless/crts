@@ -1,19 +1,54 @@
+
 This directory provides scripts that install software packages that CRTS
 depends on.  You need to run ../bootstrap before using these scripts.
 
 Each package is in a different directory.  We made an effort to configure
-all of the packages for use by CRTS.  All of these packages are can be
-built and installed from GitHub source with the git tags that are listed
-in default_prefixes, or (overridden) in prefixes if found.
+all of the packages for use by CRTS.  All of these packages can be built
+and installed from GitHub source with the git tags that are listed in
+default_prefixes, or (overridden) in prefixes if found.  The size of all
+the files in this directory is intended to be small until the packages
+are downloaded and built.  At the time of this writing the total file
+space in this directory was 220 Kilo bytes (Nov 19 2018), so we see no
+need to put these files in a different repository.
+
 
 Some of the package versions may be newer than what is available from APT
 (the Debian package management system) repositories.  Hence this directory
 exists.
 
 
-run: "sudo ./apt-getDependencies.bash" to install packages that are
+Some of the packages listed in this directory are not required except for
+CRTS development.  Some may never be required.
+
+
+There are two levels of software package perquisites:
+
+   1. those software packages that are available through the operating
+      system package manager, APT (apt-get install), and
+
+   2. those software packages that are not available through APT.
+
+
+
+
+1.  run: "sudo ./apt-getDependencies.bash" to install packages that are
 requirements on Debian or Ubuntu systems, or at you option look at the
 apt-getDependencies.bash script and install the packages yourself.
+
+
+
+2.  CRTS currently depends on (as of Nov 19 2018):
+
+    node
+
+    uhd
+
+    gnuradio
+
+
+    the rest of the directories may or may not end up be required in
+    the future.
+
 
 
 
@@ -52,7 +87,8 @@ The order of things:
   mosquitto-auth-plug depends on mosquitto, redis, and hiredis
 
 
-Instructions: 
+
+Instructions for installing any of those packages: 
 
 
   cp default_prefixes prefixes
@@ -64,19 +100,17 @@ Instructions:
 
   cd PACKAGE_DIR && make && make install && cd ..
 
-      or
+  Then you need to make the package accessible by setting your PATH, or
+  use other means.
 
-  Just run make from this directory (this may take a while):
 
-    make download && make && make install
 
-  For example if you need to run a script (SCRIPT) between each package
-  installation, you could run something like:
+Another way via LinuxBrew:
 
-        SCRIPT="sudo encap"
-        PACKAGES="uhd gnuradio libwebsockets mosquitto mqttc node redis\
- slurm hiredis mosquitto-auth-plug"
-        make download
-        for d in $PACKAGES ; do make -C $d && make -C $d install &&\
- $SCRIPT ; done 
+  1.  You need to install those software packages that are available through the operating
+      system package manager, see above, and
+
+  2.  The script in ../INSTALL_via_LinuxBrew can be used to install the
+      those software packages that are not available through APT including
+      this CRTS.  Run `../INSTALL_via_LinuxBrew --help` for options.
 

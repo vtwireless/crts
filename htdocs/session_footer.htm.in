@@ -4,12 +4,12 @@
 
   <!--
 
-  We put this index/footer at the bottom of the
-  page because:
+   This is the CRTS login footer.  It might be argued that
+   it's: (1) less intrusive than a header, and (2) it does
+   not block browser search results.
 
-    * it's less intrusive than at the top
-    * it tends not to block browser search results
-      as much as if it were at the top
+   This html requires javaScript to change the <span>s with
+   id "login" and id "user".
 
   -->
 
@@ -47,7 +47,7 @@
             border: solid 1px #45454F;
             ">
 
-            <span class=login id=sessionStatus>Not logged in.</span>
+            <span class=login id=sessionStatus>Unknown login state.</span>
             <span id=user class=login></span>
     </td>
     <td style="width:35%">
@@ -70,7 +70,6 @@
   
   </tr>
 </table>
-
 
 </body>
 </html>

@@ -12,7 +12,7 @@ IN_VARS :=\
 TAR_NAME := crts
 
 # package release version.  May differ from interface (library) versions.
-VERSION := 0.2
+VERSION := 0.3
 
 # PACKAGE CXXFLAGS is appended to the users CXXFLAGS
 CXXFLAGS := -std=c++11

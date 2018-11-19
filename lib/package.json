@@ -1,12 +1,11 @@
 {
   "name": "crts",
   "version": "0.1.0",
-  "description": "web server for CRTS",
+  "description": "web servers for CRTS",
   "main": "crts_server.js",
   "dependencies": {
     "express": "4.16.3",
-    "ws": "5.2.0",
-    "wrtc": "0.1.5"
+    "ws": "5.2.0"
   },
   "devDependencies": {
   },
