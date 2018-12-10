@@ -335,13 +335,21 @@ class CRTSTcpClient
         CRTSTcpClient(const char *toAddress, unsigned short port);
         virtual ~CRTSTcpClient(void);
 
-        /** Send a string.
+        /** Send a string or binary data
          *
          * \return false on success and true on error.
          */
-        bool send(const char *buf) const;
+        bool send(const char *buf, size_t len=0) const;
 
         /** This will block on read(2) until a full JSON is received.
+         *
+         * Since TCP/IP does not provide message framing: The JSON data
+         * must be followed by a EOT character (ascii /004), for example:
+         * buf = "{\"foo\":\"bar\"}/004".  It is assumed that the EOT will
+         * not be used anywhere in the JSON expression, so that EOT can be
+         * the separator between JSON expressions.
+         *
+         * This will fail if the JSON expression is longer than MAXREAD.
          *
          * \return a pointer to a jansson object or 0 on error.  The user
          * must call json_decref(ret) with \e ret being the returned 
@@ -349,12 +357,22 @@ class CRTSTcpClient
          */
         json_t *receiveJson(std::atomic<bool> &isRunning);
 
+        /** Get the socket file descriptor
+         *
+         * This is a terrible hack.
+         *
+         * For then you need more control, like for using sendfile()
+         * to write to the socket.
+         */
+        inline int getFd(void) { return fd; };
+
+        // fixed size of send and recv buffer.
+        static const size_t MAXREAD = (1024 * 2);
+
+
     private:
 
         int fd; // socket file descriptor.
-
-        // fixed size of send and recv buffer.
-        static const size_t MAXREAD = (1024 * 2); 
 
         // TODO: use mmap() and make a circular buffer so that memory copy
         // (memmove) is not necessary, but then again, most of the time

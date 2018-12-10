@@ -21,7 +21,7 @@
 // TODO: We could break this into more files that include each other in
 // a series of includes.
 
-// FilterModule is a opaque module thingy that the user need not worry
+// FilterModule is an opaque module thingy that the user need not worry
 // about much.  We just needed it to add stuff to the CRTSFilter that we
 // wanted to do some lifting without being seen by the user interface.
 // CRTSFilter is the particular users filter implementation that has a
@@ -40,7 +40,8 @@ class CRTSControl;
 class CRTSFilter;
 class Stream;
 
-
+// This is an internal data structure and not a user interface; hence
+// it's not called CRTSParameter.
 struct Parameter
 {
     std::function<bool (double)> set;
@@ -61,6 +62,8 @@ class CRTSStream
         // A reference to the Stream isRunning flag.
         std::atomic<bool> &isRunning;
 
+
+
     private:
 
         // The CRTSFilter user does not make a CRTSStream.  It gets made
@@ -73,6 +76,9 @@ class CRTSStream
         // set to false.  It gets set to true only before start when there
         // is just the main thread running.
         CRTSStream(std::atomic<bool> &isRunning);
+
+        // The internal stream factory.
+        Stream *stream;
 
     // The CRTSFilter/FilterModule needs to be able to set up access to the
     // isRunning flag.
@@ -652,6 +658,20 @@ class CRTSController
                 size_t len, uint32_t channelNum) = 0;
 
 
+
+        /** print the stream graph image to a file descriptor
+         *
+         * We use this to send a base 64 encoded PNG image to a
+         * socket.
+         *
+         * \param fd is the file descriptor to write the PNG file to.
+         *
+         * \return false on success and true on error.
+         * This will spew on error.
+         */
+        bool printStreamGraphDotPNG64(int fd);
+
+
         const char *getName(void) const { return (const char *) name; };
         uint32_t getId(void) const { return id; };
 
@@ -681,7 +701,8 @@ class CRTSController
         * \return a CRTSControl object pointer.
         */
         template <class C>
-        C getControl(const std::string name = "", bool addController=true, bool start=false);
+        C getControl(const std::string name = "", bool addController=true,
+                bool start=false);
 
 
     private:

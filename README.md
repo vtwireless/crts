@@ -25,10 +25,10 @@ In this script we keep a running list of dependencies that can be
 installed via apt-get.  You can install them yourself or run the script
 which will run apt-get install for you.
 
-At the time of this writing the debian/ubuntu packages "libuhd-dev" and
-"gnuradio-dev" are not current enough to be used.  Also the node JS
-package is not current enough, so we provide scripts to build and install
-them from git tagged github.com repositories.
+At the time of this writing the debian/ubuntu packages "node",
+"libuhd-dev" and "gnuradio-dev" are not current enough to be used.  Also
+the node JS package is not current enough, so we provide scripts to build
+and install them from git tagged github.com repositories.
 
 These installation scripts depend on running
 ```
@@ -198,6 +198,6 @@ and look at and run test programs in that directory.
 ## Running the CRTS server
 
 ```
-crts_server
+crts_scenarioWebServer
 ```
 

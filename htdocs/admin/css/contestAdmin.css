@@ -1,0 +1,55 @@
+div.contestPanel {
+    background-color:#A0D0E0;
+    padding: 5px;
+    margin-left: 10px;
+    min-height: 10px;
+    width: auto;
+    display: inline-block;
+    border: 2px solid black;
+    border-radius: 4px;
+}
+h3.contestPanel {
+}
+
+div.controller {
+    background-color:#80D0E0;
+    margin-left: 10px;
+    margin-right: 5px;
+    width: max-content;
+}
+h3.controller {
+}
+span.controller {
+    color: #339;
+}
+
+div.set,div.get {
+    background-color:#60A0B0;
+    margin-left: 10px;
+}
+h3.set {
+}
+table.set, th.set, td.set, tr.set,
+table.get, th.get, td.get, tr.get, td.getvalue {
+    border: 2px solid black;
+}
+h3.get {
+}
+td.getvalue {
+    background-color:#50A0A0;
+    cursor: pointer;
+}
+td.getvalue:hover {
+    background-color:#2090B0;
+}
+td.getvalue:focus {
+    background-color:#2090B0;
+}
+td.getvalue:active {
+    background-color:#F040B0;
+}
+img.controller {
+    border: 2px solid black;
+    min-width: 300px;
+    margin: 8px;
+}

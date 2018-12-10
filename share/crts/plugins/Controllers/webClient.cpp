@@ -175,14 +175,28 @@ static void *receiver(Client *client)
     {
         json_t *control = json_object_get(root, "control");
 
-        /* The JSON should be of the form:
+        // Server to Client protocol:
+        //
+        /* The JSON command request should be of the form:
          *
          *   {
-         *     control: "controlName",
-         *     command: "setOrGet",
-         *     parameter: "parameterName",
-         *     value: 1.0e-4
+         *     id: requestID_number,
+         *     control: "controlName0",
+         *     commands: [
+         *              { set: [ "parameterName0", 1.0e-4 ]},
+         *              { get: "parameterName1"},
+         *              { set: [ "parameterName2", 2.0e-6 ]}
+         *          ]
          *   }
+         *
+         * By putting the many commands in one request we can issue all
+         * commands in the request in one controller execute() call.
+         * Being able to issue all the commands in one controller
+         * execute() call could be very important.
+         *
+         * We can only make commands act in the same controller execute()
+         * call if they are in the same CRTSControl, hence we have just
+         * one control for a given command request.
          */
 
         if(control && json_typeof(control) == JSON_STRING)
@@ -250,6 +264,7 @@ void Client::start(CRTSControl *c)
     if(started) return;
     started = true;
 
+
     // There may be controls added after the filters are connected so
     // most things happen here and not in the constructor.
     //
@@ -257,13 +272,22 @@ void Client::start(CRTSControl *c)
     // control.
     //
 
-    // a JSON string of possible commands
+    // Make a JSON string of commands
     // that we will send to the server.
     //
     // TODO: Maybe rewrite this with a JSON parser API.
     // Stringifying JSON is easier than parsing JSON.
     //
-    std::string controlList("{\n  \"set\": [");
+    //
+    // Client to Server Protocol send:
+    //
+    //   see lib/socketIO.js this is doing Emit('controlList', {json}).
+    //
+    //
+    // controlList is the buffer we will send.
+    //
+    std::string controlList("I{\"name\": \"controlList\",\n"
+            "  \"args\":[\n    {");
 
     c = getControl<CRTSControl*>("",
         false/*add controller*/,
@@ -285,15 +309,17 @@ void Client::start(CRTSControl *c)
         //
         //  a JSON of setters looks like:
         //
-        //      { "set":
-        //          { "filterName0":
-        //              [ "freq",  "gain",  "foo",  "bar", "baz" ]
-        //          },
-        //          { "filterName1":
-        //              [ "freq0",  "gain2",  "foo",  "bar", "baz" ]
-        //          }
-        //      }
-        //
+        //  {
+        //      "filterName0":
+        //          [ "freq",  "gain",  "foo",  "bar", "baz" ]
+        //      ,
+        //      "filterName1":
+        //          [ "freq0",  "gain2",  "foo",  "bar", "baz" ]
+        //  }
+        // 
+        // where "freq",  "gain",  "foo",  "bar", "baz" are parameter
+        // names.
+
         //
         // Now Setters
         //
@@ -305,7 +331,7 @@ void Client::start(CRTSControl *c)
             if(!pcount && haveSetter)
             {
                 if(ccount) controlList += ",";
-                controlList += "\n    {\"";
+                controlList += "\n      \"";
                 controlList += c->getName();
                 controlList += "\": [";
             }
@@ -324,7 +350,7 @@ void Client::start(CRTSControl *c)
         if(pcount)
         {
             // We got at least one parameter in a control, now finish it off.
-            controlList += "]\n    }";
+            controlList += "]\n";
             ++ccount; // We have another control with parameters.
 #if 0
             DSPEW("added TCP/IP client command interface for control: %s with %d set parameters",
@@ -338,7 +364,7 @@ void Client::start(CRTSControl *c)
     }
 
 
-    controlList += "\n  ],\n  \"get\": [";
+    controlList += "\n    },\n    {";
     ccount = 0;
 
     c = getControl<CRTSControl*>("",
@@ -352,18 +378,20 @@ void Client::start(CRTSControl *c)
         // Now Getters
         //
         //  a JSON of getters line looks like:
-        //        
-        //          { "get":
-        //            {
-        //              { "filterName0":
-        //                  [ "freq",  "gain",  "foo",  "bar", "baz" ]
-        //              },
-        //              { "filterName1":
-        //                  [ "freq",  "gain",  "foo",  "bar", "baz" ]
-        //              }
-        //            }
-        //          }
         //
+        //  {
+        //      "filterName0":
+        //          [ "freq",  "gain",  "foo",  "bar", "baz" ]
+        //      ,
+        //      "filterName1":
+        //          [ "freq",  "gain",  "foo",  "bar", "baz" ]
+        //  }
+        //
+        //
+        //  where "freq",  "gain",  "foo",  "bar", "baz" are parameter
+        //  names.
+        //
+
         std::string name = c->getNextParameterName(true/*start*/,
                &haveSetter, &haveGetter);
         int pcount = 0;
@@ -372,7 +400,7 @@ void Client::start(CRTSControl *c)
             if(!pcount && haveGetter)
             {
                 if(ccount) controlList += ",";
-                controlList += "\n    {\"";
+                controlList += "\n      \"";
                 controlList += c->getName();
                 controlList += "\": [";
             }
@@ -391,10 +419,11 @@ void Client::start(CRTSControl *c)
         if(pcount)
         {
             // We got at least one parameter in a control, now finish it off.
-            controlList += "]\n    }";
+            controlList += "]\n";
             ++ccount; // We have another control with parameters.
 #if 0
-            DSPEW("added TCP/IP client command interface for control: %s with %d set parameters",
+            DSPEW("added TCP/IP client command interface for "
+                    "control: %s with %d set parameters",
                     c->getName(), pcount);
 #endif
         }
@@ -405,13 +434,19 @@ void Client::start(CRTSControl *c)
         c = getControl<CRTSControl*>("", false, false);
     }
 
-    controlList += "\n  ]\n}";
-    controlList += "\004"; // We use ascii EOT as a end marker.
+    if(commands.size() <= 0) 
+        throw "No controls were found";
+
+    controlList += "\n    }, \"";
 
     socket.send(controlList.c_str());
 
-    if(commands.size() <= 0) 
-        throw "No controls were found";
+    // Now we send the base 64 encoded PNG data. 
+    //
+    printStreamGraphDotPNG64(socket.getFd());
+
+    // Terminate the JSON. // We use ascii EOT as a end marker.
+    socket.send("\"]}\004"); 
 
     DSPEW("controls JSON=\n%s", controlList.c_str());
 }
@@ -436,15 +471,95 @@ void Client::execute(CRTSControl *c, const void *buffer,
 
     while(!list.empty())
     {
-        json_t *json = list.front();
+        const size_t BUFLEN = 1024;
+        char replyBuff[BUFLEN];
+        size_t replyLen = 0;
+        // We only reply if there is one or more get commands
 
+        json_t *root = list.front();
+
+#if 1 // debugging spew
         DSPEW("Got COMMAND:");
-        json_dumpf(json, stderr, 0);
+        json_dumpf(root, stderr, 0);
         fprintf(stderr, "\n");
+#endif
+
+        // jansson json_ documentation:
+        //
+        // https://jansson.readthedocs.io/en/2.6/apiref.htm
+        //
+        json_t *commands = json_object_get(root, "commands");
+        size_t numCommands = json_array_size(commands);
+        json_t *idObj = json_object_get(root, "id");
+        json_int_t id = json_integer_value(idObj);
+        if(numCommands < 1 || !idObj || json_is_integer(idObj))
+        {
+            WARN("bad request");
+            json_decref(root);
+            list.pop_front();
+            continue;
+        }
+        size_t i;
+        for(i=0; i<numCommands; ++i)
+        {
+            json_t *command = json_array_get(commands, i);
+            json_t *obj;
+
+            if((obj = json_object_get(command, "set")) // set a parameter
+                    && json_typeof(obj) == JSON_ARRAY && json_array_size(obj) == 2)
+            {
+                const char *parameterName = json_string_value(json_array_get(obj, 0));
+                obj = json_array_get(obj, 1);
+                if(parameterName && json_typeof(obj) == JSON_REAL)
+                {
+                    double value = json_real_value(obj);
+                    c->setParameter(parameterName, value);
+                }
+            }
+            else if((obj = json_object_get(command, "get"))) // get a parameter
+            {
+                const char *parameterName = json_string_value(obj);
+                if(parameterName)
+                {
+                    if(replyLen == 0)
+                    {
+                        replyLen = snprintf(replyBuff, BUFLEN,
+                        //
+                        // Client to Server protocol:
+                        //
+                        //  reply to get request with:  G{JSON}EOT
+                        //
+                        "G{\"id\":%" JSON_INTEGER_FORMAT
+                        ",\"control\":\"%s\""
+                        ",\"replies\":[",
+                        id, c->getName());
+                        ASSERT(replyLen > 0, "snprintf() failed");
+                    }
+                    else if(replyLen + 1 < BUFLEN)
+                    {
+                        replyBuff[replyLen++] = ',';
+                        replyBuff[replyLen] = '\0';
+                    }
+
+                    if(replyLen + 1 < BUFLEN)
+                        replyLen += snprintf(&replyBuff[replyLen], BUFLEN-replyLen,
+                            "{\"get\":[\"%s\",%lg]}",
+                            parameterName,
+                            c->getParameter(parameterName));
+                }
+            }
+        }
+
+        if(replyLen && replyLen + 3 < BUFLEN)
+        {
+            replyLen += snprintf(&replyBuff[replyLen], BUFLEN-replyLen, "]}\004");
+            socket.send(replyBuff);
+            DSPEW("sent reply: %s", replyBuff);
+        }
 
         // Free the json object.
         //
-        json_decref(json);
+        json_decref(root);
 
         list.pop_front();
     }

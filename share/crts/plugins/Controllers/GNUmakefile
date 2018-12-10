@@ -15,7 +15,7 @@ INSTALL_DIR = $(PREFIX)/share/crts/plugins/$(notdir $(CURDIR))
 srcs := $(patsubst %.cpp,%,$(wildcard *.cpp))
 
 # For now just this.
-srcs := joystickTx dualTx shell tcpClient
+srcs := joystickTx dualTx shell webClient
 
 
 define MkSource
@@ -35,10 +35,10 @@ joystickTx.so_LDFLAGS := $(UHD_LIBS)
 
 # The relative path linking thing is awesome.  We build the plugin so that
 # the linker finds the path to libcrts.so by looking relative to where
-# this tcpClient.so file is.  So now we don't need to change the file
-# tcpClient.so when we install it, so long as the installed relative
-# paths of tcpClient.so and libcrts.so stays the same.  It's the $ORIGIN
-# key word that adds this magic when building the tcpClient.so file.  In
+# this webClient.so file is.  So now we don't need to change the file
+# webClient.so when we install it, so long as the installed relative
+# paths of webClient.so and libcrts.so stays the same.  It's the $ORIGIN
+# key word that adds this magic when building the webClient.so file.  In
 # the past the install process had to re-link dynamic shared objects just
 # before putting them in their installed directories, and GNU autotools
 # has (or had) a butt ugly linker loader wrapper script to work around the
@@ -47,7 +47,7 @@ joystickTx.so_LDFLAGS := $(UHD_LIBS)
 # The linker reads $ORIGIN as "link path relative".  $$ keeps make from
 # eating the single $, and \$ keeps bash from eating the $.
 #
-tcpClient.so_LDFLAGS := -ljansson -lcrts -L$(ROOT)/lib -Wl,-rpath=\$$ORIGIN/$(ROOT)/lib
+webClient.so_LDFLAGS := -ljansson -lcrts -L$(ROOT)/lib -Wl,-rpath=\$$ORIGIN/$(ROOT)/lib
 
 
 include $(ROOT)/quickbuild.make

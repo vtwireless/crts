@@ -16,6 +16,11 @@ case "$NODE_TAG" in
 21e7f8b3757175543cc6d32ebe17c816ca26857c1c95bab2d2c4fe5f\
 d61f257bf4ae11ecc229271a39c4fb4b7c
         ;;
+    "v11.3.0")
+        sha512sum=0a741549f2b53afe74fe36e696906d3558fb833\
+0f08ce41331ee22c88229e1207b2b03e69d52c9b61ff9d0e55d6e7efd\
+c10e7279ea7c1807b2717c34f007afac
+        ;;
 esac
 
 

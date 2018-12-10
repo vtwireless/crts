@@ -1,0 +1,4 @@
+Files in this directory can only be accessed by the user "admin".
+
+The web server program crts_scenarioWebServer.js will not serve
+any files in this directory to anyone that is not user "admin".

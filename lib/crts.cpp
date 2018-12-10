@@ -97,9 +97,12 @@ static inline bool writen(int fd, const char *buf, size_t len)
 // We note that we do not send the '\0' to a node server,
 // it tends to choke on it.
 //
-bool CRTSTcpClient::send(const char *buf) const
+bool CRTSTcpClient::send(const char *buf, size_t len) const
 {
-    if(writen(fd, buf, strlen(buf)))
+    if(len == 0)
+        len = strlen(buf);
+
+    if(writen(fd, buf, len))
     {
         throw "failed to write() to TCP socket";
         return true; // failure

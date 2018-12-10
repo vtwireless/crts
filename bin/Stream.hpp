@@ -69,6 +69,10 @@ class Stream
         // ends in ".png".
         static bool printGraph(const char *filename = 0, bool _wait=true);
 
+        // returns a file descriptor that can read the PNG data and than
+        // the user should close it after reading it all.
+        static int printGraph(bool _wait=true);
+
 
         // It removes itself from the streams list
         ~Stream(void);

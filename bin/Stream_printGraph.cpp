@@ -39,10 +39,12 @@ bool Stream::printGraph(const char *filename, bool _wait)
     if(!filename || !filename[0])
     {
         // In this case we run dot and display the images assuming
-        // the program "display" from imagemagick is installed in
+        // the program "display" from imageMagick is installed in
         // the users path.
 
         errno = 0;
+        // Then using tmpfile(), file will be automatically deleted when
+        // it is closed or the program terminates.  Very nice...
         f = tmpfile();
         if(!f)
         {
@@ -111,7 +113,7 @@ bool Stream::printGraph(const char *filename, bool _wait)
     {
         // Run dot and generate a PNG image file.
         //
-        const char *pre = "dot -o "; // command to run without filename
+        const char *pre = "dot -Tpng -o "; // command to run without filename
         char *command = (char *) malloc(strlen(pre) + flen + 1);
         sprintf(command, "%s%s", pre, filename);
         errno = 0;
@@ -127,7 +129,7 @@ bool Stream::printGraph(const char *filename, bool _wait)
         pclose(f);
         return ret;
     }
-    
+
     // else
     // Generate a DOT graphviz file.
     //
@@ -137,10 +139,141 @@ bool Stream::printGraph(const char *filename, bool _wait)
         ERROR("fopen(\"%s\", \"w\") failed", filename);
         return true; // failure
     }
-        
+
     bool ret = printGraph(f);
     fclose(f);
     return ret;
+}
+
+// Print a base 64 encoded PNG image of a directed graph to a FILE stream
+// that this returns.  This will fork and exec the dot program.
+//
+// Returns a file descriptor on error
+//
+// On success, it's up to the user to close() this returned file
+// descriptor.  The user can read the PNG from this file descriptor.
+//
+int Stream::printGraph(bool _wait)
+{
+    // This is the main thread.
+    DASSERT(pthread_equal(Thread::mainThread, pthread_self()), "");
+
+    DSPEW("Writing DOT graph.");
+
+    // In this case we run dot (from package visgraph) assuming "dot" is
+    // installed in the users env PATH.
+
+    // We make two pipes: one to the dot program and one from it.
+
+    errno = 0;
+
+    int toDotFds[2], fromDotFds[2];
+
+    if(-1 == pipe(toDotFds))
+    {
+        ERROR("pipe() failed");
+        return -1; // failure
+    }
+
+    if(-1 == pipe(fromDotFds))
+    {
+        ERROR("pipe() failed");
+        close(toDotFds[0]);
+        close(toDotFds[1]);
+        return -1; // failure
+    }
+
+    pid_t pid = fork();
+    if(pid == 0)
+    {
+        // I'm the child
+        close(toDotFds[1]);
+        close(fromDotFds[0]);
+
+        errno = 0;
+        if(0 != dup2(toDotFds[0], 0)) // read stdin from pipe in
+        {
+            WARN("dup2(%d, 0) failed", toDotFds[0]);
+            exit(1);
+        }
+        if(1 != dup2(fromDotFds[1], 1)) // write stdout to pipe out
+        {
+            WARN("dup2(%d, 1) failed", fromDotFds[1]);
+            exit(1);
+        }
+
+        // We tried to make a PNG file but dot (graphviz version 2.38.0)
+        // will not make a PNG from reading stdin.
+        //
+        // running either:
+        //  dot -Tsvg|convert svg:- png:-|base64 -w 0
+        //  dot -Tpng|base64 -w 0
+        //  hangs, that is never exits
+        //
+        const char *run = "dot -Tsvg|base64 -w 0";
+
+        DSPEW("Running: %s", run);
+        // Now stdin to the dot program is f_toDot, and the stdout of dot
+        // is the f_fromDot file.
+        //
+        // TODO: We could set a timer in case dot hangs and does not close
+        // the stdout, f_fromDot file, and find the "dot" hang error case.
+        execl("/bin/bash", "bash", "-c", run, (char *) 0);
+        exit(1);
+    }
+    else if(pid >= 0)
+    {
+        // I'm the parent
+        //
+        close(toDotFds[0]);
+        close(fromDotFds[1]);
+        FILE *f_toDot = fdopen(toDotFds[1], "w");
+        if(!f_toDot)
+        {
+            ERROR("fdopen() failed");
+            return -1; // failure
+        }
+
+        // write the dot graph to the input pipe.
+        if(printGraph(f_toDot))
+        {
+            fclose(f_toDot);
+            close(fromDotFds[0]);
+            return -1; // failure
+        }
+
+        // we wrote the input into the dot program so we can
+        // close it now.
+        fclose(f_toDot);
+
+        if(_wait)
+        {
+            int status = 0;
+            INFO("waiting for child display process", status);
+            errno = 0;
+            // We wait for just this child.
+            if(pid == waitpid(pid, &status, 0))
+                INFO("child dot process return status %d",
+                        status);
+            else
+            {
+                WARN("child dot process gave a wait error");
+                close(fromDotFds[0]);
+                return -1; // fail.
+            }
+        }
+
+        return fromDotFds[0];
+    }
+
+    // else
+    ERROR("fork() failed");
+    close(toDotFds[0]);
+    close(toDotFds[1]);
+    close(fromDotFds[0]);
+    close(fromDotFds[1]);
+
+    return -1;
 }
 
 
@@ -163,6 +296,7 @@ bool Stream::printGraph(FILE *f)
     );
 
     fprintf(f, "digraph {\n");
+            //"  bgcolor=\"#ffffffff\";\n");
 
     for(auto stream : streams)
     {
@@ -197,7 +331,8 @@ bool Stream::printGraph(FILE *f)
             {
                 char rNodeName[64]; // reader node name
                 snprintf(rNodeName, 64, "f%" PRIu32 "_%" PRIu32, n,
-                        filterModule->outputs[i]->toFilterModule->loadIndex);
+                        filterModule->outputs[i]->toFilterModule->
+                        loadIndex);
 
                 fprintf(f, "    %s -> %s;\n", wNodeName, rNodeName);
             }
@@ -236,7 +371,8 @@ bool Stream::printGraph(FILE *f)
                 snprintf(filterName, 64, "f%" PRIu32 "_%" PRIu32,
                         n, filterModule->loadIndex);
 
-                for(auto const &controller: filterModule->filter->control->controllers)
+                for(auto const &controller:
+                        filterModule->filter->control->controllers)
                 {
                     fprintf(f, "    controller_%"
                                 PRIu32 " [label=\"%s\(%"

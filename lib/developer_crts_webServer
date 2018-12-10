@@ -1,0 +1,21 @@
+#!/bin/bash
+
+# This script makes it easy to run the server with the same users names
+# and passwords, and contest directory; so that editing and re-running
+# with the same URL queries and cookies is easy.
+#
+# We just don't want to type this every time we make an edit to the server
+# and need to re-run the server.
+#
+
+
+set -xe
+cd $(dirname $0)
+
+exec ./crts_contestWebServer.js\
+ --user=admin --password=adminK2\
+ --user=betty --password=bettyK1\
+ --user=joe --password=joeK1\
+ --user=fred --password=fredK1\
+ --contest_dir=$HOME/CRTS_CONTEST --contest_dir_overwrite --debug
+
