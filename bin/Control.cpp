@@ -28,6 +28,7 @@ CRTSControl::CRTSControl(CRTSFilter *filter_in, std::string name_in):
     ASSERT(name, "strdup() failed");
     DASSERT(filter, "");
 
+    // Initialize the getNextParameterName() iterator.
     getNextParameterNameIt = filter->parameters.end();
 
     auto &controls = CRTSControl::controls;

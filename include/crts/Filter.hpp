@@ -743,7 +743,6 @@ class CRTSController
 
 
 
-
 /** The CRTSControls should be accessed in the CRTSFilter thread
  * that it is associated with or in the main thread in a constructor.
  *
@@ -762,7 +761,6 @@ class CRTSControl
          * /return the total number of bytes that the associated 
          * input channel have been consumed by the associated CRTSFilter
          * since the last start.
-         *
          */
         uint64_t totalBytesIn(uint32_t inChannelNum =
                 CRTSFilter::ALL_CHANNELS) const
@@ -831,6 +829,18 @@ class CRTSControl
                 *hasGet = (getNextParameterNameIt->second.get ? true : false);
 
             return getNextParameterNameIt->first;
+        }
+
+
+        /** Set a callback that gets a parameter value from the CRTSFilter
+         * that this CRTSControl is associated with.
+         *
+         * /param callback function that is called any time that the
+         * parameter changes.
+         */
+        void getParameter(std::string pname, std::function<double (void)> callback)
+        {
+            // TODO: write this code.
         }
 
 
