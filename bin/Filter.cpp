@@ -169,6 +169,7 @@ void CRTSFilter::addParameter(std::string name,
         throw s;
     }
 
+
     // We store a copy of a struct Parameter
     //
     parameters[name] = { set, get };

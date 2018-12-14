@@ -44,8 +44,16 @@ class Stream;
 // it's not called CRTSParameter.
 struct Parameter
 {
+    // called in CRTSController to set the value.
     std::function<bool (double)> set;
+
+    // called in CRTSController to poll the value
     std::function<double (void)> get;
+
+    // list of callbacks called when the parameter changes.
+    // TODO: or it had setParameter() called and the value
+    // may change.
+    std::list<std::function<double (void)>> getCallbacks;
 };
 
 
