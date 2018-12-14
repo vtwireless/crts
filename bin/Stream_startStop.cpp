@@ -110,8 +110,9 @@ bool Stream::start1(void)
         CRTSControl *c = fm->filter->control;
 
         if(fm->numOutputs)
-            fm->filter->addParameter("totalBytesOut", 0/*no set()*/,
-                    [c]() { return c->totalBytesOut(); }
+            fm->filter->addParameter("totalBytesOut",
+                    [c]() { return c->totalBytesOut(); },
+                    0/* no set()*/
             );
 
         if(fm->numOutputs > 1)
@@ -120,8 +121,9 @@ bool Stream::start1(void)
             {
                 std::string s = "totalBytesOut";
                 s += std::to_string(i);
-                fm->filter->addParameter(s, 0/*no set()*/,
-                        [c,i]() { return c->totalBytesOut(i); }
+                fm->filter->addParameter(s,
+                        [c,i]() { return c->totalBytesOut(i); },
+                        0/* no set()*/
                 );
             }
 
@@ -130,8 +132,9 @@ bool Stream::start1(void)
             // ignore input from Feed
             //
             if(!fm->filter->isSource())
-                fm->filter->addParameter("totalBytesIn", 0/*no set()*/,
-                        [c]() { return c->totalBytesIn(); }
+                fm->filter->addParameter("totalBytesIn",
+                        [c]() { return c->totalBytesIn(); },
+                        0/* no set()*/
                 );
         }
 
@@ -141,8 +144,9 @@ bool Stream::start1(void)
             {
                 std::string s = "totalBytesIn";
                 s += std::to_string(i);
-                fm->filter->addParameter(s, 0/*no set()*/,
-                        [c,i]() { return c->totalBytesIn(i); }
+                fm->filter->addParameter(s,
+                        [c,i]() { return c->totalBytesIn(i); },
+                        0/* no set()*/
                 );
             }
 

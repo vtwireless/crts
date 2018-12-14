@@ -156,8 +156,8 @@ CRTSFilter::CRTSFilter(std::string controlName):
 
 
 void CRTSFilter::addParameter(std::string name,
-                std::function<bool (const double &)> set,
                 std::function<double (void)> get,
+                std::function<bool (const double &)> set,
                 bool overWrite)
 {
     if(!overWrite && parameters.find(name) != parameters.end())
@@ -168,7 +168,6 @@ void CRTSFilter::addParameter(std::string name,
         s += name + "\"";
         throw s;
     }
-
 
     // We store a copy of a struct Parameter
     //

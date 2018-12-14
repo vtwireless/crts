@@ -252,16 +252,16 @@ Rx::Rx(int argc, const char **argv):
         // parameter.
         //
         addParameter("freq",
-                [&](double x) { return setFreq(x); },
-                [&]() { return getFreq(); }
+                [&]() { return getFreq(); },
+                [&](double x) { return setFreq(x); }
         );
         addParameter("rate",
-                [&](double x) { return setRate(x); },
-                [&]() { return getRate(); }
+                [&]() { return getRate(); },
+                [&](double x) { return setRate(x); }
         );
         addParameter("gain",
-                [&](double x) { return setGain(x); },
-                [&]() { return getGain(); }
+                [&]() { return getGain(); },
+                [&](double x) { return setGain(x); }
         );
     }
     else
@@ -277,20 +277,20 @@ Rx::Rx(int argc, const char **argv):
             s = "freq";
             s += std::to_string(i); // freq0, freq1, freq2, freq3, ...
             addParameter(s,
-                [&](double x) { return setFreq(x, channels[i]); },
-                [&]() { return getFreq(channels[i]); }
+                [&]() { return getFreq(channels[i]); },
+                [&](double x) { return setFreq(x, channels[i]); }
             );
             s = "rate";
             s += std::to_string(i); // rate0, rate1, rate2, rate3, ...
             addParameter(s,
-                [&](double x) { return setRate(x, channels[i]); },
-                [&]() { return getRate(channels[i]); }
+                [&]() { return getRate(channels[i]); },
+                [&](double x) { return setRate(x, channels[i]); }
             );
             s = "gain";
             s += std::to_string(i); // gain0, gain1, gain2, gain3, ...
             addParameter(s, 
-                [&](double x) { return setGain(x, channels[i]); },
-                [&]() { return getGain(channels[i]); }
+                [&]() { return getGain(channels[i]); },
+                [&](double x) { return setGain(x, channels[i]); }
             );
         }
     }

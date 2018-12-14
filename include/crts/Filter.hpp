@@ -558,17 +558,20 @@ class CRTSFilter
          * /param name the name of the parameter that CRTSControllers will
          * be setting and getting.
          *
-         * /param set a function that is called to set the parameter
-         * in whatever way it sees fit.
-         *
          * /param get a function that returns the current parameter value,
-         * as the filter defines it.
+         * as the filter defines it.  A get function is required.
+         *
+         * /param set a function that is called to set the parameter
+         * in whatever way it sees fit.  A set function is not required.
+         * The CRTSFilter does not need to let external code set a
+         * parameter.
          *
          * /param overWrite if false this will not throw an exception
+         * due to already having a parameter with this name.
          */
         void addParameter(std::string name,
-                std::function<bool (const double &)> set,
                 std::function<double (void)> get,
+                std::function<bool (const double &)> set=0,
                 bool overWrite=false);
 
  
@@ -821,7 +824,8 @@ class CRTSControl
          * the returned string is empty than we are at the end of the list
          * of parameters.
          */
-        std::string getNextParameterName(bool start = false, bool *hasSet=0, bool *hasGet=0)
+        std::string getNextParameterName(bool start = false,
+                bool *hasSet=0, bool *hasGet=0)
         {
             if(start || getNextParameterNameIt == filter->parameters.end())
                 getNextParameterNameIt = filter->parameters.begin();
@@ -846,9 +850,21 @@ class CRTSControl
          * /param callback function that is called any time that the
          * parameter changes.
          */
-        void getParameter(std::string pname, std::function<double (void)> callback)
-        {
+        void getParameter(std::string pname,
+                std::function<double (void)> callback)
+        { 
             // TODO: write this code.
+            //
+            if(filter->parameters.find(pname) == filter->parameters.end())
+            {
+                ERROR("There is no parameter named \"%s\"",
+                    pname.c_str());
+                std::string s("There is no parameter named \"");
+                s += pname + "\"";
+                throw s;
+            }
+
+            //filter->parameters[pname].getCallbacks.pushBack(callback);
         }
 
 
