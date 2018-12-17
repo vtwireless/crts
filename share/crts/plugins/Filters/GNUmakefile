@@ -28,38 +28,8 @@ LIBFEC_LDFLAGS := -L$(ROOT)/lib -lfec
 # Make every *.cpp file into a DSO (dynamic shared object) plugin that is
 # installed.
 
-# TODO: This will not work in a build tree that is not the same as the
-# source tree.  *.cpp is in the source.  That may explain why GNU automake
-# never uses wildcards.
-#srcs := $(patsubst %.cpp,%,$(wildcard *.cpp))
-
-# from: echo *.cpp
-srcs :=\
- fileIn.cpp\
- fileOut.cpp\
- liquidFrame.cpp\
- liquidSync.cpp\
- passThrough.cpp\
- readline.cpp\
- rx.cpp\
- sin.cpp\
- sleepTest.cpp\
- sourceFeed.cpp\
- stdin.cpp\
- stdout.cpp\
- tx.cpp\
- joystick.cpp\
- sink.cpp
-ifdef BUILD_QUICKSCOPE
-srcs := $(srcs) quickscope.cpp
-endif
-
-# TODO: add terminator.cpp which is like a source.cpp and a sink.cpp
-# for all inputs and outputs.
 
 
-# TODO: We are restructuring the CRTSFilter interface, so only these
-# filters have been rewritten so far:
 srcs :=\
  stdin.cpp\
  stdout.cpp\
@@ -67,12 +37,13 @@ srcs :=\
  copy.cpp\
  tx.cpp\
  rx.cpp\
+ throttle.cpp\
  liquidFrame.cpp\
  liquidSync.cpp\
  joystick.cpp\
  sink.cpp\
+ count.cpp\
  fileIn.cpp
-
 
 
 

@@ -281,12 +281,11 @@ void Stream::waitForCondWaitThreads(void)
 
         if(!threadNotWaiting) break;
 
-        // We thought this sleeping when in this transit flush mode
-        // was better than adding another stupid flag that all the
-        // threads would have to look at in every loop when in a
-        // non-transit state.  This keeps the worker thread loops
-        // simpler.
-        struct timespec t { 0/* seconds */, 4000000 /*nano seconds*/};
+        // We thought this sleeping when in this transit flush mode was
+        // better than adding another flag that all the threads would have
+        // to look at in every loop when in a non-transit state.  This
+        // keeps the worker thread loops simpler.
+        struct timespec t { 0/* seconds */, 200000000 /*nano seconds*/};
         // If nanosleep fails it does not matter there's nothing we 
         // could do about it anyway.  A signal could make it fail.
         //
