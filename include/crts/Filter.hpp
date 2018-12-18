@@ -53,21 +53,22 @@ struct Parameter
     // list of callbacks called when the parameter changes.
     // TODO: or it had setParameter() called and the value
     // may change.
-    std::list<std::function<double (void)>> getCallbacks;
+    std::list<std::function<void (double)>> getCallbacks;
 };
 
 
 
-// CRTSStream is a user interface to set and get attributes of the Stream
-// which is the related to the group of Filters that are connected (input
-// and output) to each other.  There is a pointer to a CRTSStream in the
-// CRTSFilter called stream.
-//
+/** CRTSStream is a user interface to set and get attributes of the Stream
+ *  which is the related to the group of Filters that are connected (input
+ * and output) to each other.  There is a pointer to a CRTSStream in the
+ * CRTSFilter called stream.
+ */
 class CRTSStream
 {
     public:
 
-        // A reference to the Stream isRunning flag.
+        /** A reference to the Stream isRunning flag.
+         */
         std::atomic<bool> &isRunning;
 
 
@@ -95,48 +96,48 @@ class CRTSStream
 };
 
 
-// The CRTSFilter is the user component module base class.
-//
-// We use the word filter to refer to general data processing component.
-// Systems engineers would likely not want to refer to these
-// data processing components as filters, but strictly speaking they are
-// software filters, ref:  https://en.wikipedia.org/wiki/Filter_(software),
-// so we call them filters which is short for "software filters".
-// Some CRTSFilter objects have zero input, but the interface to these
-// filters with no inputs is the same as the filters with input, so they
-// are filters with null inputs.  We call them source filters.
-//
-// There are sink filters too. ...
-//
-//
-// The Unix philosophy encourages combining small, discrete tools to
-// accomplish larger tasks.  Reference:
-//
-//       https://en.wikipedia.org/wiki/Filter_(software)#Unix
-//
-// A stream can be thought of as items on a conveyor belt being processed
-// one at a time.  In our case in CRTSFilters are placed at points along
-// the conveyor belt to transform the data stream as it flows.
-// This idea of "stream" seems to fit what we are doing.  We assemble
-// CRTSFilters along our stream.  Reference:
-//
-//       https://en.wikipedia.org/wiki/Stream_(computing)
-//       https://en.wikipedia.org/wiki/Filter_(software)
-//
-
-// When these modules run the coding interfaces are such that we do not
-// have to know if these modules run on separate threads or not.  Wither
-// or not these modules run on different threads is decided at run time.
-// This is a requirement so that run/start time optimization is possible.
-//
-// Sometimes things are so simple that running a single thread is much
-// faster than running more than one thread; and sometimes processing in a
-// module takes so long that multi-threading, and multi-buffering between,
-// the modules is faster.  We can test different filter/thread topologies
-// on the fly and the filter writer does not have to be concerned about
-// threading, which is a run time decision.  The cost for such flexibility 
-// is requiring a particular interface, the CRTSFilter object.
-//
+/** A filter component module base class.
+ *
+ * We say that in general a filter reads inputs and writes outputs.
+ *
+ * A source filter has no input and a sink filter has no output.
+ *
+ * We use the word filter to refer to general data processing component.
+ * Systems engineers would likely not want to refer to these
+ * data processing components as filters, but strictly speaking they are
+ * software filters, ref:  https://en.wikipedia.org/wiki/Filter_(software),
+ * so we call them filters which is short for "software filters".
+ * Some CRTSFilter objects have zero input, but the interface to these
+ * filters with no inputs is the same as the filters with input, so they
+ * are filters with null inputs.  We call them source filters.
+ *
+ *
+ * The Unix philosophy encourages combining small, discrete tools to
+ * accomplish larger tasks.  Reference: 
+ * https://en.wikipedia.org/wiki/Filter_(software)#Unix
+ *
+ * A stream can be thought of as items on a conveyor belt being processed
+ * one at a time.  In our case in CRTSFilters are placed at points along
+ * the conveyor belt to transform the data stream as it flows.
+ * This idea of "stream" seems to fit what we are doing.  We assemble
+ * CRTSFilters along our stream.  Reference:
+ * https://en.wikipedia.org/wiki/Stream_(computing)
+ * https://en.wikipedia.org/wiki/Filter_(software)
+ *
+ *
+ * When these modules run the coding interfaces are such that we do not
+ * have to know if these modules run on separate threads or not.  Wither
+ * or not these modules run on different threads is decided at run time.
+ * This is a requirement so that run/start time optimization is possible.
+ *
+ * Sometimes things are so simple that running a single thread is much
+ * faster than running more than one thread; and sometimes processing in a
+ * module takes so long that multi-threading, and multi-buffering between,
+ * the modules is faster.  We can test different filter/thread topologies
+ * on the fly and the filter writer does not have to be concerned about
+ * threading, which is a run time decision.  The cost for such flexibility 
+ * is requiring a particular interface, the CRTSFilter object.
+ */
 // TODO:  It may be possible to make parts of this stream have CRTSFilter
 // modules running in different processes, not just threads.  This should
 // be able to be added seamlessly at without changing the users CRTSFilter
@@ -186,7 +187,7 @@ class CRTSFilter
 
         static const uint32_t 
 
-        /** A channel number used to refer to all channels by they input
+        /** A channel number used to refer to all channels be they input
          * or output.
          *
          * It may be used as the channel parameter to the functions:
@@ -215,18 +216,20 @@ class CRTSFilter
          * When this input() function is called the stream may be running
          * in one of two modes:
          *
-         *      1. Normal running when stream->isRunning is true.
+         *      1. Normal running when stream->isRunning is true.  In this
+         *      mode the amount of input data will always be at least as
+         *      large as the requested threshold.
          *
          *      2. Shutdown mode when stream->isRunning is false.  In
          *      shutdown mode all the source filters will no longer get
          *      their input() functions called and all the other
          *      non-source filters will get their input() called until all
-         *      the flowing data runs out.  There may be one of more
+         *      the flowing data runs out.  There may be one or more
          *      filter input() calls with the amount of input data that is
          *      less than the requested threshold amount.
          *
          * \param buffer is a pointer to the start of the input data or 0
-         * if \c len is 0.
+         * if \c len is 0 and this is a source filter.
          *
          * \param bufferLen is the number of bytes available to access in
          * \c buffer.
@@ -250,9 +253,9 @@ class CRTSFilter
          * stop() is called.
          *
          * The CRTSFilter writer may override this to take actions that
-         * dependent on what input channels and output channels are
-         * present, like how buffers are shared between input channels
-         * and output channels.
+         * depend on what input channels and output channels are present,
+         * like how buffers are shared between input channels and output
+         * channels.
          *
          * The flow graph structure is not known when the CRTSFilter Super
          * class constructor is called, so we must have this start
@@ -296,14 +299,15 @@ class CRTSFilter
          * stop().  After the constructor is called and after stop(), but
          * before start() the topology may change.
          *
-         * /param controlName sets the name of the filter control.  This
+         * \param controlName sets the name of the filter control.  This
          * name can be used by a CRTSController to get control of this
          * filter.  If \c name is an empty string a name will be generated
-         * based on the filename of the filter module plugin.
+         * based on the filename of the filter module plugin that is
+         * made with this CRTSFilter.
          */
         CRTSFilter(std::string controlName="");
 
-        // The stream that this filter object is in.
+        /** The stream that this filter object is in. */
         CRTSStream *stream;
 
     protected:
@@ -345,6 +349,22 @@ class CRTSFilter
             bytes called with the input() function.
          */
         void advanceInput(size_t len);
+
+
+        /** Set a parameter in this filter.
+         *
+         * This will call all the CRTSController::getParameter()
+         * callbacks that are registered.  If there are no callbacks this
+         * call does nothing.
+         *
+         * \param name is the name of this parameter to set.
+         *
+         * \param value is the value to set and send to the CRTSController
+         * callbacks functions.
+         *
+         * \return false on success.
+         */
+        bool setParameter(const std::string name, double value);
 
 
         /** Create a buffer that will have data with origin from this
@@ -541,7 +561,7 @@ class CRTSFilter
          *
          * This adds an interface of setting and getting parameter values
          * for modular CRTSController objects.  The CRTSControllers only
-         * have to know the /c name of the parameter to set and get its'
+         * have to know the \c name of the parameter to set and get its'
          * value, they do not need more intimate knowledge about
          * parameters to set and get them.  In this way we say that we
          * have a seamless interface to controlling the filters.  This
@@ -550,23 +570,23 @@ class CRTSFilter
          * even knowing what the filters are, it just knows that it can
          * set and get parameter values and the filter handles the detail.
          *
-         * /todo doubles can be converted to many other types, but a
+         * \todo doubles can be converted to many other types, but a
          * double can't be made into any type.  If we template out
          * the double we'll lose the seamless nature of this control
          * interface, or will we.
          *
-         * /param name the name of the parameter that CRTSControllers will
+         * \param name the name of the parameter that CRTSControllers will
          * be setting and getting.
          *
-         * /param get a function that returns the current parameter value,
+         * \param get a function that returns the current parameter value,
          * as the filter defines it.  A get function is required.
          *
-         * /param set a function that is called to set the parameter
+         * \param set a function that is called to set the parameter
          * in whatever way it sees fit.  A set function is not required.
          * The CRTSFilter does not need to let external code set a
          * parameter.
          *
-         * /param overWrite if false this will not throw an exception
+         * \param overWrite if false this will not throw an exception
          * due to already having a parameter with this name.
          */
         void addParameter(std::string name,
@@ -584,7 +604,7 @@ class CRTSFilter
 
 
         // List of all Parameters for this filter:
-        std::map<std::string, Parameter> parameters;
+        std::map<const std::string, Parameter> parameters;
 
 
         // TODO: It'd be nice to hide this list in filterModule but
@@ -621,6 +641,12 @@ class CRTSFilter
 };
 
 
+/** A Controller module base class
+ *
+ * Used to monitor and control the filter flow stream by
+ * setting and getting CRTSFilter parameters, and directly
+ * executing code before inputting data chunks into filters.
+ */
 class CRTSController
 {
 
@@ -850,8 +876,8 @@ class CRTSControl
          * /param callback function that is called any time that the
          * parameter changes.
          */
-        void getParameter(std::string pname,
-                std::function<double (void)> callback)
+        void getParameter(const std::string pname,
+                std::function<void (double)> callback)
         { 
             // TODO: write this code.
             //
@@ -864,7 +890,7 @@ class CRTSControl
                 throw s;
             }
 
-            //filter->parameters[pname].getCallbacks.pushBack(callback);
+            filter->parameters[pname].getCallbacks.push_back(callback);
         }
 
 
@@ -877,7 +903,7 @@ class CRTSControl
          * parameter with the name \c pname was not found, \e NAN
          * is returned.
          */
-        double getParameter(std::string pname)
+        double getParameter(const std::string pname)
         {
             DASSERT(filter, "");
             DASSERT(pname.length(), "");
@@ -906,7 +932,7 @@ class CRTSControl
          *
          * /return true is this call affected the parameter.
          */
-        bool setParameter(std::string pname, const double &val)
+        bool setParameter(const std::string pname, const double &val) const
         {
             DASSERT(filter, "");
             DASSERT(pname.length(), "");
@@ -1076,6 +1102,27 @@ CRTSControl *CRTSFilter::makeControl(const char *controlName, bool generateName)
     }
 
     return new CRTSControl(this, genName);
+}
+
+
+inline
+bool CRTSFilter::setParameter(const std::string pname, double value)
+{
+
+    try
+    {
+        Parameter p = this->parameters[pname];
+        for(std::function<void (double)> func: p.getCallbacks)
+            // TODO: all these calls should not be bunched together
+            // in one try/catch.
+            func(value);
+    }
+    catch(...)
+    {
+        return true; // fail
+    }
+
+    return false; // success
 }
 
 

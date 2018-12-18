@@ -254,14 +254,16 @@ void Stream::waitForCondWaitThreads(void)
                 // this time.  So we'll signal it depending on how long
                 // we've been waiting so far.
                 //
-                if(loopCount > 1)
+                if(loopCount == 2)
                 {
+                    // We'll signal just this once.
+
                     // This is in case the thread is stuck in to something
                     // like a blocking read(2) call; otherwise this could
                     // wait forever.
                     //
                     // If this call fails there not much we can do about
-                    // it, and it's not a big deal.
+                    // it, and it may not be a big deal.
                     DSPEW("signaling thread %" PRIu32 " with signal %d",
                             (*tt)->threadNum, THREAD_EXIT_SIG);
                     pthread_kill((*tt)->thread, THREAD_EXIT_SIG);
