@@ -423,8 +423,8 @@ void Client::start(CRTSControl *c)
             if(haveGetter)
             {
                 // Register the callback for when the parameter changes.
-                // THIS IS WRONG:  TODO  HHHHHHHHHHHHHHELP
-                //c->getParameter(name, [&]() { getParameterCB(name,  );
+                c->getParameter(name, [&](double value)
+                        { getParameterCB(name, value);});
 
                 if(pcount) controlList += ", ";
                 ++pcount;

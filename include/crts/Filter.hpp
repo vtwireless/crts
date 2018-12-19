@@ -53,7 +53,7 @@ struct Parameter
     // list of callbacks called when the parameter changes.
     // TODO: or it had setParameter() called and the value
     // may have changed.
-    std::list<std::function<void (const std::string name, double)>>
+    std::list<std::function<void (double)>>
         getCallbacks;
 };
 
@@ -264,7 +264,14 @@ class CRTSFilter
          *
          * This may be used to start a piece of physical hardware.
          *
-         * \param 
+         * At each start call the number of input and output channels can
+         * change.
+         *
+         * \param numInputChannels the number of inputs.  Input channels
+         * are numbers from 0 to N-1.
+         *
+         * \param numOutputtChannels the number of outputs.  Output
+         * channels are numbers from 0 to N-1.
          *
          * \return true for failure.
          */
@@ -284,6 +291,15 @@ class CRTSFilter
          * This may or may not be needed for all CRTSFilter modules.  It's
          * so the Filter may stop a piece of physical hardware for a
          * restart or shutdown like events.
+         *
+         * At each stop call the number of input and output channels will
+         * be the same as that in the last start() call.
+         *
+         * \param numInputChannels the number of inputs.  Input channels
+         * are numbers from 0 to N-1.
+         *
+         * \param numOutputtChannels the number of outputs.  Output
+         * channels are numbers from 0 to N-1.
          *
          * \return true for failure.
          */
@@ -705,8 +721,8 @@ class CRTSController
 
         /** print the stream graph image to a file descriptor
          *
-         * We use this to send a base 64 encoded PNG image to a
-         * socket.
+         * For example: we use this to send a base 64 encoded PNG image to
+         * a socket.
          *
          * \param fd is the file descriptor to write the PNG file to.
          *
@@ -880,11 +896,17 @@ class CRTSControl
         /** Set a callback that gets a parameter value from the CRTSFilter
          * that this CRTSControl is associated with.
          *
+         * The callback will be called when the stream is flowing.
+         * The callback will be called in the in the filter's thread,
+         * before or during the filter's input() is called.  So this
+         * callback is associated with a particular filter that owns this
+         * CRTSControl.
+         *
          * /param callback function that is called any time that the
          * parameter changes.
          */
         void getParameter(const std::string pname,
-                std::function<void (const std::string name, double)> callback)
+                std::function<void (double)> callback)
         { 
             // TODO: write this code.
             //
@@ -932,6 +954,11 @@ class CRTSControl
          * CRTSControl is associated with.
          *
          * /todo make a object set(pname) with method that uses operator '='.
+         * Like set["freq"]
+         *
+         * This should only be called in the excute() function which is
+         * passed this CRTSControl.  This will run filters input() thread
+         * before input() is called.
          *
          * /param pname the name of the parameter that we seek to set.
          *
@@ -946,7 +973,20 @@ class CRTSControl
 
             try
             {
-                return filter->parameters[pname].set(val);
+                Parameter p = filter->parameters[pname];
+                // Call the filters set() function.
+                bool ret = p.set(val);
+                if(ret &&  !p.getCallbacks.empty())
+                {
+                    // Call the filters get() function so that we can get
+                    // the value to pass to controller get callbacks.
+                    double value = p.get();
+                    for(std::function<void (double)> func: p.getCallbacks)
+                        // TODO: all these calls should not be bunched together
+                        // in one try/catch.
+                        func(value);
+                }
+                return ret;
             }
             catch(...)
             {
@@ -1119,10 +1159,10 @@ bool CRTSFilter::setParameter(const std::string pname, double value)
     try
     {
         Parameter p = this->parameters[pname];
-        for(std::function<void (const std::string name, double)> func: p.getCallbacks)
+        for(std::function<void (double)> func: p.getCallbacks)
             // TODO: all these calls should not be bunched together
             // in one try/catch.
-            func(pname, value);
+            func(value);
     }
     catch(...)
     {
