@@ -178,6 +178,13 @@ void Throttle::input(void *buffer, size_t len, uint32_t inChannelNum)
         return;
     }
 
+    if(!stream->isRunning)
+    {
+        // Just flush it without delay if we are finishing up.
+        output(len, 0);
+        return;
+    }
+
     // inChannelNum == 0
     //
     struct timespec t = AddTimes(period, rem);

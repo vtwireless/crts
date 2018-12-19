@@ -8,4 +8,4 @@ cd $(dirname $0)
 make -C ..
 
 
-../bin/crts_radio -f count -f throttle -f countCheck
+../bin/crts_radio -f tests/count -f throttle -f tests/countCheck

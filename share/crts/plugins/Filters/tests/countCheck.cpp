@@ -39,7 +39,6 @@ class CountCheck : public CRTSFilter
         ~CountCheck(void);
 
         bool start(uint32_t numInChannels, uint32_t numOutChannels);
-        bool stop(uint32_t numInChannels, uint32_t numOutChannels);
         void input(void *buffer, size_t bufferLen, uint32_t inChannelNum);
 
     private:
@@ -52,6 +51,10 @@ class CountCheck : public CRTSFilter
         {
             return standardDev;
         };
+
+        uint32_t numOutputs;
+
+        bool doneCheck;
 
 };
 
@@ -88,16 +91,11 @@ bool CountCheck::start(uint32_t numInChannels, uint32_t numOutChannels)
     standardDev = 0.0;
     sumSq = 0.0;
     numSamples = 0.0;
+    numOutputs = numOutChannels;
+    doneCheck = false;
 
     setParameter("standardDev", standardDev);
 
-    DSPEW();
-    return false; // success
-}
-
-
-bool CountCheck::stop(uint32_t numInChannels, uint32_t numOutChannels)
-{
     DSPEW();
     return false; // success
 }
@@ -107,26 +105,23 @@ void CountCheck::input(void *buffer, size_t len, uint32_t inChannelNum)
 {
     DASSERT(len > 0, "");
 
-    // We must read full uint64_t integers.
-    //
-    if(stream->isRunning)
+    ASSERT(doneCheck == false,
+        "We got input less than sizeof(uint64_t) already");
+
+    if(len < sizeof(uint64_t))
     {
-        DASSERT(len >= sizeof(uint64_t), "");
-        // In the case where we are finishing running we will
-        // need to output len even if we can't measure it.
-        //
-        // We must read full uint64_t integers.
-        len -= len % sizeof(uint64_t);
-    
-        // We can't advance (process) the whole length that came in if it
-        // was not a multiple of length sizeof(uint64_t).
-        //
-        // It's okay if "len" did not change, we're doing what would have
-        // been done anyway.
-        //
+        // We can't handle this small an amount of data
+        // unless this is just cruft on the end and we
+        // are done, and this is the last input.
         advanceInput(len);
+        doneCheck = true;
+        return;
     }
 
+    // We must read full uint64_t integers.
+    //
+    // We must read full uint64_t integers.
+    len -= (len % sizeof(uint64_t));
 
     // number of uint64_t counts.
     size_t num = len/sizeof(uint64_t);
@@ -135,7 +130,8 @@ void CountCheck::input(void *buffer, size_t len, uint32_t inChannelNum)
 
     if(numSamples == 0.0)
     {
-        expectedCount = *(count++) + 1;
+        expectedCount = *count + 1;
+        ++count;
         numSamples = 1.0;
         ++i;
     }
@@ -144,13 +140,18 @@ void CountCheck::input(void *buffer, size_t len, uint32_t inChannelNum)
     {
         numSamples += 1.0;
 
-        if(*count != ++expectedCount)
+        DSPEW("count = %" PRIu64, *count);
+
+        if(*count != expectedCount)
         {
+            //DSPEW("count = %" PRIu64 " expectedCount = %" PRIu64, *count, expectedCount);
             sumSq += (*count - expectedCount)*(*count - expectedCount);
-            ++count;
+            expectedCount = *count;
         }
         // else
-        //      We do no need to add to sumSq.
+        //      We do not need to add to sumSq.
+        ++count;
+        ++expectedCount;
     }
 
     // There is a popular singular case where standardDev == 0
@@ -158,18 +159,30 @@ void CountCheck::input(void *buffer, size_t len, uint32_t inChannelNum)
     // we will not keep setting the parameter standardDev to 0.
     // In all other cases it's likely that standardDev will change
     // at every input() call.
+    //
+    // TODO: we need a better measure that does not change if
+    // the count is good over some given length.
 
-    double oldStandardDev = standardDev;
+    if(num)
+    {
+        double oldStandardDev = standardDev;
 
-    standardDev = sqrt(sumSq/(numSamples-1));
+        standardDev = sqrt(sumSq/(numSamples-1));
 
-    // The "standardDev" parameter is only set here by this filter,
-    // and can't be set by a CRTSController.
+        // The "standardDev" parameter is only set here by this filter,
+        // and can't be set by a CRTSController.
 
-    if(oldStandardDev != standardDev)
-        setParameter("standardDev", standardDev);
+        if(oldStandardDev != standardDev)
+            setParameter("standardDev", 0.23);
+    }
 
-    output(len, 0);
+    if(numOutputs)
+        output(len, ALL_CHANNELS);
+    else
+        // If len was changed we need to advance the buffer not
+        // the full len that came in.
+        advanceInput(len);
+
 }
 
 
