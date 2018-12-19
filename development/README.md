@@ -38,8 +38,7 @@ Fast stream requires:
 Fast stream API trends:
 
 - Buffering between modules is automatically managed making
-  it somewhat seamless.  i.e. buffer sizes and advancement
-  is not not coded by the API user.
+  it somewhat seamless.
 
 - Filter modules register filter parameters that may be
   monitored and adjusted with "control" interfaces.

@@ -54,7 +54,6 @@ class Stdin : public CRTSFilter
         ~Stdin(void);
 
         bool start(uint32_t numInChannels, uint32_t numOutChannels);
-        bool stop(uint32_t numInChannels, uint32_t numOutChannels);
         void input(void *buffer, size_t bufferLen, uint32_t inChannelNum);
 
     private:
@@ -109,25 +108,6 @@ bool Stdin::start(uint32_t numInChannels, uint32_t numOutChannels)
     // If there are no inputs this Filer becomes a source filter which
     // gets write(0,0,0) calls in a loop, which is the start of a buffer
     // flow.
-
-    DSPEW();
-    return false; // success
-}
-
-
-bool Stdin::stop(uint32_t numInChannels, uint32_t numOutChannels)
-{
-    // In this function we could flush away all the input data to stdin,
-    // but if the input never stops that could be a problem.  We could
-    // close a file here, but that's not a good idea either.  So stop() in
-    // this filter does nothing, any input to stdin will just accumulate.
-    //
-    // We have no reactor core to shutdown in this, stdin, case.
-    //
-    // Buffers all get destroyed automatically and if a start() happens
-    // again buffers get re-created.
-
-    file = 0;
 
     DSPEW();
     return false; // success

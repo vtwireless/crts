@@ -16,7 +16,7 @@
 // because C++ sucks) we are forced to put most of the CRTS interface
 // definitions in this one file.  We are always required to define all
 // these classes in order to use any one of them, because they are all
-// connected.
+// interdependent.
 //
 // TODO: We could break this into more files that include each other in
 // a series of includes.
@@ -269,7 +269,7 @@ class CRTSFilter
          * \return true for failure.
          */
         virtual bool start(uint32_t numInputChannels,
-                uint32_t numOutputChannels) = 0;
+                uint32_t numOutputChannels) { return false;/*success*/};
 
         /** This is called after the flow stops and the stream topology has
          * not changed yet.  This may be due to the program heading toward
@@ -288,7 +288,7 @@ class CRTSFilter
          * \return true for failure.
          */
         virtual bool stop(uint32_t numInputChannels,
-                uint32_t numOutputChannels) = 0;
+                uint32_t numOutputChannels) { return false;/*success*/};
 
 
         virtual ~CRTSFilter(void);
@@ -659,15 +659,21 @@ class CRTSController
         /** start is called after all the filters start and
          * before the stream is running.
          *
-         * /param c the filters CRTS control
-         */
-        virtual void start(CRTSControl *c) = 0;
-
-        /** stop is called just before the filters stop.
+         * A module class that inherits CRTSController may opt
+         * out of writing a start() method.
          *
          * /param c the filters CRTS control
          */
-        virtual void stop(CRTSControl *c) = 0;
+        virtual void start(CRTSControl *c) { };
+
+        /** stop is called just before the filters stop.
+         *
+         * A module class that inherits CRTSController may opt
+         * out of writing a stop() method.
+         *
+         * /param c the filters CRTS control
+         */
+        virtual void stop(CRTSControl *c) { };
 
         /** execute is called before each CRTSFilter that owns the
          * CRTSControl calls output() for the connected CRTSFilters.
