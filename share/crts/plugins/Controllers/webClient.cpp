@@ -113,6 +113,21 @@ class Client: public CRTSController
         const char *address;
 
         CRTSTcpClient socket;
+
+    private:
+
+        // This function sends a parameter changing event to
+        // the web server.
+        void getParameterCB(const std::string name, double value)
+        {
+            std::string str = "C{\"name\":\"getParameter\""
+                     ",\"args\":[ \"";
+            str += name;
+            str += "\",";
+            str += std::to_string(value);
+            str += "]}\004";
+            socket.send(str.c_str());
+        }
 };
 
 
@@ -121,15 +136,15 @@ unsigned short Client::getPortAndAddressFromArgs(int argc, const char **argv)
 {
     CRTSModuleOptions opt(argc, argv, usage);
 
-    address = opt.get("server_address", DEFAULT_ADDRESS);
+    address = opt.get("--server_address", DEFAULT_ADDRESS);
 
-    return (port = opt.get("server_port", DEFAULT_PORT));
+    return (port = opt.get("--server_port", DEFAULT_PORT));
 }
 
 /* Find the path to the program "crts_shell" by assuming that it is in the
  * same directory as the current running program "crts_radio".
  *
- * Note: This code is very Linux specific, using /proc/.
+ * Note: This code is very Linux specific, using file system /proc/.
  */
 static inline std::string getExePath(void)
 {
@@ -353,7 +368,8 @@ void Client::start(CRTSControl *c)
             controlList += "]\n";
             ++ccount; // We have another control with parameters.
 #if 0
-            DSPEW("added TCP/IP client command interface for control: %s with %d set parameters",
+            DSPEW("added TCP/IP client command interface for control:"
+                    "%s with %d set parameters",
                     c->getName(), pcount);
 #endif
         }
@@ -406,6 +422,10 @@ void Client::start(CRTSControl *c)
             }
             if(haveGetter)
             {
+                // Register the callback for when the parameter changes.
+                // THIS IS WRONG:  TODO  HHHHHHHHHHHHHHELP
+                //c->getParameter(name, [&]() { getParameterCB(name,  );
+
                 if(pcount) controlList += ", ";
                 ++pcount;
                 controlList += "\"";

@@ -11,7 +11,9 @@ CPPFLAGS := -I$(ROOT)/include
 
 srcs :=\
  sleepPassThrough\
- joystickTxController
+ joystickTxController\
+ count\
+ countCheck
 
 
 define MkSource

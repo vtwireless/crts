@@ -42,7 +42,6 @@ srcs :=\
  liquidSync.cpp\
  joystick.cpp\
  sink.cpp\
- count.cpp\
  fileIn.cpp
 
 

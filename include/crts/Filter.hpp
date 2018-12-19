@@ -52,8 +52,9 @@ struct Parameter
 
     // list of callbacks called when the parameter changes.
     // TODO: or it had setParameter() called and the value
-    // may change.
-    std::list<std::function<void (double)>> getCallbacks;
+    // may have changed.
+    std::list<std::function<void (const std::string name, double)>>
+        getCallbacks;
 };
 
 
@@ -877,7 +878,7 @@ class CRTSControl
          * parameter changes.
          */
         void getParameter(const std::string pname,
-                std::function<void (double)> callback)
+                std::function<void (const std::string name, double)> callback)
         { 
             // TODO: write this code.
             //
@@ -1112,10 +1113,10 @@ bool CRTSFilter::setParameter(const std::string pname, double value)
     try
     {
         Parameter p = this->parameters[pname];
-        for(std::function<void (double)> func: p.getCallbacks)
+        for(std::function<void (const std::string name, double)> func: p.getCallbacks)
             // TODO: all these calls should not be bunched together
             // in one try/catch.
-            func(value);
+            func(pname, value);
     }
     catch(...)
     {

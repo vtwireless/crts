@@ -23,7 +23,7 @@ static void usage(void)
 "   uses the input buffer as a pass through buffer.\n"
 "\n"
 "\n",
-    name, DEFAULT_THRESHOLD);
+    name);
 
     errno = 0;
     throw "usage help"; // This is how return an error from a C++ constructor
