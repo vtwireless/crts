@@ -165,12 +165,14 @@ void FilterModule::runUsersActions(size_t len, Input *input)
 
     // Add unread/accumulated data to the len that we
     // will pass to the CRTSFilter::input().
-    size_t startingUnreadLen = len = input->unreadLength;
+    len = input->unreadLength;
     buf = (void *) input->readPoint;
 
 
     while(len)
     {
+        size_t startingUnreadLen = input->unreadLength;
+
         // If the filter has a choke length set we may call the
         // filter->write() many times, so that we do not write more than
         // the choke length and any one call.
