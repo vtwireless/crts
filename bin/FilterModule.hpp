@@ -374,17 +374,19 @@ class FilterModule
                 uint32_t outputChannelNum, Output * &ownerOutput,
                 bool isPassThrough = false);
 
-        void AdvanceWriteBuffer(size_t len, Output *o, CRTSFilter *f);
+        void AdvanceWriteBuffer(size_t len, Output *o, uint32_t outputChannelNum);
 
         inline void advanceWriteBuffer(size_t len, uint32_t outputChannelNum);
 
         void InputOutputReport(FILE *file = stderr);
 
-        void ControlActions(const void *buffer, size_t len, uint32_t inputChannelNum);
+        void ControlActions(const void *buffer, size_t len,
+                uint32_t inputChannelNum);
 };
 
 
-inline void FilterModule::AdvanceWriteBuffer(size_t len, Output *o, CRTSFilter *f)
+inline void FilterModule::AdvanceWriteBuffer(size_t len, Output *o,
+        uint32_t outputChannelNum)
 {
     if(o->ringBuffer->ownerOutput == o && o->isPassThrough == false)
         o->ringBuffer->advancePointer(o->ringBuffer->writePoint, len);
@@ -393,7 +395,18 @@ inline void FilterModule::AdvanceWriteBuffer(size_t len, Output *o, CRTSFilter *
     o->totalBytesOut += len;
 
     // For all output channels in the filter
-    f->_totalBytesOut += len;
+    filter->_totalBytesOut += len;
+
+
+    if(numOutputs)
+        filter->setParameter("totalBytesOut", filter->control->totalBytesOut());
+    if(numOutputs > 1)
+    {
+        // If there was just one output there is not need of 
+        std::string s = "totalBytesOut";
+        s += std::to_string(outputChannelNum);
+        filter->setParameter(s, filter->control->totalBytesOut(outputChannelNum));
+    }
 }
 
 
@@ -401,13 +414,13 @@ inline void
 FilterModule::advanceWriteBuffer(size_t len, uint32_t outputChannelNum)
 {
     if(outputChannelNum != CRTSFilter::ALL_CHANNELS)
-        AdvanceWriteBuffer(len, outputs[outputChannelNum], filter);
+        AdvanceWriteBuffer(len, outputs[outputChannelNum], outputChannelNum);
     else
     {
         // outputChannelNum == CRTSFilter::ALL_CHANNELS
         //
         for(uint32_t i=0; i<numOutputs; ++i)
-            AdvanceWriteBuffer(len, outputs[i], filter);
+            AdvanceWriteBuffer(len, outputs[i], i);
     }
 }
 

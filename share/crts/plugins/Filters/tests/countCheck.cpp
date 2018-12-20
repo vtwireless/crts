@@ -140,8 +140,6 @@ void CountCheck::input(void *buffer, size_t len, uint32_t inChannelNum)
     {
         numSamples += 1.0;
 
-        DSPEW("count = %" PRIu64, *count);
-
         if(*count != expectedCount)
         {
             //DSPEW("count = %" PRIu64 " expectedCount = %" PRIu64, *count, expectedCount);
@@ -167,13 +165,14 @@ void CountCheck::input(void *buffer, size_t len, uint32_t inChannelNum)
     {
         double oldStandardDev = standardDev;
 
-        standardDev = sqrt(sumSq/(numSamples-1));
+        if(numSamples > 1)
+            standardDev = sqrt(sumSq/(numSamples-1));
 
         // The "standardDev" parameter is only set here by this filter,
         // and can't be set by a CRTSController.
 
         if(oldStandardDev != standardDev)
-            setParameter("standardDev", 0.23);
+            setParameter("standardDev", standardDev);
     }
 
     if(numOutputs)

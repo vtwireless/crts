@@ -118,11 +118,13 @@ class Client: public CRTSController
 
         // This function sends a parameter changing event to
         // the web server.
-        void getParameterCB(const std::string name, double value)
+        void getParameterCB(const char *controlName, const std::string parameterName, double value)
         {
-            std::string str = "C{\"name\":\"getParameter\""
-                     ",\"args\":[ \"";
-            str += name;
+            std::string str = "I{\"name\":\"getParameter\""
+                     ",\"args\":[\"";
+            str += controlName;
+            str += "\",\"";
+            str += parameterName;
             str += "\",";
             str += std::to_string(value);
             str += "]}\004";
@@ -423,8 +425,8 @@ void Client::start(CRTSControl *c)
             if(haveGetter)
             {
                 // Register the callback for when the parameter changes.
-                c->getParameter(name, [&,name](double value)
-                        { getParameterCB(name, value);});
+                c->getParameter(name, [&,c,name](double value)
+                        { getParameterCB(c->getName(), name, value);});
 
                 if(pcount) controlList += ", ";
                 ++pcount;

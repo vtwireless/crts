@@ -197,15 +197,50 @@ void FilterModule::runUsersActions(size_t len, Input *input)
         if(currentInput && !advancedInput)
             filter->advanceInput(lenIn);
 
+
+        // BUG: this counting of input is WRONG it assumes that the len in
+        // is the same as the length consumed.  We really need the bytes
+        // that are consumed and that is the sum of
+        // CRTSFilter::advanceInput(), CRTSFilter::output() and the
+        // automatic advanceInput.  Both filter->_totalBytesIn and
+        // input->totalBytesIn may be wrong.
+
         filter->_totalBytesIn += lenIn;
+        // For just this one input and not the whole filter
+        // is not the same as filter->_totalBytesIn
         input->totalBytesIn += lenIn;
+
+
+
+
+
+
+
+
 
         len -= lenIn;
     }
 
+    // Now push out the "totalBytes*" parameters.
+    //
+    // TODO: Should this be done (N times) in the while loop just above?
+    // Maybe the ControlActions() should be done before the loop?
+    //
+    if(!filter->isSource())
+    {
+        filter->setParameter("totalBytesIn", filter->control->totalBytesIn());
+        if(numInputs > 1)
+        {
+            std::string s = "totalBytesIn";
+            s += std::to_string(inputChannelNum);
+            filter->setParameter(s, filter->control->totalBytesIn(inputChannelNum));
+        }
+    }
+
+
     // If the controller needs a hook to be called after the last
-    // filter->write() so they can use the controller destructor which is
-    // called after the last write.
+    // filter->write() so they can use the controller
+    // CRTSController::stop() which is called after the last write.
     //
     // The hook comes in all the connected CRTS Filters is called:
     // CRTSController::shutdown(CRTSControl *c)

@@ -920,6 +920,7 @@ class CRTSControl
             }
 
             filter->parameters[pname].getCallbacks.push_back(callback);
+            callback(filter->parameters[pname].get());
         }
 
 
