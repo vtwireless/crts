@@ -198,26 +198,6 @@ void FilterModule::runUsersActions(size_t len, Input *input)
             filter->advanceInput(lenIn);
 
 
-        // BUG: this counting of input is WRONG it assumes that the len in
-        // is the same as the length consumed.  We really need the bytes
-        // that are consumed and that is the sum of
-        // CRTSFilter::advanceInput(), CRTSFilter::output() and the
-        // automatic advanceInput.  Both filter->_totalBytesIn and
-        // input->totalBytesIn may be wrong.
-
-        filter->_totalBytesIn += lenIn;
-        // For just this one input and not the whole filter
-        // is not the same as filter->_totalBytesIn
-        input->totalBytesIn += lenIn;
-
-
-
-
-
-
-
-
-
         len -= lenIn;
     }
 

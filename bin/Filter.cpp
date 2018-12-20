@@ -378,9 +378,15 @@ void CRTSFilter::createPassThroughBuffer(
 }
 
 
-static inline void
-AdvanceInput(size_t len, Input *input, FilterModule *fm)
+void CRTSFilter::advanceInput(size_t len)
 {
+    DASSERT(!pthread_equal(Thread::mainThread, pthread_self()), "");
+    DASSERT(filterModule, "");
+    DASSERT(filterModule->filter == this, "");
+    DASSERT(filterModule->numInputs, "");
+
+    Input *input = filterModule->currentInput;
+
     DASSERT(input, "");
     DASSERT(input->output, "");
     DASSERT(input->output->ringBuffer, "");
@@ -391,31 +397,13 @@ AdvanceInput(size_t len, Input *input, FilterModule *fm)
     {
         input->unreadLength -= len;
         input->output->ringBuffer->advancePointer(input->readPoint, len);
+
+        filterModule->filter->_totalBytesIn += len;
+        // For just this one input and not the whole filter
+        // is not the same as filter->_totalBytesIn
+        input->totalBytesIn += len;
     }
-    fm->advancedInput = true;
-}
-
-#if 0
-// TODO: This may or may not make sense.
-//
-void CRTSFilter::advanceInput(size_t len, uint32_t inputChannelNum)
-{
-    DASSERT(!pthread_equal(Thread::mainThread, pthread_self()), "");
-    DASSERT(filterModule, "");
-    DASSERT(filterModule->numInputs >= inputChannelNum, "");
-
-    AdvanceInput(len, filterModule->inputs[inputChannelNum], filterModule);
-}
-#endif
-
-
-void CRTSFilter::advanceInput(size_t len)
-{
-    DASSERT(!pthread_equal(Thread::mainThread, pthread_self()), "");
-    DASSERT(filterModule, "");
-    DASSERT(filterModule->numInputs, "");
-
-    AdvanceInput(len, filterModule->currentInput, filterModule);
+    filterModule->advancedInput = true;
 }
 
 

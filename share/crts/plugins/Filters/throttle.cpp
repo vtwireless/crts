@@ -28,19 +28,24 @@ static void usage(void)
 "   blocking the first channel (0) the running of this filters thread for some time\n"
 "   for each input.\n"
 "\n"
-"   TODO: currently the number of inputs must be the same as the number of outputs.\n"
-"   With a little more code that restriction could be removed.\n"
+"   This filter must not be a source filter and it must have one input channel.\n"
+"   There may be any number of outputs including zero.  The input will be sprayed\n"
+"   to all output channels.  In the case with no output, this filter just serves to\n"
+"   delay (throttle) the consumption of the input, bottle-necking the flow at the\n"
+"   end.\n"
 "\n"
 "  ---------------------------------------------------------------------------\n"
 "                           OPTIONS\n"
 "  ---------------------------------------------------------------------------\n"
 "\n"
 "\n"
-"   --bytes BYTES     number of bytes written per period.  The default is %zu\n"
+"   --bytes BYTES     number of bytes written per period.  The default is %zu .\n"
+"                     BYTES may not be changed while the stream is running.\n"
 "\n"
 "\n"
 "   --period SEC      time to delay in seconds before outputing data. The default\n"
-"                     is %g seconds.\n"
+"                     is %g seconds.  The period can be changed while the stream is\n"
+"                     running.\n"
 "\n",
     name, DEFAULT_BYTES, DEFAULT_PERIOD);
 
@@ -59,7 +64,6 @@ class Throttle : public CRTSFilter
         ~Throttle(void);
 
         bool start(uint32_t numInChannels, uint32_t numOutChannels);
-        bool stop(uint32_t numInChannels, uint32_t numOutChannels);
         void input(void *buffer, size_t bufferLen, uint32_t inChannelNum);
 
     private:
@@ -97,6 +101,7 @@ class Throttle : public CRTSFilter
 
         size_t bytes;
         struct timespec period, rem; // Time to sleep and remaining time
+        uint32_t numOutputs;
 };
 
 
@@ -109,10 +114,9 @@ Throttle::Throttle(int argc, const char **argv)
     period.tv_sec = seconds;
     period.tv_nsec = (seconds - period.tv_sec)*(1.0e+9);
 
-    addParameter("bytes",
-                [&]() { return getBytes(); },
-                [&](double x) { return setBytes(x); }
-    );
+    // We can change the period on the fly, but we can't change the chunk
+    // size (bytes) on the fly (while the stream is running); because
+    // we can't change the ring buffers while it is running.
 
     addParameter("period",
                 [&]() { return getPeriod(); },
@@ -125,17 +129,21 @@ Throttle::Throttle(int argc, const char **argv)
 
 bool Throttle::start(uint32_t numInChannels, uint32_t numOutChannels)
 {
-    ASSERT(numInChannels && numInChannels == numOutChannels,
+    ASSERT(!isSource() && numInChannels == 1,
             "The number of input channels is not the same as"
             " the number of output channels");
 
-    createPassThroughBuffer(0, 0,
+    numOutputs = numOutChannels;
+
+    if(numOutputs)
+        createPassThroughBuffer(0, 0,
                 bytes /*maxBufferLen promise*/, bytes/*threshold amount*/);
 
     for(uint32_t i=1; i<numOutChannels; ++i)
         createPassThroughBuffer(i, i,
                 bytes /*maxBufferLen promise*/, bytes);
 
+    // We will never input() more than bytes.
     setChokeLength(bytes, ALL_CHANNELS);
 
     rem = {0,0};
@@ -144,12 +152,6 @@ bool Throttle::start(uint32_t numInChannels, uint32_t numOutChannels)
     return false; // success
 }
 
-
-bool Throttle::stop(uint32_t numInChannels, uint32_t numOutChannels)
-{
-    DSPEW();
-    return false; // success
-}
 
 
 static inline
@@ -168,40 +170,34 @@ struct timespec AddTimes(const struct timespec a, const struct timespec b)
 
 void Throttle::input(void *buffer, size_t len, uint32_t inChannelNum)
 {
+    DASSERT(inChannelNum == 0, "");
     DASSERT(bytes >= len,"");
 
-    if(inChannelNum != 0)
+    if(stream->isRunning)
     {
-        // For channel != 0 we just pass through.
+        DASSERT(bytes == len,"");
+
+        struct timespec t = AddTimes(period, rem);
+        errno = 0;
+        // TODO: consider using an interval timer instead.
         //
-        output(len, inChannelNum);
-        return;
+        // TODO: We could be interrupted more than once.
+        //
+        if(nanosleep(&t, &rem) == -1 && errno == EINTR &&
+                (rem.tv_sec || rem.tv_nsec))
+        {
+            t = rem;
+            rem = { 0, 0 };
+            // We where interrupted so do it again.
+            nanosleep(&t, &rem);
+        }
     }
 
-    if(!stream->isRunning)
-    {
-        // Just flush it without delay if we are finishing up.
+    if(numOutputs)
         output(len, 0);
-        return;
-    }
 
-    // inChannelNum == 0
-    //
-    struct timespec t = AddTimes(period, rem);
-    errno = 0;
-    // TODO: consider using an interval timer instead.
-    //
-    // TODO: We could be interrupted more than once.
-    //
-    if(nanosleep(&t, &rem) == -1 && errno == EINTR &&
-            (rem.tv_sec || rem.tv_nsec))
-    {
-        t = rem;
-        rem = { 0, 0 };
-        nanosleep(&t, &rem);
-    }
-
-    output(len, 0);
+    //else // This is done automatically.
+        //advanceInput(len);
 }
 
 

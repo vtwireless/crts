@@ -8,4 +8,4 @@ cd $(dirname $0)
 make -C ..
 
 
-../bin/crts_radio -f tests/count -f throttle -f tests/countCheck
+../bin/crts_radio -f tests/count -f throttle [ --bytes 15 --period 0.1 ] -f tests/countCheck
