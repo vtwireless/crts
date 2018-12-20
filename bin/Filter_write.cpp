@@ -165,7 +165,7 @@ void FilterModule::runUsersActions(size_t len, Input *input)
 
     // Add unread/accumulated data to the len that we
     // will pass to the CRTSFilter::input().
-    len = input->unreadLength;
+    size_t startingUnreadLen = len = input->unreadLength;
     buf = (void *) input->readPoint;
 
 
@@ -197,33 +197,32 @@ void FilterModule::runUsersActions(size_t len, Input *input)
         if(currentInput && !advancedInput)
             filter->advanceInput(lenIn);
 
+        // Now push out the "totalBytesIn" parameters.
+        //
+        // TODO: Should this be done (N times) in the while loop here, or
+        // maybe these totalBytesIn" parameters should be changed before or
+        // after the loop.
+        //
+        if(!filter->isSource() && startingUnreadLen != input->unreadLength)
+        {
+            filter->setParameter("totalBytesIn", filter->control->totalBytesIn());
+            if(numInputs > 1)
+            {
+                std::string s = "totalBytesIn";
+                s += std::to_string(inputChannelNum);
+                filter->setParameter(s, filter->control->totalBytesIn(inputChannelNum));
+            }
+        }
 
         len -= lenIn;
     }
 
-    // Now push out the "totalBytes*" parameters.
-    //
-    // TODO: Should this be done (N times) in the while loop just above?
-    // Maybe the ControlActions() should be done before the loop?
-    //
-    if(!filter->isSource())
-    {
-        filter->setParameter("totalBytesIn", filter->control->totalBytesIn());
-        if(numInputs > 1)
-        {
-            std::string s = "totalBytesIn";
-            s += std::to_string(inputChannelNum);
-            filter->setParameter(s, filter->control->totalBytesIn(inputChannelNum));
-        }
-    }
 
 
     // If the controller needs a hook to be called after the last
     // filter->write() so they can use the controller
     // CRTSController::stop() which is called after the last write.
     //
-    // The hook comes in all the connected CRTS Filters is called:
-    // CRTSController::shutdown(CRTSControl *c)
 
     currentInput = 0;
 };
