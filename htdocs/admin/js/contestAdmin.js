@@ -130,7 +130,6 @@ function _appendContestTable(controller, programName,
     console.log('adding image: ' + image);
     img.src = image;
 
-    //img.src = "data:image/png;base64, iVBORw0KGgoAAAANSUhEUgAAAAUAAAAFCAYAAACNbyblAAAAHElEQVQI12P4//8/w38GIAXDIBKE0DHxgljNBAAO9TXL0Y4OHwAAAABJRU5ErkJggg==";
     img.className = 'controller';
     controllerDiv.appendChild(img);
 
@@ -151,6 +150,9 @@ function contestAdminInit(io) {
     assert(_contest.io === undefined,
         "You cannot load/call this function more than once.");
     _contest.io = io;
+
+    io.Emit('getLauncherPrograms');
+
 
     io.On('addUsers', function(users) {
 

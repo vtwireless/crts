@@ -36,9 +36,9 @@
     ASSERT((errno = pthread_mutex_unlock(&client->mutex)) == 0,          \
             "pthread_mutex_unlock() failed")
 
-// Default address of crts_scenarioWebServer
+// Default address of crts_contestWebServer
 #define DEFAULT_ADDRESS "127.0.0.1"
-// DEFAULT_PORT should be consistent with crts_scenarioWebServer
+// DEFAULT_PORT should be consistent with crts_contestWebServer
 #define DEFAULT_PORT    ((uint32_t) 9383)
 
 

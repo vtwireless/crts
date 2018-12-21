@@ -198,6 +198,6 @@ and look at and run test programs in that directory.
 ## Running the CRTS server
 
 ```
-crts_scenarioWebServer
+crts_contestWebServer
 ```
 
