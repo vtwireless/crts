@@ -1,3 +1,22 @@
+# Web Server Design
+
+## Launching Programs for a Contest
+
+The client browser admin can click on a program (with options) and launch
+programs for the contest.
+
+We need the server to dynamically look up programs that it can launch;
+then we can add programs on the fly.  That will be a nice feature,
+compared to having static pages with programs listed, which would be error
+prone.
+
+Some launched programs connect to the web server via controller
+webClient.so and others like crts_spectrumFeed connect without
+webClient.so.  This connection will need to be TLS over TCP/IP in the
+future, but locally behind a firewall TCP/IP without TSL will be faster,
+and so should still be supported.
+
+
 # The fast stream software design pattern
 
 ## Objective
@@ -138,7 +157,8 @@ Running streams:
 
 ### GStreamer - https://gstreamer.freedesktop.org/
 
- For each incoming buffer, one buffer will go out, too.
+ For each incoming buffer, one buffer will go out, too;
+ so ya, no pass through buffers.
  https://gstreamer.freedesktop.org/data/doc/gstreamer/head/manual/manual.pdf
 
 ### DirectShow - https://en.wikipedia.org/wiki/DirectShow
@@ -165,7 +185,7 @@ schemes vary across software packages.
 
 
 
-| Package        | stream | filter     |  input      |  output   | control | parameter | controller |
+| Package        | stream | filter      |  input      |  output   | control | parameter | controller |
 ---------------------------------------------------------------------------
 | GNURadio      |         |  Block      |             |           |            |
 | GStreamer     |         |  Element    | source pad  | sink pad  |            |
@@ -191,5 +211,9 @@ schemes vary across software packages.
 ### Sound and video
 
 ### Software defined radio
+
+### Stupid test programs
+
+Needed for development.
 
 

@@ -1,4 +1,6 @@
-Files in this directory can only be accessed by the user "admin".
+Files in this directory can only be accessed by the user "admin"
+for the web server named crts_contestWebServer
 
-The web server program crts_scenarioWebServer.js will not serve
+The web server program crts_contestWebServer will not serve
 any files in this directory to anyone that is not user "admin".
+There can be any number of connections that are user "admin".
