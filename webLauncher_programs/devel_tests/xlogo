@@ -1,0 +1,3 @@
+#!/bin/bash
+
+exec xlogo -bg blue -fg red
