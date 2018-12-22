@@ -3,6 +3,25 @@
 //
 var _contest = { controllers: {} };
 
+
+function _getContestPanel(){
+
+    if(_contest.panel === undefined) {
+        var panelDiv = _contest.panel = document.createElement('div');
+        panelDiv.className = "contestPanel";
+        panelDiv.innerHTML = "<h3 class=contestPanel>CRTS " +
+            "Contest Access Control Panel</h3>";
+
+        parentElement.appendChild(panelDiv);
+
+        console.log('created contest panel');
+    } else {
+        var panelDiv = _contest.panel;
+    }
+    return panelDiv;
+}
+
+
 function _makeId(elementType, programName, controlName, parameter) {
 
     var ret = "";
@@ -34,7 +53,7 @@ function _getParameter(programName, controlName, parameter, id) {
 
 
 function _appendContestTable(controller, programName,
-    set, get, image) {
+    set, get, image, parentElement) {
 
     // type is "set" or "get"
     // obj is set or get
@@ -106,18 +125,7 @@ function _appendContestTable(controller, programName,
         parentNode.appendChild(div);
     }
 
-    if(_contest.panel === undefined) {
-        var panelDiv = _contest.panel = document.createElement('div');
-        panelDiv.className = "contestPanel";
-        panelDiv.innerHTML = "<h3 class=contestPanel>CRTS " +
-            "Contest Access Control Panel</h3>";
-
-        getElementById('bottom').appendChild(panelDiv);
-
-        console.log('appended contest panel');
-    } else {
-        var panelDiv = _contest.panel;
-    }
+    var panelDiv = _getContestPanel();
 
     // Add the controller <div>
     var controllerDiv = controller.div = document.createElement('div');
@@ -153,6 +161,14 @@ function contestAdminInit(io) {
 
     io.Emit('getLauncherPrograms');
 
+    io.On('launcherPrograms', function(programs) {
+        console.log("programs=" + programs);
+
+        var contestPanel = _getContestPanel();
+    
+
+        // MORE CODE HERE ..........
+    });
 
     io.On('addUsers', function(users) {
 
@@ -177,7 +193,8 @@ function contestAdminInit(io) {
             get: get
         };
 
-        _appendContestTable(controller, programName, set, get, image);
+        _appendContestTable(controller, programName, set, get, image,
+                getElementById('bottom')/*append to*/);
 
     });
 
