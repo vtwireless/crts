@@ -7,12 +7,13 @@ var _contest = { controllers: {} };
 function _getContestPanel(){
 
     if(_contest.panel === undefined) {
+
         var panelDiv = _contest.panel = document.createElement('div');
         panelDiv.className = "contestPanel";
         panelDiv.innerHTML = "<h3 class=contestPanel>CRTS " +
             "Contest Access Control Panel</h3>";
 
-        parentElement.appendChild(panelDiv);
+        getElementById('bottom').appendChild(panelDiv);
 
         console.log('created contest panel');
     } else {
@@ -53,7 +54,7 @@ function _getParameter(programName, controlName, parameter, id) {
 
 
 function _appendContestTable(controller, programName,
-    set, get, image, parentElement) {
+    set, get, image) {
 
     // type is "set" or "get"
     // obj is set or get
@@ -193,8 +194,7 @@ function contestAdminInit(io) {
             get: get
         };
 
-        _appendContestTable(controller, programName, set, get, image,
-                getElementById('bottom')/*append to*/);
+        _appendContestTable(controller, programName, set, get, image);
 
     });
 
