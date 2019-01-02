@@ -151,6 +151,111 @@ function _appendContestTable(controller, programName,
 }
 
 
+function _addLauncher(io) {
+
+
+    var programs = null;
+
+    function displayLauncher(program) {
+
+        // TODO: this text node could be made into
+        // a table row.
+
+        program.textNode.data =
+            program.path + ' [ran ' +
+            program.runCount + ' times]' +
+            ' (' + program.numRunning +
+            ' running)';
+    }
+
+    io.Emit('getLauncherPrograms');
+
+    io.On('receiveLauncherPrograms', function(programs_in) {
+
+        var programNames = Object.keys(programs_in);
+
+        if(programNames.length < 1) {
+            console.log('got NO receiveLauncherPrograms');
+            return;
+        }
+
+        var contestPanel = _getContestPanel();
+
+        // TODO: This html could be prettied up a lot.
+        //
+
+        if(programs) {
+            // remove the old list
+            assert(programs.div, "");
+            while(programs.div.firstChild)
+                programs.div.removeChild(launcher.firstChild);
+            delete programs.div; // Is this delete needed??
+            delete programs;
+        }
+
+        programs = {};
+        var div = programs.div = document.createElement('div');
+
+        div.className = 'launcher';
+        {
+            let h4 = document.createElement('h4');
+            h4.appendChild(document.createTextNode('launch program'));
+            div.appendChild(h4);
+
+            let ul = document.createElement('ul');
+            ul.className = 'launcher';
+            programNames.forEach(function(key) {
+
+                var path = key;
+                var program = programs_in[key];
+
+                assert(path === programs_in[key].path, "program != path");
+
+                var li = document.createElement('li');
+                li.className = 'launcher';
+                li.onclick = function() {
+                    console.log("launch program=" + path);
+                    io.Emit('launch', path);
+                };
+
+
+                var text = document.createTextNode(text);
+                li.appendChild(text);
+                ul.appendChild(li);
+                programs[path] = {
+                    // We save the text node so we may change the text.
+                    textNode: text,
+                    path: path,
+                    runCount: program.runCount,
+                    numRunning: program.numRunning
+                };
+                // copy all the data for this program.
+                Object.keys(program).forEach(function(key) {
+                    programs[path][key] = program[key];
+                });
+
+                displayLauncher(programs[path]);
+            });
+
+            div.appendChild(ul);
+        }
+        contestPanel.appendChild(div);
+    });
+
+    io.On('updateRunState', function(path, program_in) {
+
+        if(undefined === programs[path]) return;
+        var program = programs[path];
+        Object.keys(program_in).forEach(function(key) {
+            program[key] = program_in[key];
+        });
+
+        displayLauncher(programs[path]);
+    });
+
+}
+
+
 
 function contestAdminInit(io) {
 
@@ -158,18 +263,10 @@ function contestAdminInit(io) {
 
     assert(_contest.io === undefined,
         "You cannot load/call this function more than once.");
+
     _contest.io = io;
 
-    io.Emit('getLauncherPrograms');
-
-    io.On('launcherPrograms', function(programs) {
-        console.log("programs=" + programs);
-
-        var contestPanel = _getContestPanel();
-    
-
-        // MORE CODE HERE ..........
-    });
+    _addLauncher(io);
 
     io.On('addUsers', function(users) {
 

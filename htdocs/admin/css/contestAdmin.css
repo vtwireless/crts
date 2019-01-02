@@ -53,3 +53,19 @@ img.controller {
     min-width: 300px;
     margin: 8px;
 }
+div.launcher {
+    background-color:#A0A9B0;
+}
+li.launcher {
+    color: #34F;
+    cursor: pointer;
+}
+li.launcher:focus {
+    color: #34A;
+}
+li.launcher:hover {
+    color: #84A;
+}
+li.launcher:active {
+    color: #C25;
+}
