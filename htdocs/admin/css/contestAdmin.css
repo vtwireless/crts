@@ -54,18 +54,31 @@ img.controller {
     margin: 8px;
 }
 div.launcher {
-    background-color:#A0A9B0;
+    background-color:#CAC;
 }
-li.launcher {
+table.launcher {
+    border: 2px solid black;
+}
+td.launcher, td.args, td.runCount, td.numRunning {
+    border: 1px solid black;
+}
+
+td.launcher {
     color: #34F;
     cursor: pointer;
 }
-li.launcher:focus {
+td.launcher:focus {
     color: #34A;
 }
-li.launcher:hover {
+td.launcher:hover {
     color: #84A;
 }
-li.launcher:active {
+td.launcher:active {
     color: #C25;
+}
+td.runCount {
+}
+td.numRunning {
+}
+td.args {
 }

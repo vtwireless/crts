@@ -151,21 +151,23 @@ function _appendContestTable(controller, programName,
 }
 
 
-function _addLauncher(io) {
+
+//  _addLauncherPanel() makes HTML that is a clickable list of programs
+//  that we can launch on the server.
+//
+function _addLauncherPanel(io) {
 
 
     var programs = null;
 
-    function displayLauncher(program) {
+    function displayLauncher(launcher) {
 
         // TODO: this text node could be made into
         // a table row.
+        //
+        launcher.runCountText.data = launcher.runCount.toString();
 
-        program.textNode.data =
-            program.path + ' [ran ' +
-            program.runCount + ' times]' +
-            ' (' + program.numRunning +
-            ' running)';
+        launcher.numRunningText.data = launcher.numRunning.toString();
     }
 
     io.Emit('getLauncherPrograms');
@@ -197,64 +199,123 @@ function _addLauncher(io) {
         var div = programs.div = document.createElement('div');
 
         div.className = 'launcher';
-        {
-            let h4 = document.createElement('h4');
-            h4.appendChild(document.createTextNode('launch program'));
-            div.appendChild(h4);
 
-            let ul = document.createElement('ul');
-            ul.className = 'launcher';
-            programNames.forEach(function(key) {
+        let table = document.createElement('table');
+        table.className = 'launcher';
 
-                var path = key;
-                var program = programs_in[key];
-
-                assert(path === programs_in[key].path, "program != path");
-
-                var li = document.createElement('li');
-                li.className = 'launcher';
-                li.onclick = function() {
-                    console.log("launch program=" + path);
-                    io.Emit('launch', path);
-                };
+        let tr = document.createElement('tr');
+        tr.className = 'launcher';
 
 
-                var text = document.createTextNode(text);
-                li.appendChild(text);
-                ul.appendChild(li);
-                programs[path] = {
-                    // We save the text node so we may change the text.
-                    textNode: text,
-                    path: path,
-                    runCount: program.runCount,
-                    numRunning: program.numRunning
-                };
-                // copy all the data for this program.
-                Object.keys(program).forEach(function(key) {
-                    programs[path][key] = program[key];
-                });
 
-                displayLauncher(programs[path]);
+        let th = document.createElement('th');
+        th.className = 'launcher';
+        th.appendChild(document.createTextNode('program'));
+        tr.appendChild(th);
+
+        th = document.createElement('th');
+        th.className = 'launcher';
+        th.appendChild(document.createTextNode('run with arguments'));
+        tr.appendChild(th);
+
+
+        th = document.createElement('th');
+        th.className = 'launcher';
+        th.appendChild(document.createTextNode('number running'));
+        tr.appendChild(th);
+
+        th = document.createElement('th');
+        th.className = 'launcher';
+        th.appendChild(document.createTextNode('run count'));
+        tr.appendChild(th);
+
+        table.appendChild(tr);
+
+
+        programNames.forEach(function(key) {
+
+            var path = key;
+            var program = programs_in[key];
+
+            assert(path === programs_in[key].path, "program != path");
+
+            var tr = document.createElement('tr');
+            tr.className = 'launcher';
+
+            // All paths will start with '/' so they will not conflict
+            // with objects keys in programs that do not start with '/'.
+            //
+            var launcher = programs[path] = { path: path};
+            Object.keys(program).forEach(function(key) {
+                launcher[key] = program[key];
             });
 
-            div.appendChild(ul);
-        }
-        contestPanel.appendChild(div);
-    });
 
-    io.On('updateRunState', function(path, program_in) {
+            var argsInput = document.createElement('input');
+            argsInput.type = 'text';
+            argsInput.value = '';
 
-        if(undefined === programs[path]) return;
-        var program = programs[path];
-        Object.keys(program_in).forEach(function(key) {
-            program[key] = program_in[key];
+
+            var td = document.createElement('td');
+            td.className = 'launcher';
+            td.appendChild(document.createTextNode(path));
+            tr.appendChild(td);
+            td.onclick = function() {
+                console.log("launch program=" + path + ' ' +
+                    argsInput.value);
+                io.Emit('launch', path, argsInput.value);
+            };
+
+            td = document.createElement('td');
+            td.className = 'args';
+            td.appendChild(argsInput);
+            tr.appendChild(td);
+
+            td = document.createElement('td');
+            td.className = 'numRunning';
+            launcher.numRunningText = document.createTextNode('');
+            td.appendChild(launcher.numRunningText);
+            tr.appendChild(td);
+
+            td = document.createElement('td');
+            td.className = 'runCount';
+            launcher.runCountText = document.createTextNode('');
+            td.appendChild(launcher.runCountText);
+            tr.appendChild(td);
+
+            table.appendChild(tr);
+            displayLauncher(launcher);
         });
 
-        displayLauncher(programs[path]);
+
+        div.appendChild(table);
+        contestPanel.appendChild(div);
+        // Make this a show/hide clickable thing.
+        makeShowHide(div, { header: 'launch programs' });
     });
 
+    io.On('updateRunState', function(path, program) {
+
+        if(undefined === programs[path]) return;
+        var launcher = programs[path];
+        Object.keys(program).forEach(function(key) {
+            launcher[key] = program[key];
+        });
+
+        displayLauncher(launcher);
+    });
 }
 
+
+// Make a panel for all the currently running programs
+//
+function _addRunningProgramsPannel(io) {
+
+    var programs = null;
+
+
+
+}
 
 
 function contestAdminInit(io) {
@@ -266,7 +327,8 @@ function contestAdminInit(io) {
 
     _contest.io = io;
 
-    _addLauncher(io);
+    _addLauncherPanel(io);
+    _addRunningProgramsPannel(io);
 
     io.On('addUsers', function(users) {
 
