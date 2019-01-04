@@ -160,7 +160,7 @@ function _appendContestTable(controller, programName,
 
 
 //  _addLauncherPanel() makes HTML that is a clickable list of programs
-//  that we can launch on the server.
+//  that we can launch on the server by clicking on the client browser.
 //
 function _addLauncherPanel(io) {
 
@@ -318,7 +318,11 @@ function _addLauncherPanel(io) {
         makeShowHide(div, { header: 'launch' });
     });
 
-    io.On('updateRunState', function(path, program) {
+    io.On('programTally', function(path, program) {
+
+        // This updates the table of programs giving a count
+        // of the number of launched programs and the number
+        // of running programs.
 
         if(undefined === programs[path]) return;
         var launcher = programs[path];
@@ -331,36 +335,99 @@ function _addLauncherPanel(io) {
 }
 
 
-// Make a panel for all the currently running programs
+// Make a panel for all the currently running programs.
+//
+// Programs may be run more than once so we need a list
+// of them with a unique id for each program, the PID.
+//
+// We can preform actions on the running programs with
+// this panel.
 //
 function _addRunningProgramsPannel(io) {
 
-    var programs = null;
+    var programs = {};
+    var table;
 
-    function getRunningProgramsPanel() {
+    var contestPanel = _getContestPanel();
+    var topDiv = document.createElement('div');
+    topDiv.className = 'programs';
+    var header = document.createElement('h3');
+    header.appendChild(document.createTextNode('Running Programs'));
+    topDiv.appendChild(header);
+    contestPanel.appendChild(programs.div);
 
-        if(programs) return programs.div;
+    var table = document.createElement('table');
 
-        programs = {};
-        var contestPanel = _getContestPanel();
-        programs.div = document.createElement('div');
-        programs.div.className = 'programs';
-        var header = document.createElement('h3');
-        header.appendChild(document.createTextNode('Running Programs'));
-        programs.div.appendChild(header);
-        contestPanel.appendChild(programs.div);
+    {
+        let tr = document.createElement('tr');
+
+        let th = document.createElement('th');
+        th.appendChild(document.createTextNode('program'));
+        tr.appendChild(th);
+
+        th = document.createElement('th');
+        th.appendChild(document.createTextNode('args'));
+        th.className = 'programs';
+        tr.appendChild(th);
+
+        th = document.createElement('th');
+        th.appendChild(document.createTextNode('PID'));
+        th.className = 'programs';
+        tr.appendChild(th);
+
+        th = document.createElement('th');
+        th.appendChild(document.createTextNode('signal'));
+        th.className = 'programs';
+        tr.appendChild(th);
+
+        table.appendChild(tr);
+
+        topDiv.appendChild(table);
         makeShowHide(programs.div, { header: header });
-        return programs.div;
     }
 
 
-    var div = getRunningProgramsPanel();
+    io.On('programRunStatus', function(path, pid, args, state) {
 
-    io.On('updateRunState', function(path, program_in, pid, isRunning) {
+        if(programs[pid] === undefined && state !== 'exited') {
 
-        if(programs[pid] === undefined && isRunning) {
+            let program = programs[pid] = {
+                path: path,
+                pid: pid,
+                args: args,
+                state: state
+            };
 
-            var program = programs[pid] = program_in;
+            let tr = document.createElement('tr');
+
+            let td = document.createElement('td');
+            td.className = 'programs';
+            td.appendChild(document.createTextNode(path));
+            tr.appendChild(td);
+
+            td = document.createElement('td');
+            td.className = 'programs';
+            td.appendChild(document.createTextNode(pid.toString()));
+            tr.appendChild(td);
+
+            td = document.createElement('td');
+            td.className = 'programs';
+            {
+                let input = document.createElement('input');
+                input.type = 'text';
+                let span = document.createElement('span');
+                span.className = 'program_signal';
+                span.appendChild(document.createTextNode('signal'));
+            }
+
+        } else if(programs[pid] !== undefined && state === 'exited') {
+
+            // TODO: Remove this from the panel.
+
+            
+
+            delete programs[pid];
+
         }
     });
 

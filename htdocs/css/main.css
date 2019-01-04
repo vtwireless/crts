@@ -29,12 +29,19 @@ span.hide_tab, span.show_tab {
 
 }
 
-div.show_tab:hover, div.hide_tab:hover {
+div.show_tab:hover, div.hide_tab:hover, span.program_signal:hover {
     color: #A59;
 }
-div.show_tab:active, div.hide_tab:active {
+div.show_tab:active, div.hide_tab:active, span.program_signal:active {
     color: #F59;
 }
-div.show_tab:focus, div.hide_tab:focus {
+div.show_tab:focus, div.hide_tab:focus, span.program_signal:focus {
     color: #C59;
+}
+
+div.programs {
+    background-color:#D0D0F0;
+}
+table.programs, th.programs, td.programs {
+    border: 1px solid black;
 }

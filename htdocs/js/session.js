@@ -136,9 +136,7 @@ function _client(user, connectCallback=null) {
     // On() interfaces.
 
     // io will be the exposed "public" object.
-    var io = {};
-
-    createSocketIOObject(io, function(msg) { ws.send(msg); });
+    var io = createSocketIOObject(function(msg) { ws.send(msg); });
 
     ws.onmessage = function(e) {
 
@@ -155,7 +153,7 @@ function _client(user, connectCallback=null) {
 
     ws.onopen = function(e) {
 
-        console.log('got webSocket to: ' + url);
+        console.log('created webSocket to: ' + url);
 
         // If this is an invalid attempt than the server will disconnect.
 
