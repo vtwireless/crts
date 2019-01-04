@@ -55,8 +55,6 @@ function makeShowHide(container,
     if(typeof(opts.startShow) === 'boolean')
         showing = opts.startShow;
 
-    console.log('showing=' + showing);
-
     // Create the show/hide tag as the first child
     var tab = document.createElement('div');
     var span = document.createElement('span');
@@ -87,10 +85,8 @@ function makeShowHide(container,
         tab.className = 'show_tab';
     }
 
+
     tab.onclick = function() {
-
-        console.log('onclick()  showing=' + showing);
-
         if(showing) {
             // HIDE IT
             tabText.data = 'show';
@@ -119,7 +115,6 @@ function makeShowHide(container,
         tab.onclick();
     }
 }
-
 
 
 // We did not want to expose this function so we put an underscore

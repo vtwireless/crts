@@ -59,7 +59,7 @@ div.launcher {
 table.launcher {
     border: 2px solid black;
 }
-td.launcher, td.args, td.runCount, td.numRunning {
+th.launcher, td.launcher, td.args, td.runCount, td.numRunning {
     border: 1px solid black;
 }
 
@@ -82,3 +82,27 @@ td.numRunning {
 }
 td.args {
 }
+
+table.runningPrograms {
+    border: 2px solid black;
+}
+th.runningPrograms, td.path, td.args, td.signalInput, td.signalButton {
+    border: 1px solid black;
+}
+
+td.signalButton:focus {
+    color: #34A;
+}
+td.signalButton:hover {
+    color: #84A;
+}
+td.signalButton:active {
+    color: #C25;
+}
+
+div.programs {
+    background-color:#CAC;
+}
+
+
+

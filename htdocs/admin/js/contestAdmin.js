@@ -10,58 +10,65 @@ function _getContestPanel(){
 
         var panelDiv = _contest.panel = document.createElement('div');
         panelDiv.className = "contestPanel";
-        panelDiv.innerHTML = "<h3 class=contestPanel>CRTS " +
-            "Contest Access Control Panel</h3>";
+
+        var h = document.createElement('h3');
+        h.appendChild(document.createTextNode('CRTS ' +
+                'Contest Access Control Panel'));
+        h.className = 'contestPanel';
+        panelDiv.appendChild(h);
 
         getElementById('bottom').appendChild(panelDiv);
 
         console.log('created contest panel');
+
+        makeShowHide(panelDiv, {header:  h});
+
     } else {
         var panelDiv = _contest.panel;
     }
+
     return panelDiv;
 }
-
-
-function _makeId(elementType, programName, controlName, parameter) {
-
-    var ret = "";
-    for(var i=0; i < arguments.length; ++i) {
-        ret += arguments[i];
-        ret += '_';
-    }
-    return ret;
-}
-
-function _checkboxOnChange(userName, programName, type,
-    controlName, parameter, input) {
-
-    console.log(parameter + " checkbox changed:  value= " + input.checked);
-
-    _contest.io.Emit('changePermission', userName, programName, type,
-            controlName, parameter, input.checked);
-}
-
-function _getParameter(programName, controlName, parameter, id) {
-
-    console.log('getParameter ' + parameter + " id=" + id);
-
-    _contest.io.Emit('getParameter', programName, controlName,
-        parameter, id);
-}
-
 
 
 
 function _appendContestTable(controller, programName,
     set, get, image) {
 
+    function getParameter(programName, controlName, parameter, id) {
+
+        console.log('getParameter ' + parameter + " id=" + id);
+
+        _contest.io.Emit('getParameter', programName, controlName,
+            parameter, id);
+    }
+
+    function checkboxOnChange(userName, programName, type,
+        controlName, parameter, input) {
+
+        console.log(parameter + " checkbox changed:  value= " + input.checked);
+
+        _contest.io.Emit('changePermission', userName, programName, type,
+                controlName, parameter, input.checked);
+    }
+
+    function _makeId(elementType, programName, controlName, parameter) {
+
+        var ret = "";
+        for(var i=0; i < arguments.length; ++i) {
+            ret += arguments[i];
+            ret += '_';
+        }
+        return ret;
+    }
+
+
     // type is "set" or "get"
     // obj is set or get
     function makeActionTable(type, obj, parentNode) {
 
         function checkbox(userName, controlName, parameter) {
-            return '<input type=checkbox onchange="_checkboxOnChange(\'' + 
+            return '<input type=checkbox onchange="checkboxOnChange(\'' + 
                 userName + "','" +
                 programName + "','" +
                 type + "','" +
@@ -110,7 +117,7 @@ function _appendContestTable(controller, programName,
                         controlName, parameter);
                     div_innerHTML +=
                     '<td class=getvalue id=' + id +
-                    ' onclick="_getParameter(\'' +
+                    ' onclick="getParameter(\'' +
                         programName + "','" +
                         controlName + "','" +
                         parameter + "','" +
@@ -170,6 +177,26 @@ function _addLauncherPanel(io) {
         launcher.numRunningText.data = launcher.numRunning.toString();
     }
 
+    function createPrograms() {
+        var contestPanel = _getContestPanel();
+
+        if(programs) {
+            // remove the old list
+            assert(programs.div, "");
+            while(programs.div.firstChild)
+                programs.div.removeChild(launcher.firstChild);
+            delete programs.div; // Is this delete needed??
+            delete programs;
+        }
+
+        programs = {};
+        var div = programs.div = document.createElement('div');
+
+        div.className = 'launcher';
+        return div;
+    }
+
+
     io.Emit('getLauncherPrograms');
 
     io.On('receiveLauncherPrograms', function(programs_in) {
@@ -195,8 +222,7 @@ function _addLauncherPanel(io) {
             delete programs;
         }
 
-        programs = {};
-        var div = programs.div = document.createElement('div');
+        var div = createPrograms();
 
         div.className = 'launcher';
 
@@ -205,7 +231,6 @@ function _addLauncherPanel(io) {
 
         let tr = document.createElement('tr');
         tr.className = 'launcher';
-
 
 
         let th = document.createElement('th');
@@ -217,7 +242,6 @@ function _addLauncherPanel(io) {
         th.className = 'launcher';
         th.appendChild(document.createTextNode('run with arguments'));
         tr.appendChild(th);
-
 
         th = document.createElement('th');
         th.className = 'launcher';
@@ -291,7 +315,7 @@ function _addLauncherPanel(io) {
         div.appendChild(table);
         contestPanel.appendChild(div);
         // Make this a show/hide clickable thing.
-        makeShowHide(div, { header: 'launch programs' });
+        makeShowHide(div, { header: 'launch' });
     });
 
     io.On('updateRunState', function(path, program) {
@@ -313,6 +337,32 @@ function _addRunningProgramsPannel(io) {
 
     var programs = null;
 
+    function getRunningProgramsPanel() {
+
+        if(programs) return programs.div;
+
+        programs = {};
+        var contestPanel = _getContestPanel();
+        programs.div = document.createElement('div');
+        programs.div.className = 'programs';
+        var header = document.createElement('h3');
+        header.appendChild(document.createTextNode('Running Programs'));
+        programs.div.appendChild(header);
+        contestPanel.appendChild(programs.div);
+        makeShowHide(programs.div, { header: header });
+        return programs.div;
+    }
+
+
+    var div = getRunningProgramsPanel();
+
+    io.On('updateRunState', function(path, program_in, pid, isRunning) {
+
+        if(programs[pid] === undefined && isRunning) {
+
+            var program = programs[pid] = program_in;
+        }
+    });
 
 
 }
