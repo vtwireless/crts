@@ -15,7 +15,6 @@ div.controller {
     background-color:#80D0E0;
     margin-left: 10px;
     margin-right: 5px;
-    width: max-content;
 }
 h3.controller {
 }
@@ -53,8 +52,8 @@ img.controller {
     min-width: 300px;
     margin: 8px;
 }
-div.launcher {
-    background-color:#CAC;
+div.launcher, div.programs {
+    background-color:#9FC6E3;
 }
 table.launcher {
     border: 2px solid black;
@@ -99,10 +98,3 @@ td.signalButton:hover {
 td.signalButton:active {
     color: #C25;
 }
-
-div.programs {
-    background-color:#CAC;
-}
-
-
-

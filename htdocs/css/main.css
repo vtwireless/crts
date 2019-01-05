@@ -26,22 +26,37 @@ span.hide_tab, span.show_tab {
     border-color: black;
     border-radius: 4px;
     border-bottom-style: none;
-
 }
 
-div.show_tab:hover, div.hide_tab:hover, span.program_signal:hover {
+div.hide_tab, div.show_tab {
+    color: #55F;
+}
+
+span.program_signal {
+    cursor: pointer;
+    color: #55A;
+}
+
+div.show_tab:hover, div.hide_tab:hover,
+span.program_signal:hover {
     color: #A59;
 }
-div.show_tab:active, div.hide_tab:active, span.program_signal:active {
+div.show_tab:active, div.hide_tab:active,
+span.program_signal:active {
     color: #F59;
 }
-div.show_tab:focus, div.hide_tab:focus, span.program_signal:focus {
+div.show_tab:focus, div.hide_tab:focus,
+span.program_signal:focus {
     color: #C59;
 }
 
 div.programs {
     background-color:#D0D0F0;
+    margin: 4px;
 }
-table.programs, th.programs, td.programs {
+th.programs, td.programs {
     border: 1px solid black;
+}
+table.programs {
+    border: 2px solid black;
 }

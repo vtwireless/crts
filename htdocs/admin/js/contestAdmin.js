@@ -315,7 +315,7 @@ function _addLauncherPanel(io) {
         div.appendChild(table);
         contestPanel.appendChild(div);
         // Make this a show/hide clickable thing.
-        makeShowHide(div, { header: 'launch' });
+        makeShowHide(div, { header: 'Launch' });
     });
 
     io.On('programTally', function(path, program) {
@@ -351,18 +351,17 @@ function _addRunningProgramsPannel(io) {
     var contestPanel = _getContestPanel();
     var topDiv = document.createElement('div');
     topDiv.className = 'programs';
-    var header = document.createElement('h3');
-    header.appendChild(document.createTextNode('Running Programs'));
-    topDiv.appendChild(header);
-    contestPanel.appendChild(programs.div);
+    contestPanel.appendChild(topDiv);
 
     var table = document.createElement('table');
+    table.className = 'programs';
 
     {
         let tr = document.createElement('tr');
 
         let th = document.createElement('th');
         th.appendChild(document.createTextNode('program'));
+        th.className = 'programs';
         tr.appendChild(th);
 
         th = document.createElement('th');
@@ -383,7 +382,49 @@ function _addRunningProgramsPannel(io) {
         table.appendChild(tr);
 
         topDiv.appendChild(table);
-        makeShowHide(programs.div, { header: header });
+        makeShowHide(topDiv, { header: 'Running Programs' });
+    }
+
+
+    function addProgram(path, pid, args) {
+
+        let tr = document.createElement('tr');
+
+        programs[pid] = {
+            path: path,
+            pid: pid,
+            args: args,
+            tr: tr
+        };
+
+
+        let td = document.createElement('td');
+        td.className = 'programs';
+        td.appendChild(document.createTextNode(path));
+        tr.appendChild(td);
+
+        td = document.createElement('td');
+        td.className = 'programs';
+        td.appendChild(document.createTextNode(args));
+        tr.appendChild(td);
+
+        td = document.createElement('td');
+        td.className = 'programs';
+        td.appendChild(document.createTextNode(pid.toString()));
+        tr.appendChild(td);
+
+
+        td = document.createElement('td');
+        td.className = 'programs';
+        let input = document.createElement('input');
+        input.type = 'text';
+        let span = document.createElement('span');
+        span.className = 'program_signal';
+        span.appendChild(document.createTextNode('signal'));
+        td.appendChild(span);
+        td.appendChild(input);
+        tr.appendChild(td);
+        table.appendChild(tr);
     }
 
 
@@ -391,46 +432,25 @@ function _addRunningProgramsPannel(io) {
 
         if(programs[pid] === undefined && state !== 'exited') {
 
-            let program = programs[pid] = {
-                path: path,
-                pid: pid,
-                args: args,
-                state: state
-            };
-
-            let tr = document.createElement('tr');
-
-            let td = document.createElement('td');
-            td.className = 'programs';
-            td.appendChild(document.createTextNode(path));
-            tr.appendChild(td);
-
-            td = document.createElement('td');
-            td.className = 'programs';
-            td.appendChild(document.createTextNode(pid.toString()));
-            tr.appendChild(td);
-
-            td = document.createElement('td');
-            td.className = 'programs';
-            {
-                let input = document.createElement('input');
-                input.type = 'text';
-                let span = document.createElement('span');
-                span.className = 'program_signal';
-                span.appendChild(document.createTextNode('signal'));
-            }
+            addProgram(path, pid, args);
 
         } else if(programs[pid] !== undefined && state === 'exited') {
 
-            // TODO: Remove this from the panel.
-
-            
-
+            // Remove this from the panel.
+            table.removeChild(programs[pid].tr);
             delete programs[pid];
-
         }
     });
 
+
+    io.On('runningPrograms', function(runningPrograms) {
+
+        var keys = Object.keys(runningPrograms);
+        keys.forEach(function(pid) {
+            var rp = runningPrograms[pid];
+            addProgram(rp.path, rp.pid, rp.args);
+        });
+    });
 
 }
 
