@@ -13,7 +13,8 @@ srcs :=\
  sleepPassThrough\
  joystickTxController\
  count\
- countCheck
+ countCheck\
+ msequence
 
 
 define MkSource

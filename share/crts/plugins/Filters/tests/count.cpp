@@ -24,7 +24,7 @@ static void usage(void)
 "    Write unsigned 64 bit counter to the stream, starting at 0.\n"
 "\n"
 "    This filter can only be a source filter.  You can connect it\n"
-"    to any number of filters\n"
+"    to any number of filters.\n"
 "\n"
 "\n",
     name);
@@ -40,10 +40,8 @@ class Count : public CRTSFilter
     public:
 
         Count(int argc, const char **argv);
-        ~Count(void);
 
         bool start(uint32_t numInChannels, uint32_t numOutChannels);
-        bool stop(uint32_t numInChannels, uint32_t numOutChannels);
         void input(void *buffer, size_t bufferLen, uint32_t inChannelNum);
 
     private:
@@ -74,27 +72,13 @@ bool Count::start(uint32_t numInChannels, uint32_t numOutChannels)
 }
 
 
-bool Count::stop(uint32_t numInChannels, uint32_t numOutChannels)
-{
-    DSPEW();
-    return false; // success
-}
-
-
-Count::~Count(void)
-{
-    // Do nothing...
-
-    DSPEW();
-}
-
 
 void Count::input(void *buffer_in, size_t len, uint32_t inputChannelNum)
 {
     if(inputChannelNum > 0) 
         return;
 
-    // We just write when input channel one is triggered.
+    // We just write when input channel zero is triggered.
     uint64_t *buf = (uint64_t *) getOutputBuffer(0);
 
     // We can only write out multiples of length of uint64_t
