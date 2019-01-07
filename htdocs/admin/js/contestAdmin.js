@@ -177,25 +177,54 @@ function _addLauncherPanel(io) {
         launcher.numRunningText.data = launcher.numRunning.toString();
     }
 
-    function createPrograms() {
-        var contestPanel = _getContestPanel();
+    var contestPanel = _getContestPanel();
 
-        if(programs) {
-            // remove the old list
-            assert(programs.div, "");
-            while(programs.div.firstChild)
-                programs.div.removeChild(launcher.firstChild);
-            delete programs.div; // Is this delete needed??
-            delete programs;
-        }
+    var div = document.createElement('div');
+    div.className = 'launcher';
 
-        programs = {};
-        var div = programs.div = document.createElement('div');
+    contestPanel.appendChild(div);
+    // Make this a show/hide clickable thing.
+    makeShowHide(div, { header: 'Launch' });
 
-        div.className = 'launcher';
-        return div;
+    var table = null;
+
+    function makeTable() {
+
+        if(table) div.removeChild(table);
+
+        table = document.createElement('table');
+        table.className = 'launcher';
+
+        var header_tr = document.createElement('tr');
+        header_tr.className = 'launcher';
+
+
+        let th = document.createElement('th');
+        th.className = 'launcher';
+        th.appendChild(document.createTextNode('program'));
+        header_tr.appendChild(th);
+
+        th = document.createElement('th');
+        th.className = 'launcher';
+        th.appendChild(document.createTextNode('run with arguments'));
+        header_tr.appendChild(th);
+
+        th = document.createElement('th');
+        th.className = 'launcher';
+        th.appendChild(document.createTextNode('number running'));
+        header_tr.appendChild(th);
+
+        th = document.createElement('th');
+        th.className = 'launcher';
+        th.appendChild(document.createTextNode('run count'));
+        header_tr.appendChild(th);
+
+        table.appendChild(header_tr);
+        div.appendChild(table);
     }
 
+    makeTable();
+ 
 
     io.Emit('getLauncherPrograms');
 
@@ -208,53 +237,13 @@ function _addLauncherPanel(io) {
             return;
         }
 
-        var contestPanel = _getContestPanel();
-
-        // TODO: This html could be prettied up a lot.
-        //
-
+ 
         if(programs) {
             // remove the old list
-            assert(programs.div, "");
-            while(programs.div.firstChild)
-                programs.div.removeChild(launcher.firstChild);
-            delete programs.div; // Is this delete needed??
+            makeTable();
             delete programs;
         }
-
-        var div = createPrograms();
-
-        div.className = 'launcher';
-
-        let table = document.createElement('table');
-        table.className = 'launcher';
-
-        let tr = document.createElement('tr');
-        tr.className = 'launcher';
-
-
-        let th = document.createElement('th');
-        th.className = 'launcher';
-        th.appendChild(document.createTextNode('program'));
-        tr.appendChild(th);
-
-        th = document.createElement('th');
-        th.className = 'launcher';
-        th.appendChild(document.createTextNode('run with arguments'));
-        tr.appendChild(th);
-
-        th = document.createElement('th');
-        th.className = 'launcher';
-        th.appendChild(document.createTextNode('number running'));
-        tr.appendChild(th);
-
-        th = document.createElement('th');
-        th.className = 'launcher';
-        th.appendChild(document.createTextNode('run count'));
-        tr.appendChild(th);
-
-        table.appendChild(tr);
-
+        programs = {};
 
         programNames.forEach(function(key) {
 
@@ -312,10 +301,6 @@ function _addLauncherPanel(io) {
         });
 
 
-        div.appendChild(table);
-        contestPanel.appendChild(div);
-        // Make this a show/hide clickable thing.
-        makeShowHide(div, { header: 'Launch' });
     });
 
     io.On('programTally', function(path, program) {
