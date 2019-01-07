@@ -1,39 +1,16 @@
 
-// Local file object.
-//
-var _contest = { controllers: {} };
+function _addControllerPanel(io, contestPanel) {
+
+    var controllers = {};
+    var users = false;
 
 
-function _getContestPanel(){
+    io.On('addUsers', function(userNames) {
 
-    if(_contest.panel === undefined) {
+        assert(users === false, "We only add the users once.");
+        users = userNames;
+    });
 
-        var panelDiv = _contest.panel = document.createElement('div');
-        panelDiv.className = "contestPanel";
-
-        var h = document.createElement('h3');
-        h.appendChild(document.createTextNode('CRTS ' +
-                'Contest Access Control Panel'));
-        h.className = 'contestPanel';
-        panelDiv.appendChild(h);
-
-        getElementById('bottom').appendChild(panelDiv);
-
-        console.log('created contest panel');
-
-        makeShowHide(panelDiv, {header:  h});
-
-    } else {
-        var panelDiv = _contest.panel;
-    }
-
-    return panelDiv;
-}
-
-
-
-function _appendContestTable(controller, programName,
-    set, get, image) {
 
     function getParameter(programName, controlName, parameter, id) {
 
@@ -43,7 +20,7 @@ function _appendContestTable(controller, programName,
             parameter, id);
     }
 
-    function checkboxOnChange(userName, programName, type,
+    function userCheckboxOnChange(userName, programName, type,
         controlName, parameter, input) {
 
         console.log(parameter + " checkbox changed:  value= " + input.checked);
@@ -52,7 +29,7 @@ function _appendContestTable(controller, programName,
                 controlName, parameter, input.checked);
     }
 
-    function _makeId(elementType, programName, controlName, parameter) {
+    function makeId(elementType, programName, controlName, parameter) {
 
         var ret = "";
         for(var i=0; i < arguments.length; ++i) {
@@ -62,13 +39,17 @@ function _appendContestTable(controller, programName,
         return ret;
     }
 
+    // This will keep adding controller panels to the ContestPanel as they
+    // come up.
 
+    // makeActionTable() makes a set or get table for a controller.
+    //
     // type is "set" or "get"
     // obj is set or get
-    function makeActionTable(type, obj, parentNode) {
+    function makeActionTable(type, obj, parentNode, programName) {
 
         function checkbox(userName, controlName, parameter) {
-            return '<input type=checkbox onchange="checkboxOnChange(\'' + 
+            return '<input type=checkbox onchange="userCheckboxOnChange(\'' + 
                 userName + "','" +
                 programName + "','" +
                 type + "','" +
@@ -83,15 +64,15 @@ function _appendContestTable(controller, programName,
             type + "</h3>" +
             "<table class=" + type + ">" + 
             "<tr><td></td><th class=" + type + " colspan=" +
-            _contest.users.length.toString() +
-            ">Users</th>" + 
+            users.length; +
+            ">Users</th>" +
             ((type==="get")?"<th></th>":"") +
             "</tr>" +
             "<tr class=" +
             type + "><th class=" + type +
             ">parameter</th>";
 
-        _contest.users.forEach(function(userName) {
+        users.forEach(function(userName) {
             div_innerHTML += '<th class=' + type + '>' +
                 userName + '</th>';
         });
@@ -107,13 +88,13 @@ function _appendContestTable(controller, programName,
                 div_innerHTML += "<tr class=" + type +
                     "><td class=" + type + ">" + controlName +
                     ":" + parameter + '</th>';
-                _contest.users.forEach(function(userName) {
+                users.forEach(function(userName) {
                     div_innerHTML += '<td class=' + type +
                         '>' + checkbox(userName, controlName, parameter) +
                         '</td>';
                 });
                 if(type==="get") {
-                    let id = _makeId('getTD', programName,
+                    let id = makeId('getTD', programName,
                         controlName, parameter);
                     div_innerHTML +=
                     '<td class=getvalue id=' + id +
@@ -133,28 +114,71 @@ function _appendContestTable(controller, programName,
         parentNode.appendChild(div);
     }
 
-    var panelDiv = _getContestPanel();
+    function appendContestTable(controller, programName,
+        set, get, image) {
 
-    // Add the controller <div>
-    var controllerDiv = controller.div = document.createElement('div');
-    controllerDiv.className = "controller";
-    controllerDiv.innerHTML = "<h3 class=controller>Controller " +
-        "<span class=controller>" + programName + "</span></h3>";
-    panelDiv.appendChild(controllerDiv);
+        // Add a new controller <div>
+        var controllerDiv = controller.div = document.createElement('div');
+        controllerDiv.className = "controller";
+        controllerDiv.innerHTML = "<h3 class=controller>Controller " +
+            "<span class=controller>" + programName + "</span></h3>";
+        contestPanel.appendChild(controllerDiv);
 
-    var img = document.createElement('img');
-    console.log('adding image: ' + image);
-    img.src = image;
+        var img = document.createElement('img');
+        console.log('adding image: ' + image);
+        img.src = image;
 
-    img.className = 'controller';
-    controllerDiv.appendChild(img);
+        img.className = 'controller';
+        controllerDiv.appendChild(img);
 
-    // TODO: add the table required attributes.  I forget what it was
-    // called.  Like description of something.  Tidy complains about it
-    // not being there.
+        makeActionTable("set", set, controllerDiv, programName);
+        makeActionTable("get", get, controllerDiv, programName);
+    }
 
-    makeActionTable("set", set, controllerDiv);
-    makeActionTable("get", get, controllerDiv);
+
+    io.On('addController', function(programName, set, get, image) {
+
+        assert(users !== false, "We have not gotten 'addUsers' yet");
+
+        console.log('Got On("addController",) program="' +
+            programName + '"' +
+            '\n    set=' + JSON.stringify(set) +
+            '\n    get=' + JSON.stringify(get) +
+            '\n  image=' + image);
+
+        var controller = controllers[programName] = {
+            programName: programName,
+            set: set,
+            get: get
+        };
+
+        appendContestTable(controller, programName, set, get, image);
+    });
+
+
+    io.On('getParameter', function(value, programName, controlName,
+        parameter, id) {
+
+        var node = document.getElementById(id);
+        if(node) {
+            node.innerHTML = value.toString();
+        }
+    });
+
+
+    io.On('removeController', function(programName, set, get) {
+
+        console.log('Got On("removeController",) program="' +
+            programName);
+
+        // TODO: HERE more code.
+        //
+        //
+
+
+        delete _contest.controllers[programName];
+    });
+
 }
 
 
@@ -162,7 +186,7 @@ function _appendContestTable(controller, programName,
 //  _addLauncherPanel() makes HTML that is a clickable list of programs
 //  that we can launch on the server by clicking on the client browser.
 //
-function _addLauncherPanel(io) {
+function _addLauncherPanel(io, contestPanel) {
 
 
     var programs = null;
@@ -176,8 +200,6 @@ function _addLauncherPanel(io) {
 
         launcher.numRunningText.data = launcher.numRunning.toString();
     }
-
-    var contestPanel = _getContestPanel();
 
     var div = document.createElement('div');
     div.className = 'launcher';
@@ -328,12 +350,11 @@ function _addLauncherPanel(io) {
 // We can preform actions on the running programs with
 // this panel.
 //
-function _addRunningProgramsPannel(io) {
+function _addRunningProgramsPanel(io, contestPanel) {
 
     var programs = {};
     var table;
 
-    var contestPanel = _getContestPanel();
     var topDiv = document.createElement('div');
     topDiv.className = 'programs';
     contestPanel.appendChild(topDiv);
@@ -442,64 +463,22 @@ function _addRunningProgramsPannel(io) {
 
 function contestAdminInit(io) {
 
-    console.log('contestAdminInit()');
+    var contestPanel = document.createElement('div');
+    contestPanel.className = "contestPanel";
 
-    assert(_contest.io === undefined,
-        "You cannot load/call this function more than once.");
+    var h = document.createElement('h3');
+    h.appendChild(document.createTextNode('CRTS ' +
+            'Contest Access Control Panel'));
+    h.className = 'contestPanel';
+    contestPanel.appendChild(h);
 
-    _contest.io = io;
+    getElementById('bottom').appendChild(contestPanel);
+    makeShowHide(contestPanel, {header:  h});
 
-    _addLauncherPanel(io);
-    _addRunningProgramsPannel(io);
+    console.log('created contest panel');
 
-    io.On('addUsers', function(users) {
-
-        if(_contest.users === undefined)
-            _contest.users = [];
-        _contest.users = _contest.users.concat(users);
-
-        console.log('added users=' + users);
-    });
-
-    io.On('addController', function(programName, set, get, image) {
-
-        console.log('Got On("addController",) program="' +
-            programName + '"' +
-            '\n    set=' + JSON.stringify(set) +
-            '\n    get=' + JSON.stringify(get) +
-            '\n  image=' + image);
-
-        var controller = _contest.controllers[programName] = {
-            programName: programName,
-            set: set,
-            get: get
-        };
-
-        _appendContestTable(controller, programName, set, get, image);
-
-    });
-
-    io.On('getParameter', function(value, programName, controlName,
-        parameter, id) {
-
-        var node = document.getElementById(id);
-        if(node) {
-            node.innerHTML = value.toString();
-        }
-    });
-
-
-    io.On('removeController', function(programName, set, get) {
-
-        console.log('Got On("removeController",) program="' +
-            programName);
-
-        // TODO: HERE more code.
-        //
-        //
-
-
-        delete _contest.controllers[programName];
-    });
+    _addLauncherPanel(io, contestPanel);
+    _addRunningProgramsPanel(io, contestPanel);
+    _addControllerPanel(io, contestPanel);
 }
 

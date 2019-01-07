@@ -1,0 +1,11 @@
+#!/bin/bash
+
+set -ex
+
+cd $(dirname ${BASH_SOURCE[0]})
+
+crts_radio=../../bin/crts_radio
+
+exec $crts_radio\
+ -f tests/count -f throttle -f tests/countCheck\
+ -C webClient
