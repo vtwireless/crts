@@ -20,15 +20,6 @@ function _addControllerPanels(io, contestPanel) {
             parameter, id);
     }
 
-    function userCheckboxOnChange(userName, programName, type,
-        controlName, parameter, input) {
-
-        console.log(parameter + " checkbox changed:  value= " + input.checked);
-
-        _contest.io.Emit('changePermission', userName, programName, type,
-                controlName, parameter, input.checked);
-    }
-
     function makeId(elementType, programName, controlName, parameter) {
 
         var ret = "";
@@ -49,35 +40,61 @@ function _addControllerPanels(io, contestPanel) {
     function makeActionTable(type, obj, parentNode, programName) {
 
         function checkbox(userName, controlName, parameter) {
-            return '<input type=checkbox onchange="userCheckboxOnChange(\'' + 
-                userName + "','" +
-                programName + "','" +
-                type + "','" +
-                controlName + "','" +
-                parameter + "',this);\"" +
-                "></input>";
+
+            var input = document.createElement('input');
+            input.type = 'checkbox';
+            input.onchange = function() {
+
+                // TODO: We need to group commands sent like this ...
+
+                io.Emit('changePermission', userName, programName, type,
+                    controlName, parameter, input.checked);
+            };
+
+            return input;
         }
 
         var div = document.createElement('div');
         div.className = type;
-        var div_innerHTML = "<h3 class=" + type + ">" +
-            type + "</h3>" +
-            "<table class=" + type + ">" + 
-            "<tr><td></td><th class=" + type + " colspan=" +
-            users.length; +
-            ">Users</th>" +
-            ((type==="get")?"<th></th>":"") +
-            "</tr>" +
-            "<tr class=" +
-            type + "><th class=" + type +
-            ">parameter</th>";
+        {
+            let h3 = document.createElement('h3');
+            h3.className = type;
+            h3.appendChild(document.createTextNode(type));
+            div.appendChild(h3);
+        }
+        var table = document.createElement('table');
+        table.className = type;
+        div.appendChild(table);
+        var tr = document.createElement('tr');
+        table.appendChild(tr);
+        {
+            // Content of tr is table headers
+            //
+            var th = document.createElement('th');
+            th.className = type;
+            th.appendChild(document.createTextNode('Filter:Parameter'));
+            tr.appendChild(th);
 
-        users.forEach(function(userName) {
-            div_innerHTML += '<th class=' + type + '>' +
-                userName + '</th>';
-        });
-        if(type==="get") div_innerHTML += "<th>value</th>";
-        div_innerHTML += '</tr>';
+            if(type === 'get') {
+                th = document.createElement('th');
+                th.className = type;
+                th.appendChild(document.createTextNode('value'));
+                tr.appendChild(th);
+            } else {
+                // type === 'set'
+                th = document.createElement('th');
+                th.className = type;
+                th.appendChild(document.createTextNode('set to:'));
+                tr.appendChild(th);
+            }
+
+            users.forEach(function(userName) {
+                th = document.createElement('th');
+                th.className = type;
+                th.appendChild(document.createTextNode(userName));
+                tr.appendChild(th);
+            });
+        }
 
         Object.keys(obj).forEach(function(controlName) {
 
@@ -85,34 +102,53 @@ function _addControllerPanels(io, contestPanel) {
 
             parameters.forEach(function(parameter) {
                 // Make a row for this parameter
-                div_innerHTML += "<tr class=" + type +
-                    "><td class=" + type + ">" + controlName +
-                    ":" + parameter + '</th>';
-                users.forEach(function(userName) {
-                    div_innerHTML += '<td class=' + type +
-                        '>' + checkbox(userName, controlName, parameter) +
-                        '</td>';
-                });
-                if(type==="get") {
-                    let id = makeId('getTD', programName,
-                        controlName, parameter);
-                    div_innerHTML +=
-                    '<td class=getvalue id=' + id +
-                    ' onclick="getParameter(\'' +
-                        programName + "','" +
-                        controlName + "','" +
-                        parameter + "','" +
-                        id + "');\"" +
-                        '>click</td>';
+                //
+                var tr = document.createElement('tr');
+                table.appendChild(tr);
+
+                var td = document.createElement('td');
+                td.className = type;
+                td.appendChild(document.createTextNode(
+                    controlName + ":" + parameter));
+                tr.appendChild(td);
+
+                if(type === "get") {
+                    td = document.createElement('td');
+                    td.className = 'getvalue';
+                    td.id = makeId('getTD', programName, controlName, parameter);
+                    td.appendChild(document.createTextNode('value'));
+                    tr.appendChild(td);
+                } else {
+                    // type === 'set'
+                    td = document.createElement('td');
+                    td.className = 'setValue';
+                    let input = document.createElement('input');
+                    input.type = 'text';
+                    input.onchange = function() {
+                        io.Emit('setParameter', programName, controlName,
+                            parameter, input.value);
+                    };
+                    td.appendChild(input);
+                    tr.appendChild(td);
+
                 }
-                div_innerHTML += '</tr>';
+
+
+                users.forEach(function(userName) {
+
+                    td = document.createElement('td');
+                    td.className = type;
+                    td.appendChild(checkbox(userName, controlName, parameter));
+                    tr.appendChild(td);
+                });
+
+
             });
         });
 
-        div_innerHTML += '</table>';
-        div.innerHTML = div_innerHTML;
         parentNode.appendChild(div);
     }
+
 
     function appendContestTable(controller, programName,
         set, get, image) {
@@ -140,6 +176,8 @@ function _addControllerPanels(io, contestPanel) {
         makeActionTable("set", set, controllerDiv, programName);
         makeActionTable("get", get, controllerDiv, programName);
         makeShowHide(controllerDiv, { header: h3 });
+
+        return controllerDiv;
     }
 
 
@@ -159,16 +197,33 @@ function _addControllerPanels(io, contestPanel) {
             get: get
         };
 
-        appendContestTable(controller, programName, set, get, image);
+        var div = appendContestTable(controller, programName, set, get, image);
+
+        controller.destroy = function() {
+            console.log('removing controller for ' + programName);
+            // remove widget
+            div.parentNode.removeChild(div);
+            // delete controller from list
+            delete controllers[this.programName];
+        }
     });
 
 
-    io.On('getParameter', function(value, programName, controlName,
-        parameter, id) {
+    io.On('getParameter', function(programName,
+            controlName, parameter, value) {
 
-        var node = document.getElementById(id);
-        if(node) {
-            node.innerHTML = value.toString();
+        //console.log("GOT socketIO event 'getParameter'," +
+        //    "args=" + [].slice.call(arguments));
+
+        if(controllers[programName] === undefined) return;
+
+
+        if(true) {
+            var node = document.getElementById(makeId(
+                'getTD', programName, controlName, parameter));
+            if(node) {
+                node.innerHTML = value.toString();
+            }
         }
     });
 
@@ -178,12 +233,8 @@ function _addControllerPanels(io, contestPanel) {
         console.log('Got On("removeController",) program="' +
             programName);
 
-        // TODO: HERE more code.
-        //
-        //
-
-
-        delete _contest.controllers[programName];
+        if(controllers[programName] === undefined) return;
+        controllers[programName].destroy();
     });
 
 }
@@ -430,6 +481,7 @@ function _addRunningProgramsPanel(io, contestPanel) {
         td.className = 'programs';
         let input = document.createElement('input');
         input.type = 'text';
+        input.value = 'SIGTERM';
         let span = document.createElement('span');
         span.className = 'program_signal';
         span.appendChild(document.createTextNode('signal'));
@@ -438,7 +490,6 @@ function _addRunningProgramsPanel(io, contestPanel) {
         };
         td.appendChild(span);
         td.appendChild(input);
-        input.value = 'TERM';
         tr.appendChild(td);
         table.appendChild(tr);
     }

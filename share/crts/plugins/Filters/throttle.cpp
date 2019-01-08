@@ -187,8 +187,6 @@ void Throttle::input(void *buffer, size_t len, uint32_t inChannelNum)
         struct timespec t = AddTimes(period, rem);
         errno = 0;
 
-SPEW("t.tv_sec=%ld  t.tv_nsec=%ld", t.tv_sec, t.tv_nsec);
-
         // TODO: consider using an interval timer instead.
         //
         // TODO: We could be interrupted more than once.
