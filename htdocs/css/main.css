@@ -36,6 +36,21 @@ span.program_signal {
     cursor: pointer;
     color: #55A;
 }
+span.program_signal {
+    margin: 2px;
+    border: solid;
+    border-width: 2px;
+    border-radius: 4px;
+}
+span.program_signal:focus {
+    border-color: #D59;
+}
+span.program_signal:active {
+    border-color: #F59;
+}
+span.program_signal:hover {
+    border-color: #A58;
+}
 
 div.show_tab:hover, div.hide_tab:hover,
 span.program_signal:hover {

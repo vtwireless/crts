@@ -157,13 +157,20 @@ bool Throttle::start(uint32_t numInChannels, uint32_t numOutChannels)
 static inline
 struct timespec AddTimes(const struct timespec a, const struct timespec b)
 {
-    time_t seconds = a.tv_sec + b.tv_sec +
-        (a.tv_nsec + b.tv_nsec)/1000000000.0F;
+    long nsec = a.tv_nsec + b.tv_nsec;
+    time_t seconds = a.tv_sec + b.tv_sec;
+
+    if(nsec > 1000000000)
+    {
+        time_t rem = nsec/1000000000.0F;
+        seconds += rem;
+        nsec -= rem * 1000000000;
+    }
 
     return
     {
         seconds,
-        (a.tv_nsec + b.tv_nsec) - seconds * 1000000000 // nano seconds
+        nsec // nano seconds
     };
 }
 
@@ -179,6 +186,9 @@ void Throttle::input(void *buffer, size_t len, uint32_t inChannelNum)
 
         struct timespec t = AddTimes(period, rem);
         errno = 0;
+
+SPEW("t.tv_sec=%ld  t.tv_nsec=%ld", t.tv_sec, t.tv_nsec);
+
         // TODO: consider using an interval timer instead.
         //
         // TODO: We could be interrupted more than once.

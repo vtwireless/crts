@@ -1,5 +1,5 @@
 
-function _addControllerPanel(io, contestPanel) {
+function _addControllerPanels(io, contestPanel) {
 
     var controllers = {};
     var users = false;
@@ -120,8 +120,14 @@ function _addControllerPanel(io, contestPanel) {
         // Add a new controller <div>
         var controllerDiv = controller.div = document.createElement('div');
         controllerDiv.className = "controller";
-        controllerDiv.innerHTML = "<h3 class=controller>Controller " +
-            "<span class=controller>" + programName + "</span></h3>";
+        let h3 = document.createElement('h3');
+        let span = document.createElement('span');
+        h3.appendChild(document.createTextNode('Controller '));
+        span.appendChild(document.createTextNode(programName));
+        span.className = 'controller';
+        h3.appendChild(span);
+        controllerDiv.appendChild(h3);
+
         contestPanel.appendChild(controllerDiv);
 
         var img = document.createElement('img');
@@ -133,6 +139,7 @@ function _addControllerPanel(io, contestPanel) {
 
         makeActionTable("set", set, controllerDiv, programName);
         makeActionTable("get", get, controllerDiv, programName);
+        makeShowHide(controllerDiv, { header: h3 });
     }
 
 
@@ -419,7 +426,6 @@ function _addRunningProgramsPanel(io, contestPanel) {
         td.appendChild(document.createTextNode(pid.toString()));
         tr.appendChild(td);
 
-
         td = document.createElement('td');
         td.className = 'programs';
         let input = document.createElement('input');
@@ -427,8 +433,12 @@ function _addRunningProgramsPanel(io, contestPanel) {
         let span = document.createElement('span');
         span.className = 'program_signal';
         span.appendChild(document.createTextNode('signal'));
+        span.onclick = function() {
+            io.Emit('signalProgram', pid, input.value);
+        };
         td.appendChild(span);
         td.appendChild(input);
+        input.value = 'TERM';
         tr.appendChild(td);
         table.appendChild(tr);
     }
@@ -477,8 +487,10 @@ function contestAdminInit(io) {
 
     console.log('created contest panel');
 
+    // We add panels in this order.
+    //
     _addLauncherPanel(io, contestPanel);
     _addRunningProgramsPanel(io, contestPanel);
-    _addControllerPanel(io, contestPanel);
+    _addControllerPanels(io, contestPanel);
 }
 
