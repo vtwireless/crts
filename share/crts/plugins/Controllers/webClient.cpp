@@ -196,26 +196,10 @@ static void *receiver(Client *client)
         //
         /* The JSON command request should be of the form:
          *
-         *   {
-         *     id: requestID_number,
-         *     control: "controlName0",
-         *     commands: [
-         *              { set: [ "parameterName0", 1.0e-4 ]},
-         *              { get: "parameterName1"},
-         *              { set: [ "parameterName2", 2.0e-6 ]}
-         *          ]
-         *   }
+         * example:
          *
-         * By putting the many commands in one request we can issue all
-         * commands in the request in one controller execute() call.
-         * Being able to issue all the commands in one controller
-         * execute() call could be very important.
-         *
-         * We can only make commands act in the same controller execute()
-         * call if they are in the same CRTSControl, hence we have just
-         * one control for a given command request.
+         * I{name: "setParameter", args [ ] }
          */
-
         if(control && json_typeof(control) == JSON_STRING)
         {
             const char *controlName = json_string_value(control);
