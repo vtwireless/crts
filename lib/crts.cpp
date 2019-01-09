@@ -22,7 +22,6 @@ CRTSTcpClient::CRTSTcpClient(const char *address, unsigned short port):
     // Initialize read buffers and pointers.
     //
     current = end = buf;
-    *buf = '\0';
 
 
     struct sockaddr_in addr;
@@ -120,6 +119,8 @@ json_t *CRTSTcpClient::receiveJson(std::atomic<bool> &isRunning)
     //
     // reference: https://json.org/
     //
+    // Since \004 is not part of JSON this should work.
+    //
 
     DASSERT(MAXREAD > (size_t)(uintptr_t)(end - buf), "");
 
@@ -150,18 +151,23 @@ json_t *CRTSTcpClient::receiveJson(std::atomic<bool> &isRunning)
 
         // Go to the end of the string.
         end += n;
-        // Terminate the end of the string.
-        *end = '\0';
 
-        while(*current && *current != '\004')
+        while(current < end && *current != '\004')
             ++current;
 
-        if(*current)
+        if(*current == '\004')
         {
+            // *current == '\004'
+            DASSERT(end >= current, "");
             DASSERT(*(current-1) == '}', "");
 
-            // Terminate the string.
+            // Terminate the string. By replacing the '\004' char with a
+            // '\0' (null terminator).
             *current = '\0';
+            // go to the next char to test.
+            ++current;
+
+            WARN("(n=%zu) msg=\"%s\"", n, buf);
 
             json_t *root;
             json_error_t error;
@@ -169,33 +175,44 @@ json_t *CRTSTcpClient::receiveJson(std::atomic<bool> &isRunning)
             root = json_loads(buf, 0, &error);
 
             if(end > current)
+                // If end == current this is not needed
+                // which should be for the slow writing case.
+                //
                 // Copy any extra data from the end of the buffer to
                 // the front of the buffer.
                 memmove(buf, current, end - current);
 
             // reset pointers.
-            end = buf + (end - current);
-
+            current = end = buf + (end - current);
+            //current = buf;
 
             if(!root)
             {
-                ERROR("json error on line %d: %s\n", error.line, error.text);
-                throw "bad JSON read from socket";
+                WARN("json error on line %d: %s\n", error.line, error.text);
+                //throw "bad JSON read from socket";
             }
-
-            // We have an end of a JSON expression.
-            return root;
+            else
+                // We have an end of a JSON expression.
+                return root;
         }
 
         if(end >= buf + MAXREAD)
         {
+            // TODO: This could make it not work because the buffer is not
+            // large enough.  We may be screwed if the frames of JSON
+            // strings in the messages are miss-aligned.
+
             WARN("Failed to read good JSON in %zu bytes", MAXREAD);
 
             // Reinitialize read buffers and pointers.
             //
             current = end = buf;
-            *buf = '\0';
         }
+
+        // else
+        //
+        //   We loop and keep adding to the buffer until we get another
+        //   JSON string + '\004'
 
     } while(isRunning);
 

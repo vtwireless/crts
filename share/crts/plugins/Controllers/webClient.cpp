@@ -118,7 +118,8 @@ class Client: public CRTSController
 
         // This function sends a parameter changing event to
         // the web server.
-        void getParameterCB(const char *controlName, const std::string parameterName, double value)
+        void getParameterCB(const char *controlName,
+                const std::string parameterName, double value)
         {
             std::string str = "I{\"name\":\"getParameter\""
                      ",\"args\":[\"";
@@ -190,32 +191,30 @@ static void *receiver(Client *client)
 
     while((root = socket.receiveJson(isRunning)))
     {
-        json_t *control = json_object_get(root, "control");
-
-        // Server to Client protocol:
-        //
-        /* The JSON command request should be of the form:
-         *
-         * example:
-         *
-         * I{name: "setParameter", args [ ] }
-         */
-        if(control && json_typeof(control) == JSON_STRING)
-        {
-            const char *controlName = json_string_value(control);
-            if(controlName)
-            {
-                CRTSControl *crtsControl = client->findControl(controlName);
-                if(crtsControl)
-                    // Add a command to the list for this control.
-                    client->commands[crtsControl].push_back(root);
-            }
-        }
-        // else we got crap.
-
         DSPEW("GOT COMMAND:");
         json_dumpf(root, stderr, 0);
         fprintf(stderr, "\n");
+
+        const char *controlName;
+        json_t *commands;
+
+        json_object_foreach(root, controlName, commands)
+        {
+            DSPEW("controlName=%s", controlName);
+            CRTSControl *crtsControl = client->findControl(controlName);
+            if(crtsControl)
+            {
+                if(commands && json_typeof(commands) == JSON_ARRAY)
+                {
+                    client->commands[crtsControl].push_back(commands);
+                    DSPEW("control %s commands:", controlName);
+                    json_dumpf(commands, stderr, 0);
+                    fprintf(stderr, "\n");
+                }
+            }
+        }
+
+        // else we got crap.
     }
 
 
@@ -482,11 +481,12 @@ void Client::execute(CRTSControl *c, const void *buffer,
         size_t replyLen = 0;
         // We only reply if there is one or more get commands
 
-        json_t *root = list.front();
+        // Array of commands
+        json_t *commands = list.front();
 
 #if 1 // debugging spew
-        DSPEW("Got COMMAND:");
-        json_dumpf(root, stderr, 0);
+        DSPEW("Got control %s COMMANDs:", c->getName());
+        json_dumpf(commands, stderr, 0);
         fprintf(stderr, "\n");
 #endif
 
@@ -494,17 +494,15 @@ void Client::execute(CRTSControl *c, const void *buffer,
         //
         // https://jansson.readthedocs.io/en/2.6/apiref.htm
         //
-        json_t *commands = json_object_get(root, "commands");
         size_t numCommands = json_array_size(commands);
-        json_t *idObj = json_object_get(root, "id");
-        json_int_t id = json_integer_value(idObj);
-        if(numCommands < 1 || !idObj || json_is_integer(idObj))
+        if(numCommands < 1)
         {
             WARN("bad request");
-            json_decref(root);
+            json_decref(commands);
             list.pop_front();
             continue;
         }
+
         size_t i;
         for(i=0; i<numCommands; ++i)
         {
@@ -516,17 +514,31 @@ void Client::execute(CRTSControl *c, const void *buffer,
             {
                 const char *parameterName = json_string_value(json_array_get(obj, 0));
                 obj = json_array_get(obj, 1);
-                if(parameterName && json_typeof(obj) == JSON_REAL)
+                if(parameterName && (
+                        json_typeof(obj) == JSON_REAL ||
+                        json_typeof(obj) == JSON_INTEGER))
                 {
-                    double value = json_real_value(obj);
+                    double value;
+                    if(json_typeof(obj) == JSON_REAL)
+                        value = json_real_value(obj);
+                    else
+                        value = json_integer_value(obj);
+
                     c->setParameter(parameterName, value);
                 }
             }
             else if((obj = json_object_get(command, "get"))) // get a parameter
             {
+                // TODO: This is not set up on the server side yet.  So
+                // this code it not tested yet.
+
                 const char *parameterName = json_string_value(obj);
                 if(parameterName)
                 {
+                    // TODO: Write this ....
+                    //
+                    long long int id = 0;
+
                     if(replyLen == 0)
                     {
                         replyLen = snprintf(replyBuff, BUFLEN,
@@ -565,7 +577,7 @@ void Client::execute(CRTSControl *c, const void *buffer,
 
         // Free the json object.
         //
-        json_decref(root);
+        json_decref(commands);
 
         list.pop_front();
     }

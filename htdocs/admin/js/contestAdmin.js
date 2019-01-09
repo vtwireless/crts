@@ -125,9 +125,20 @@ function _addControllerPanels(io, contestPanel) {
                     let input = document.createElement('input');
                     input.type = 'text';
                     input.onchange = function() {
+                        console.log('io.Emit(' + ['setParameter',
+                            programName, controlName,
+                            parameter, parseFloat(input.value)] + ')');
+
                         io.Emit('setParameter', programName, controlName,
-                            parameter, input.value);
+                            parameter, parseFloat(input.value));
                     };
+                    let button = document.createElement('button');
+                    button.type = 'button';
+                    button.appendChild(document.createTextNode('submit'));
+                    button.onclick = function() {
+                        input.onchange();
+                    };
+                    td.appendChild(button);
                     td.appendChild(input);
                     tr.appendChild(td);
 
@@ -544,4 +555,3 @@ function contestAdminInit(io) {
     _addRunningProgramsPanel(io, contestPanel);
     _addControllerPanels(io, contestPanel);
 }
-
