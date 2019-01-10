@@ -1,0 +1,30 @@
+#!/bin/bash
+
+set -ex
+
+cd $(dirname ${BASH_SOURCE[0]})
+
+crts_radio="../../bin/crts_radio"
+
+source usrp_config
+
+
+$crts_radio\
+ -f tests/count\
+ -f liquidFrame\
+ -f tx [ --uhd $USRP1 --freq 914.5 --rate 0.2 --gain 15 ]\
+ -c\
+ -f rx [ --uhd $USRP1 --freq 915.5 --rate 0.2 --gain 0 ]\
+ -f liquidSync\
+ -f tests/countCheck\
+ -c\
+ -f rx [ --uhd $USRP2 --freq 914.5 --rate 0.2 --gain 0 ]\
+ -f liquidSync\
+ -f tests/countCheck\
+ -c\
+ -f tests/count\
+ -f liquidFrame\
+ -f tx [ --uhd $USRP2 --freq 915.5 --rate 0.2 --gain 15 ]\
+ -C webClient
+ -D 
+

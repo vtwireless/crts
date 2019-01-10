@@ -74,9 +74,8 @@ bool Count::start(uint32_t numInChannels, uint32_t numOutChannels)
     return false; // success
 }
 
-static const uint64_t HIGHBIT = ((uint64_t) 01) << 63;
 
-uint64_t GetNextValue(uint64_t &count)
+uint64_t GetNextValue(uint64_t count)
 {
     uint64_t highestBit = ((count & 01) + ((count & 02) >> 1)) << 63;
     return (count >> 1) | highestBit;
