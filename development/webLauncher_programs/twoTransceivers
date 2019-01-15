@@ -8,8 +8,8 @@ crts_radio="../../bin/crts_radio"
 
 source usrp_config
 
-
-$crts_radio\
+exec\
+ $crts_radio\
  -f tests/count\
  -f liquidFrame\
  -f tx [ --uhd $USRP1 --freq 914.5 --rate 0.2 --gain 15 ]\
@@ -26,5 +26,4 @@ $crts_radio\
  -f liquidFrame\
  -f tx [ --uhd $USRP2 --freq 915.5 --rate 0.2 --gain 15 ]\
  -C webClient
- -D 
-
+ -D

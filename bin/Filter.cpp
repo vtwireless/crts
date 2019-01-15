@@ -45,9 +45,10 @@ FilterModule::FilterModule(Stream *stream_in, CRTSFilter *filter_in,
     filter->filterModule = this;
 
     filter->stream = new CRTSStream(stream->isRunning);
-    name += "(";
-    name += std::to_string(loadIndex);
-    name += ")";
+    //name += "(";
+    //name += std::to_string(loadIndex);
+    //name += ")";
+
     DSPEW();
 }
 
@@ -110,16 +111,19 @@ FilterModule::~FilterModule(void)
         thread->filterModules.remove(this);
     }
 
-     if(destroyFilter)
+    if(destroyFilter)
+    {
         // Call the CRTSFilter factory destructor function that we got
         // from loading the plugin.
         destroyFilter(filter);
+        // Remove this filter name from the process list.
+        stream->filterNames.erase(name);
+    }
     else
-        // It was not loaded from a plugin.
+        // It was not loaded from a plugin.  This must be a feed filter.
         delete filter;
 
     stream->map.erase(loadIndex);
-
 
     DSPEW("deleted filter: \"%s\"", name.c_str());
 

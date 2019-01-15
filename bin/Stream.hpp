@@ -23,6 +23,12 @@ class Stream
         // The list (map) of filter modules in this Stream.
         std::map<uint32_t, FilterModule*> map;
 
+        // We use this map just to keep the name unique for a given
+        // filter.  The thing stored in this map is of no concern.  We
+        // just use this map to keep the filter names unique for the whole
+        // process.  This is not used with the Feed filters.
+        static std::map<const std::string, uint32_t> filterNames;
+
         void getSources(void);
 
         // Finish building the default thread groupings for all streams.

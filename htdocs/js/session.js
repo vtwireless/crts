@@ -290,7 +290,9 @@ function createClient(connectCallback=null) {
     let doRun = ((lastScript.src.search(/run$/))===(-1))?false:true;
 
     if(doRun)
+        //
         onload = function() { createClient(); };
-
+        //window.addEventListener('load', function() { createClient(); });
+        //document.addEventListener("DOMContentLoaded", function() { createClient(); });
 })();
 

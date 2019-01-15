@@ -7,6 +7,7 @@
 #include <time.h>
 #include <signal.h>
 #include <map>
+#include <string>
 #include <list>
 
 #include "crts/debug.h"
@@ -22,6 +23,8 @@
 #include "makeRingBuffer.hpp"
 
 
+
+std::map<const std::string, uint32_t> Stream::filterNames;
 
 std::list<Stream*> Stream::streams;
 
@@ -380,6 +383,8 @@ void Stream::destroyStreams(void)
 }
 
 
+
+
 FilterModule* Stream::load(CRTSFilter *crtsFilter,
         void *(*destroyFilter)(CRTSFilter *),
         const char *name)
@@ -404,20 +409,42 @@ FilterModule* Stream::load(CRTSFilter *crtsFilter,
 // Each Stream is a factory of filter modules.  stream->load()
 // is how we make them.
 //
-bool Stream::load(const char *name, int argc, const char **argv)
+bool Stream::load(const char *filename, int argc, const char **argv)
 {
     // This is the main thread.
     DASSERT(pthread_equal(Thread::mainThread, pthread_self()), "");
 
+    std::string uniqueName = filename;
+    uint32_t count = 2;
+
+    // TODO: allocate args and check name and stow name.
+
+    // Parse [ --name filterName ]
+
+    //
+
+    // MORE HERE .............
+
+    while(filterNames.find(uniqueName) != filterNames.end())
+    {
+        // The name is taken already.
+        uniqueName = filename;
+        uniqueName += '_';
+        uniqueName += std::to_string(count++);
+    }
+
+    filterNames.insert(
+            std::pair<const std::string, uint32_t>(uniqueName, 0));
+
     void *(*destroyFilter)(CRTSFilter *);
 
-    CRTSFilter *crtsFilter = LoadModule<CRTSFilter>(name, "Filters",
+    CRTSFilter *crtsFilter = LoadModule<CRTSFilter>(filename, "Filters",
             argc, argv, destroyFilter);
 
     if(!crtsFilter || !destroyFilter)
         return true; // fail
 
-    FilterModule *m = load(crtsFilter, destroyFilter, name);
+    FilterModule *m = load(crtsFilter, destroyFilter, uniqueName.c_str());
 
     // If there was no CRTSControl for this CRTS Filter we will add
     // a default CRTSControl.
