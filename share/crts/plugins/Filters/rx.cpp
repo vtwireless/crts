@@ -12,8 +12,6 @@
 
 #include "defaultUSRP.hpp" // defaults: RX_FREQ, RX_RATE, RX_GAIN
 
-#define DEFAULT_RXCONTROL_NAME "rx"
-
 
 class Rx : public CRTSFilter
 {
@@ -134,10 +132,6 @@ static void usage(void)
 "\n"
 "\n"
 "   --channels CH   which channel(s) to use (specify \"0\", \"1\", \"0,1\", etc)\n"
-"\n"
-"\n"
-"   --control NAME  set the name of the CRTS control to NAME.  The default value of\n"
-"                   NAME is \"" DEFAULT_RXCONTROL_NAME "\".\n"
 "\n"
 "\n"
 "   --freq FREQ     set the initial receiver frequency to FREQ MHz.  The default\n"

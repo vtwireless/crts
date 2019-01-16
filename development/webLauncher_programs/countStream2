@@ -7,9 +7,13 @@ cd $(dirname ${BASH_SOURCE[0]})
 crts_radio=../../bin/crts_radio
 
 exec $crts_radio\
- -f tests/count [ --name count ]\
+ -f tests/count\
  -f throttle [ --bytes 17 --period 2 ]\
  -f tests/countCheck\
+ -c\
+ -f tests/count\
+ -f throttle [ --bytes 100 --period 1 ]\
+ -f tests/countCheck\
  -C webClient\
- $*
+ -D
 

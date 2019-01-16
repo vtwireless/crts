@@ -126,7 +126,19 @@ int usage(const char *argv0, const char *uopt=0)
 "                                   all filters modules in a single thread for each\n"
 "                                   stream.\n"
 "\n"
+"\n"
+"\n"
+"                filter OPTIONS\n"
+"\n"
+"\n"
+"  All filters support the following options:\n"
+"\n"
+"   -n | --name  NAME               name the filter NAME.  This will name the filter and that\n"
+"                                   name will be shared by the CRTS control that is created with\n"
+"                                   the filter.\n"
+"\n"
 "\n", argv0);
+
 
     return 1; // return error status
 }

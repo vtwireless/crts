@@ -11,8 +11,6 @@
 
 #include "defaultUSRP.hpp" // defaults: TX_FREQ, TX_RATE, TX_GAIN
 
-#define DEFAULT_TXCONTROL_NAME  "tx"
-
 
 
 class Tx : public CRTSFilter
@@ -144,11 +142,6 @@ static void usage(void)
 "\n"
 "\n"
 "   --channels CH   which channel(s) to use (specify \"0\", \"1\", \"0,1\", etc)\n"
-"\n"
-"\n"
-// The --control NAME is also parsed by the filter module plugin loader.
-"   --control NAME  set the name of the CRTS control to NAME.  The default value of\n"
-"                   NAME is \"" DEFAULT_TXCONTROL_NAME "\".\n"
 "\n"
 "\n"
 "   --freq FREQ     set the initial receiver frequency to FREQ MHz.  The default\n"

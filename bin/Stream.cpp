@@ -11,6 +11,7 @@
 #include <list>
 
 #include "crts/debug.h"
+#include "get_opt.hpp"
 #include "crts/crts.hpp"
 #include "LoadModule.hpp"
 #include "pthread_wrappers.h"
@@ -415,16 +416,27 @@ bool Stream::load(const char *filename, int argc, const char **argv)
     DASSERT(pthread_equal(Thread::mainThread, pthread_self()), "");
 
     std::string uniqueName = filename;
-    uint32_t count = 2;
-
-    // TODO: allocate args and check name and stow name.
-
+    bool gotNameOpt = false;
     // Parse [ --name filterName ]
-
     //
+    for(int i=0; i<argc; ++i)
+    {
+        if(get_opt(uniqueName, "-n", "--name", argc, argv, i))
+        {
+            gotNameOpt = true;
+            continue;
+        }
+        ++i;
+    }
 
-    // MORE HERE .............
+    if(gotNameOpt && filterNames.find(uniqueName) != filterNames.end())
+    {
+        WARN("The filter name \"%s\" is already in use by a loaded filter.",
+                uniqueName.c_str());
+        return true;
+    }
 
+    uint32_t count = 2;
     while(filterNames.find(uniqueName) != filterNames.end())
     {
         // The name is taken already.
