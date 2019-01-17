@@ -54,7 +54,7 @@ class Shell: public CRTSController
         Shell(int argc, const char **argv);
         ~Shell(void);
 
-        void start(CRTSControl *c);
+        void start(CRTSControl *c, uint32_t numIn, uint32_t numOut);
         void stop(CRTSControl *c);
 
         void execute(CRTSControl *c, const void *buffer, size_t len,
@@ -396,7 +396,7 @@ Shell::~Shell(void)
 };
 
 
-void Shell::start(CRTSControl *c)
+void Shell::start(CRTSControl *c, uint32_t numIn, uint32_t numOut)
 {
     // This function will get called once for each filter/control
     // but we just need it to do anything once, so we use this

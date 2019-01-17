@@ -678,9 +678,16 @@ class CRTSController
          * A module class that inherits CRTSController may opt
          * out of writing a start() method.
          *
+         * /param numChannelsIn is the number of channels that input into
+         * this filter with this CRTSControl.
+         *
+         * /param numChannelsOut is the number of channels that will
+         * output from this filter with this CRTSControl.
+         *
          * /param c the filters CRTS control
          */
-        virtual void start(CRTSControl *c) { };
+        virtual void start(CRTSControl *c, uint32_t numChannelsIn, uint32_t numChannelsOut) { };
+
 
         /** stop is called just before the filters stop.
          *

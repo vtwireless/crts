@@ -17,7 +17,7 @@ class JoystickTx: public CRTSController
 
         ~JoystickTx(void) {  DSPEW(); };
 
-        void start(CRTSControl *c);
+        void start(CRTSControl *c, uint32_t numIn, uint32_t numOut);
         void stop(CRTSControl *c);
 
         void execute(CRTSControl *c, const void *buffer, size_t len,
@@ -97,7 +97,7 @@ JoystickTx::JoystickTx(int argc, const char **argv)
 }
 
 
-void JoystickTx::start(CRTSControl *c)
+void JoystickTx::start(CRTSControl *c, uint32_t numIn, uint32_t numOut)
 {
     if(c->getId() != js->getId())
     {

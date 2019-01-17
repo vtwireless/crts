@@ -14,7 +14,7 @@ class DualTx: public CRTSController
         ~DualTx(void) {  DSPEW(); };
 
         void execute(CRTSControl *c, const void *buffer, size_t len, uint32_t channelNum);
-        void start(CRTSControl *c);
+        void start(CRTSControl *c, uint32_t numIn, uint32_t numOut);
         void stop(CRTSControl *c);
 
     private:
@@ -87,7 +87,7 @@ static inline double FartherFrom(double val, double x, double y)
 }
 
 
-void DualTx::start(CRTSControl *c)
+void DualTx::start(CRTSControl *c, uint32_t numIn, uint32_t numOut)
 {
     c->setParameter("freq", maxFreq);
 

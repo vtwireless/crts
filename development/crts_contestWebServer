@@ -12,10 +12,12 @@
 set -xe
 cd $(dirname $0)
 
-exec ../lib/crts_contestWebServer.js\
+exec ../bin/crts_contestWebServer\
  --user=admin --password=adminK2\
  --user=betty --password=bettyK1\
  --user=joe --password=joeK1\
  --user=fred --password=fredK1\
  --launcher_dir webLauncher_programs\
- --contest_dir=$HOME/CRTS_CONTEST --contest_dir_overwrite --debug $*
+ --contest_dir=$HOME/CRTS_CONTEST\
+ --contest_dir_overwrite\
+ --debug $*

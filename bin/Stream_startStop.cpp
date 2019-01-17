@@ -179,7 +179,8 @@ bool Stream::start2(void)
         {
             try
             {
-                controller->start(it.second->filter->control);
+                controller->start(it.second->filter->control,
+                        it.second->numInputs, it.second->numOutputs);
             }
             catch(std::string str)
             {

@@ -11,6 +11,19 @@ function _addControllerPanels(io, contestPanel) {
         users = userNames;
     });
 
+    io.On('changePermission', function(userName, programName, setOrGet,
+            controlName, parameterName, boolValue) {
+
+        console.log("On 'changePermission' (" +
+            [].slice.call(arguments) + ')');
+
+        var access = controllers[programName][setOrGet][controlName]
+            [parameterName][userName];
+        if(boolValue !== access.checkbox.checked) {
+            access.checkbox.checked = boolValue;
+        }
+    });
+
 
     function getParameter(programName, controlName, parameter, id) {
 
@@ -36,19 +49,24 @@ function _addControllerPanels(io, contestPanel) {
     // makeActionTable() makes a set or get table for a controller.
     //
     // type is "set" or "get"
-    // obj is set or get
-    function makeActionTable(type, obj, parentNode, programName) {
+    //
+    function makeActionTable(type, setOrGet, parentNode, programName) {
 
-        function checkbox(userName, controlName, parameter) {
+        function checkbox(userName, controlName, parameterName, value) {
 
             var input = document.createElement('input');
             input.type = 'checkbox';
+            input.checked = value;
             input.onchange = function() {
 
                 // TODO: We need to group commands sent like this ...
 
                 io.Emit('changePermission', userName, programName, type,
-                    controlName, parameter, input.checked);
+                    controlName, parameterName, input.checked);
+                console.log('changePermission ("' +  userName +
+                        '","' + controlName +
+                        '","' + parameterName +
+                        '","' + type + '")');
             };
 
             return input;
@@ -96,26 +114,27 @@ function _addControllerPanels(io, contestPanel) {
             });
         }
 
-        Object.keys(obj).forEach(function(controlName) {
+        Object.keys(setOrGet).forEach(function(controlName) {
 
-            var parameters = obj[controlName];
+            var parameters = Object.keys(setOrGet[controlName]);
 
-            parameters.forEach(function(parameter) {
+            parameters.forEach(function(parameterName) {
                 // Make a row for this parameter
                 //
+                var access = setOrGet[controlName][parameterName];
                 var tr = document.createElement('tr');
                 table.appendChild(tr);
 
                 var td = document.createElement('td');
                 td.className = type;
                 td.appendChild(document.createTextNode(
-                    controlName + ":" + parameter));
+                    controlName + ":" + parameterName));
                 tr.appendChild(td);
 
                 if(type === "get") {
                     td = document.createElement('td');
                     td.className = 'getvalue';
-                    td.id = makeId('getTD', programName, controlName, parameter);
+                    td.id = makeId('getTD', programName, controlName, parameterName);
                     td.appendChild(document.createTextNode('value'));
                     tr.appendChild(td);
                 } else {
@@ -127,10 +146,10 @@ function _addControllerPanels(io, contestPanel) {
                     input.onchange = function() {
                         console.log('io.Emit(' + ['setParameter',
                             programName, controlName,
-                            parameter, parseFloat(input.value)] + ')');
+                            parameterName, parseFloat(input.value)] + ')');
 
                         io.Emit('setParameter', programName, controlName,
-                            parameter, parseFloat(input.value));
+                            parameterName, parseFloat(input.value));
                     };
                     let button = document.createElement('button');
                     button.type = 'button';
@@ -141,19 +160,21 @@ function _addControllerPanels(io, contestPanel) {
                     td.appendChild(button);
                     td.appendChild(input);
                     tr.appendChild(td);
-
                 }
 
-
                 users.forEach(function(userName) {
-
                     td = document.createElement('td');
                     td.className = type;
-                    td.appendChild(checkbox(userName, controlName, parameter));
+                    var boolValue = access[userName];
+                    access[userName] = {
+                        checkbox:
+                            checkbox(userName, controlName,
+                                parameterName, boolValue),
+                        permission: boolValue
+                    };
+                    td.appendChild(access[userName].checkbox);
                     tr.appendChild(td);
                 });
-
-
             });
         });
 

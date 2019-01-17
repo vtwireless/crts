@@ -11,5 +11,6 @@ exec $crts_radio\
  -f throttle [ --bytes 17 --period 2 ]\
  -f tests/countCheck\
  -C webClient\
+ -C logger [ --file ../xxx throttle ]
  $*
 

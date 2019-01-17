@@ -85,7 +85,7 @@ class Client: public CRTSController
         Client(int argc, const char **argv);
         ~Client(void);
 
-        void start(CRTSControl *c);
+        void start(CRTSControl *c, uint32_t numIn, uint32_t numOut);
         void stop(CRTSControl *c);
 
         void execute(CRTSControl *c, const void *buffer, size_t len,
@@ -255,7 +255,7 @@ Client::~Client(void)
 };
 
 
-void Client::start(CRTSControl *c)
+void Client::start(CRTSControl *c, uint32_t numIn, uint32_t numOut)
 {
     // This function will get called once for each filter/control
     // but we just need it to do anything once, so we use this
