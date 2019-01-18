@@ -39,7 +39,7 @@ static void usage(void)
     fprintf(stderr,
 "\n"
 "\n"
-"Usage: %s --file FILE Filter ... [ OPTIONS ]\n"
+"Usage: %s --file FILE FILTER PARAMETER ... [OPTIONS]\n"
 "\n"
 "  Write log files.  TODO: Add a tcp or TLS connection to the web server that\n"
 "  sends this to web clients.  TODO: Easyer may be to publish web viewable plots.\n"
@@ -56,20 +56,26 @@ static void usage(void)
 "  ---------------------------------------------------------------------------\n"
 "\n"
 "\n"
-"   --file FILE FILTER PARAMETER0 PARAMETER1 ...\n"
-"                                  Write FILE with time in seconds since starting\n"
-"                                  or since OFFSET_SECONDS, if that option was given,\n"
-"                                  than write the value of the listed parameters.\n"
-"                                  There must be at least one --file option.\n"
+"   --file FILE FILTER PARAMETER0 [PARAMETER1 ...]\n"
 "\n"
+"                         Write FILE with time in seconds since starting or since\n"
+"                         OFFSET_SECONDS, if that option was given, then write the\n"
+"                         value of the listed parameters.  There must be at least\n"
+"                         one --file option, and there may be any number of --file\n"
+"                         options in the command line.\n"
+"\n"
+"\n"
+"   --help                print this help\n"
 "\n"
 "\n  TODO:\n"
-"   --period SECONDS               Compute a running average of all entries rate\n"
-"                                  over this period SECONDS adding a rate after\n"
-"                                  each parameter.\n"
+"   --period SECONDS      Compute a running average of all entries rate\n"
+"                         over this period SECONDS adding a rate after\n"
+"                         each parameter.\n"
 "\n"
 "\n"
-"   --help                         print this help\n"
+"   --time-offset SECONDS Subtract this offset to the times reported.  The default\n"
+"                         offset will be the time at the start.  This time is the\n"
+"                         standard UNIX time, the number seconds since 1970.\n"
 "\n",
     name);
 }
@@ -83,6 +89,9 @@ class Logger: public CRTSController
         Logger(int argc, const char **argv);
         ~Logger(void);
 
+        void start(CRTSControl *c,
+                uint32_t numChannelsIn,
+                uint32_t numChannelsOut);
         void stop(CRTSControl *c) { run(c); };
 
         void execute(CRTSControl *c, const void *buffer, size_t len,
@@ -90,12 +99,27 @@ class Logger: public CRTSController
 
     private:
 
+        double GetTime(void)
+        {
+            struct timespec t;
+            ASSERT(clock_gettime(CLOCK_TYPE, &t) == 0, "");
+            return (double) t.tv_sec - offset.tv_sec +
+                (t.tv_nsec - offset.tv_nsec)/1.0e9;
+        };
+
         void run(CRTSControl *c);
+
+        struct timespec offset;
+        double d_offset;
+        double period;
 
         // To keep track of files that we will be writing to:
         std::map<CRTSControl *, FILE *> fileMap;
+        std::map<CRTSControl *, std::list<const char *>> parameterMap;
         FILE **files;
 };
+
+#define DEFAULT_DOUBLE_OFFSET (-1.0)
 
 
 Logger::Logger(int argc, const char **argv):
@@ -103,6 +127,9 @@ Logger::Logger(int argc, const char **argv):
 {
     // To parse the --help we call:
     CRTSModuleOptions opt(argc, argv, usage);
+
+    d_offset = opt.get("--offset", DEFAULT_DOUBLE_OFFSET);
+    period = opt.get("--period", 0.0);
 
     int nFiles = 0;
 
@@ -112,9 +139,9 @@ Logger::Logger(int argc, const char **argv):
         {
             ++i;
 
-            if(((i+1)>=argc) || (strncmp("--", argv[i+1], 2) == 0))
+            if(((i+2)>=argc) || (strncmp("--", argv[i+1], 2) == 0))
             {
-                ERROR("bad --file option i+1=%d argc=%d argv[i+1]=\"%s\"", i+1, argc, argv[i+1]);
+                ERROR("bad --file option");
                 usage();
                 throw "bad --file option";
             }
@@ -124,7 +151,8 @@ Logger::Logger(int argc, const char **argv):
             {
                 ERROR("fopen(\"%s\", w) failed", argv[i]);
                 usage();
-                throw "bad --file option";
+                throw (std::string("fopen(\"") +
+                        argv[i] + "\", w) failed");
             }
             DSPEW("opened log file \"%s\"", argv[i]);
 
@@ -132,15 +160,24 @@ Logger::Logger(int argc, const char **argv):
             files = (FILE **) realloc(files, sizeof(FILE *)*(nFiles+1));
             files[nFiles-1] = file;
             files[nFiles] = 0;
-
+            CRTSControl *c = getControl<CRTSControl *>(argv[++i]);
+            fileMap[c] = file;
+            std::list<const char *> parameters;
             while(++i<argc && strncmp("--", argv[i], 2) != 0)
+                parameters.push_back(argv[i]);
+            if(parameters.size() == 0)
             {
-                CRTSControl *c = getControl<CRTSControl *>(argv[i]);
-                fileMap[c] = file;
+                ERROR("bad --file option no parameters listed");
+                usage();
+                throw "bad --file option no parameters listed";
             }
+            // Copy this list into the map of parameters;
+            // we are assuming that it's not a big list.
+            parameterMap[c] = parameters;
+            continue; // next
         }
-        else
-            ++i;
+        // else skip this argument
+        ++i;
     }
 
     if(nFiles == 0)
@@ -169,13 +206,32 @@ Logger::~Logger(void)
 
 
 
+void Logger::start(CRTSControl *c,
+                uint32_t numChannelsIn,
+                uint32_t numChannelsOut)
+{
+    if(d_offset == DEFAULT_DOUBLE_OFFSET)
+        ASSERT(clock_gettime(CLOCK_TYPE, &offset) == 0, "");
+    else
+    {
+        offset.tv_sec = d_offset;
+        offset.tv_nsec = fmod(d_offset, 1.0)*1000000000;
+    }
+}
+
+
 void Logger::run(CRTSControl *c)
 {
     DSPEW("control=\"%s\"", c->getName());
 
-    fprintf(fileMap[c], "%.22lg %.22lg\n",
-            c->getParameter("totalBytesIn"),
-            c->getParameter("totalBytesOut"));
+    FILE *file = fileMap[c];
+
+    fprintf(file, "%.22lg", GetTime()); 
+
+    // C++11
+    for(auto parameter: parameterMap[c])
+        fprintf(file, "%.22lg", c->getParameter(parameter));
+    fprintf(file, "\n");
 }
 
 
