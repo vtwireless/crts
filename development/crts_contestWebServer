@@ -12,6 +12,8 @@
 set -xe
 cd $(dirname $0)
 
+export CRTS_CONTEST_DIR=$HOME/CRTS_CONTEST
+
 exec ../bin/crts_contestWebServer\
  --user=admin --password=adminK2\
  --user=betty --password=bettyK1\

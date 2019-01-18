@@ -121,7 +121,7 @@ class Client: public CRTSController
         void getParameterCB(const char *controlName,
                 const std::string parameterName, double value)
         {
-            std::string str = "I{\"name\":\"getParameter\""
+            std::string str = "I{\"name\":\"updateParameter\""
                      ",\"args\":[\"";
             str += controlName;
             str += "\",\"";

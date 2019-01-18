@@ -222,7 +222,7 @@ void Logger::start(CRTSControl *c,
 
 void Logger::run(CRTSControl *c)
 {
-    DSPEW("control=\"%s\"", c->getName());
+    //DSPEW("control=\"%s\"", c->getName());
 
     FILE *file = fileMap[c];
 
@@ -230,7 +230,7 @@ void Logger::run(CRTSControl *c)
 
     // C++11
     for(auto parameter: parameterMap[c])
-        fprintf(file, "%.22lg", c->getParameter(parameter));
+        fprintf(file, " %.22lg", c->getParameter(parameter));
     fprintf(file, "\n");
 }
 
