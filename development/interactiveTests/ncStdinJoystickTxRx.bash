@@ -3,30 +3,26 @@
 set -e
 cd $(dirname ${BASH_SOURCE[0]})
 
-source usrp_config
+crts_radio="../../bin/crts_radio"
 
-crts_radio="../bin/crts_radio"
+source usrp_config
 
 ./termRun
 
 ./termRun uhd_fft -f 915.0e6 -s 2.6e6 --args $USRP3
 
-./termRun "\
+./termRun "nc -ulp 6666 |\
  $crts_radio\
- -f stdin\
+ -f fileIn [ --file - ]\
+ -f sink [ --control joystick ]\
+ -c\
+ -f fileIn [ --file /dev/urandom ] \
  -f liquidFrame\
  -f tx [ --uhd $USRP1 --freq 915.5 --rate 0.2 --gain 15 ]\
  -c\
- -f tests/joystickTxController\
- -c\
- -D < /dev/urandom | hexdump -v"
-
-
-# 915.5 MHz receiver
-./termRun "$crts_radio\
  -f rx [ --uhd $USRP2 --freq 915.5 --rate 0.2 --gain 0 ]\
  -f liquidSync\
  -f stdout\
- -D |\
- hexdump -v"
-
+ -c\
+ -C tests/joystickTxRx\
+ -D | hexdump -v"

@@ -3,7 +3,7 @@
 set -e
 cd $(dirname ${BASH_SOURCE[0]})
 
-crts_radio="../bin/crts_radio"
+crts_radio="../../bin/crts_radio"
 
 source usrp_config
 
@@ -16,10 +16,12 @@ source usrp_config
  -f stdin\
  -f liquidFrame\
  -f tx [ --uhd $USRP1 --freq 914.5 --rate 0.2 --gain 15 ]\
+ -t 0 -t 1 -t 2\
  -c\
  -f rx [ --uhd $USRP1 --freq 915.5 --rate 0.2 --gain 0 ]\
  -f liquidSync\
  -f stdout\
+ -t 0 -t 1 -t 2\
  -D |\
  hexdump -v"
 
@@ -28,10 +30,12 @@ source usrp_config
  -f rx [ --uhd $USRP2 --freq 914.5 --rate 0.2 --gain 0 ]\
  -f liquidSync\
  -f stdout\
+ -t 0 -t 1 -t 2\
  -c\
  -f stdin\
  -f liquidFrame\
  -f tx [ --uhd $USRP2 --freq 915.5 --rate 0.2 --gain 15 ]\
+ -t 0 -t 1 -t 2\
  -D |\
  hexdump -v"
 

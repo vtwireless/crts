@@ -3,7 +3,7 @@
 set -e
 cd $(dirname ${BASH_SOURCE[0]})
 
-crts_radio="../bin/crts_radio"
+crts_radio="../../bin/crts_radio"
 
 ./termRun
 

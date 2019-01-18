@@ -5,7 +5,7 @@ cd $(dirname ${BASH_SOURCE[0]})
 
 source usrp_config
 
-crts_radio="../bin/crts_radio"
+crts_radio="../../bin/crts_radio"
 
 ./termRun
 

@@ -3,7 +3,7 @@
 set -e
 cd $(dirname ${BASH_SOURCE[0]})
 
-crts_radio="../bin/crts_radio"
+crts_radio="../../bin/crts_radio"
 
 ./termRun
 
@@ -11,7 +11,7 @@ tmp=$(mktemp --suffix=CRTS_test)
 out_tmp=$(mktemp --suffix=CRTS_test)
 
 
-dd if=/dev/urandom count=10K of=$tmp 
+dd if=/dev/urandom count=100K of=$tmp 
 
 
 function waitForStart()
@@ -19,7 +19,7 @@ function waitForStart()
     # This can totally fail due to race condition.
     #
     while ! killall -CONT crts_radio 2> /dev/null  ; do
-        sleep 0.01
+        sleep 0.1
     done &
 }
 
@@ -39,15 +39,18 @@ function waitForFinish()
 
 ret=0
 
+# This script is not so great.
+set +e
+killall -9 crts_radio
+set -e
+
+
 waitForStart
 
 ./termRun "cat $tmp |\
  $crts_radio\
  -f stdin\
- -f liquidFrame\
- -f liquidSync\
  -f stdout\
- -t 0 -t 1 -t 2 -t 3\
  -D > $out_tmp"
 
 wait
@@ -58,15 +61,36 @@ waitForStart
 ./termRun "cat $tmp |\
  $crts_radio\
  -f stdin\
- -f liquidFrame\
- -f liquidSync\
  -f copy\
- -f liquidFrame\
- -f liquidSync\
  -f stdout\
- -t 0 -t 1 -t 2 -t 3 -t 4 -t 5 -t 6\
  -D > $out_tmp"
 
+wait
+waitForFinish
+waitForStart
+
+./termRun "cat $tmp |\
+ $crts_radio\
+ -f stdin\
+ -f passThrough\
+ -f stdout\
+ -D > $out_tmp"
+
+wait
+waitForFinish
+waitForStart
+
+
+
+./termRun "cat $tmp |\
+ $crts_radio\
+ -f stdin\
+ -f copy\
+ -f passThrough\
+ -f copy\
+ -f passThrough\
+ -f stdout\
+ -D > $out_tmp"
 
 wait
 waitForFinish
