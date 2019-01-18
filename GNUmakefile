@@ -20,8 +20,7 @@ SUBDIRS :=\
  bin\
  share\
  etc\
- htdocs\
- interactiveTests
+ htdocs
 
 
 # The program crts_mkTUN needs a special installation so it can startup as
