@@ -5,12 +5,16 @@ set -ex
 cd $(dirname ${BASH_SOURCE[0]})
 
 crts_radio=../../bin/crts_radio
+tFile=$CRTS_CONTEST_DIR/count_bytesOut_${LAUNCH_ID}
+iFile=$CRTS_CONTEST_DIR/count_bytesIn_${LAUNCH_ID}
+
 
 exec $crts_radio\
  -f tests/count [ --name count ]\
  -f throttle [ --bytes 17 --period 2 ]\
  -f tests/countCheck\
  -C webClient\
- -C logger [ --file ../xxx throttle totalBytesIn totalBytesOut ]
+ -C logger [\
+ --file $iFile count totalBytesOut\
+ --file $tFile throttle totalBytesIn totalBytesOut ]\
  $*
-

@@ -160,11 +160,22 @@ Logger::Logger(int argc, const char **argv):
             files = (FILE **) realloc(files, sizeof(FILE *)*(nFiles+1));
             files[nFiles-1] = file;
             files[nFiles] = 0;
-            CRTSControl *c = getControl<CRTSControl *>(argv[++i]);
+            const char *controlName = argv[++i];
+            CRTSControl *c = getControl<CRTSControl *>(controlName);
+            if(!c)
+            {
+                ERROR("failed to get controller: %s", argv[i]);
+                throw (std::string("failed to get controller: ") + argv[i]); 
+            }
             fileMap[c] = file;
+            fprintf(file, "time_seconds");
             std::list<const char *> parameters;
             while(++i<argc && strncmp("--", argv[i], 2) != 0)
+            {
+                fprintf(file, " %s:%s", controlName, argv[i]);
                 parameters.push_back(argv[i]);
+            }
+            fprintf(file, "\n");
             if(parameters.size() == 0)
             {
                 ERROR("bad --file option no parameters listed");
