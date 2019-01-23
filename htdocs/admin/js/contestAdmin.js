@@ -1,15 +1,7 @@
 
-function _addControllerPanels(io, contestPanel) {
+function _addControllerPanels(io, contestPanel, users) {
 
     var controllers = {};
-    var users = false;
-
-
-    io.On('addUsers', function(userNames) {
-
-        assert(users === false, "We only add the users once.");
-        users = userNames;
-    });
 
     io.On('changePermission', function(userName, programName, setOrGet,
             controlName, parameterName, boolValue) {
@@ -214,8 +206,6 @@ function _addControllerPanels(io, contestPanel) {
 
 
     io.On('addController', function(programName, set, get, image) {
-
-        assert(users !== false, "We have not gotten 'addUsers' yet");
 
         console.log('Got On("addController",) program="' +
             programName + '"' +
@@ -556,12 +546,13 @@ function _addRunningProgramsPanel(io, contestPanel) {
 
 function contestAdminInit(io) {
 
+
     var contestPanel = document.createElement('div');
     contestPanel.className = "contestPanel";
 
     var h = document.createElement('h3');
     h.appendChild(document.createTextNode('CRTS ' +
-            'Contest Access Control Panel'));
+            'Contest Control Panel'));
     h.className = 'contestPanel';
     contestPanel.appendChild(h);
 
@@ -570,9 +561,59 @@ function contestAdminInit(io) {
 
     console.log('created contest panel');
 
-    // We add panels in this order.
-    //
-    _addLauncherPanel(io, contestPanel);
-    _addRunningProgramsPanel(io, contestPanel);
-    _addControllerPanels(io, contestPanel);
+    io.On('addUsers', function(users, urls) {
+
+        /************* Make "Contestant User URLs" panel ***********/
+        var div = document.createElement('div');
+        div.className = 'userLinks';
+        contestPanel.appendChild(div);
+        // Make this a show/hide clickable thing.
+        makeShowHide(div, { header: "Contestant User URLs" });
+
+        var userNames = [];
+        Object.keys(users).forEach(function(userName) {
+            if(userName === 'admin') return;
+            userNames.push(userName);
+        });
+
+        let p = document.createElement('p');
+        p.className = 'userLinks';
+        p.appendChild(document.createTextNode(
+            'Contest participants  may login an access the' +
+            'contest with the following URLs:'));
+        div.appendChild(p);
+
+        urls.forEach(function(url) {
+
+            var ul = document.createElement('ul');
+            ul.className = 'userLinks';
+            div.appendChild(ul);
+
+            userNames.forEach(function(userName) {
+
+                if(userName === 'admin') return;
+
+                var li = document.createElement('li');
+                li.className = 'userLinks';
+                ul.appendChild(li);
+                var a = document.createElement('a');
+                a.className = 'userLinks';
+                a.href = url + '/?user=' + userName +
+                    '&password=' + users[userName].password;
+                a.appendChild(document.createTextNode(a.href));
+                li.appendChild(a);
+            });
+        });
+
+        /******************* Make three more panels ************/
+        // We add panels in this order.
+        //
+        _addLauncherPanel(io, contestPanel);
+        _addRunningProgramsPanel(io, contestPanel);
+        _addControllerPanels(io, contestPanel, userNames);
+    });
+
+
+
+   
 }
