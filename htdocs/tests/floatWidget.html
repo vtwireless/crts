@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang=en>
+<head>
+    <meta charset="utf-8"/>
+    <link rel='stylesheet' href='../css/main.css'></link>
+    <link rel='stylesheet' href='floatWidget.css'></link>
+    <script src=floatWidget.js></script>
+    <script>
+
+    onload = function() {
+        document.getElementById("widget").appendChild(
+                createFloatWidget(915500000, { units: 'Hz' }));
+    };
+
+    </script>
+    <title>CRTS</title>
+</head>
+<body>
+
+    <h1>Floating point number widget</h1>
+
+    <div id=widget></div>
+
+
+</body>
+</html>

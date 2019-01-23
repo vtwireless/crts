@@ -1,0 +1,24 @@
+
+
+div.floatWidget {
+    cursor: pointer;
+    background-color: #89A2BC;
+    padding: 3px;
+    display: inline-block;
+    font-size: 120%;
+}
+div.floatWidget:focus {
+    background-color: #CFDEE5;
+}
+span.selectedDigit {
+    color: #11E;
+    background-color: #85CCEA;
+}
+span.digit {
+    color: #33A;
+}
+
+span.units {
+    color: #111;
+}
+
