@@ -36,11 +36,24 @@
     ASSERT((errno = pthread_mutex_unlock(&client->mutex)) == 0,          \
             "pthread_mutex_unlock() failed")
 
-// Default address of crts_contestWebServer
+// Default address of crts_contestWebServer that this code connects to:
 #define DEFAULT_ADDRESS "127.0.0.1"
-// DEFAULT_PORT should be consistent with crts_contestWebServer
+// DEFAULT_PORT should be consistent with crts_contestWebServer.
 #define DEFAULT_PORT    ((uint32_t) 9383)
 
+
+/*************************************************************************
+ *
+ *    BIG TODO:  How this module stops needs to be thought through.  It
+ *    may not have a robust stopping that catches all TCP requests.  It
+ *    may need a shutdown sequence of commands to and from the server to
+ *    let both this client and the server shutdown in a synchronous fashion.
+ *
+ *    and
+ *
+ *    There's the BIGGER issue of stream restart.
+ *
+ *************************************************************************/
 
 
 static void usage(void)
@@ -52,7 +65,9 @@ static void usage(void)
 "\n"
 "Usage: %s [ OPTIONS ]\n"
 "\n"
-"  OPTIONS are optional.  Transmitter Controller test module.\n"
+"  This controller module connects to the CRTS web server letting a browser\n"
+"  control and monitor the stream.  It can sends and receive all filter control\n"
+"  parameter values for all filters that it finds in all streams that it finds.\n"
 "\n"
 "\n"
 "  ---------------------------------------------------------------------------\n"
@@ -69,8 +84,6 @@ static void usage(void)
 "\n"
 "   --server_port PORT       set the server port to connect to.  The default port\n"
 "                            port is %u\n"
-"\n"
-"   --help             print this help\n"
 "\n",
 name, DEFAULT_PORT);
 
@@ -144,41 +157,6 @@ unsigned short Client::getPortAndAddressFromArgs(int argc, const char **argv)
     return (port = opt.get("--server_port", DEFAULT_PORT));
 }
 
-/* Find the path to the program "crts_shell" by assuming that it is in the
- * same directory as the current running program "crts_radio".
- *
- * Note: This code is very Linux specific, using file system /proc/.
- */
-static inline std::string getExePath(void)
-{
-    ssize_t bufLen = 128;
-    char *buf = (char *) malloc(bufLen);
-    ASSERT(buf, "malloc() failed");
-    ssize_t rl = readlink("/proc/self/exe", buf, bufLen);
-    ASSERT(rl > 0, "readlink(\"/proc/self/exe\",,) failed");
-    while(rl >= bufLen)
-    {
-        DASSERT(bufLen < 1024*1024, ""); // it should not get this large.
-        buf = (char *) realloc(buf, bufLen += 128);
-        ASSERT(buf, "realloc() failed");
-        rl = readlink("/proc/self/exe", buf, bufLen);
-        ASSERT(rl > 0, "readlink(\"/proc/self/exe\",,) failed");
-    }
-
-    // Strip off the filename leaving just the directory file path.
-    // Example:   /foo/bin/crts_radio  => /foo/bin
-    char *s = &buf[rl];
-    while(--s > buf && *s != '/') *s = '\0';
-    ASSERT(s > buf, "Failed to find the path to this program");
-    *s = '\0';
-
-    std::string path = buf;
-    path += "/crts_shell";
-    free(buf);
-
-    return path;
-}
-
 
 // Instead of polling for input in the Client::execute() method we
 // just use a blocking read in another thread, here:
@@ -214,7 +192,7 @@ static void *receiver(Client *client)
             }
         }
 
-        // else we got crap.
+        // else we got crap and we are ignoring it.
     }
 
 
@@ -459,7 +437,11 @@ void Client::start(CRTSControl *c, uint32_t numIn, uint32_t numOut)
 
 void Client::stop(CRTSControl *c)
 {
-    // TODO: more code here.
+    // Process any final requests.  This should get the final values of
+    // totalByteIn and totalBytesOut from all the filters (CRTSControl).
+    //
+    execute(c, 0, 0, 0);
+
     started = false;
     DSPEW("control %s", c->getName());
 }
