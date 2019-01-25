@@ -1,5 +1,3 @@
-
-
 div.floatWidget {
     cursor: pointer;
     background-color: #89A2BC;
@@ -14,8 +12,11 @@ span.selectedDigit {
     color: #11E;
     background-color: #85CCEA;
 }
-span.digit {
+span.digit, span.ddigit{
     color: #33A;
+}
+span.deadDigit {
+    background-color: #9FD0D5;
 }
 
 span.units {

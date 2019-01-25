@@ -8,9 +8,15 @@
     <script>
 
     onload = function() {
-        document.getElementById("widget").appendChild(
-                createFloatWidget(915500000, { units: 'Hz' }));
-    };
+        document.getElementById("widgetHolder1").appendChild(
+                createFloatWidget(915500000, 995500000, 1000,
+                    2/*decimal points*/,
+                    { units: 'Hz', label: 'freq'}));
+        document.getElementById("widgetHolder2").appendChild(
+                createFloatWidget(900, 10000, 100,
+                    0,
+                    { units: 'bits/sec', label: 'rate'}));
+     };
 
     </script>
     <title>CRTS</title>
@@ -19,7 +25,10 @@
 
     <h1>Floating point number widget</h1>
 
-    <div id=widget></div>
+    <table>
+        <tr sytle="width: 100%;"><td sytle="width: 100%;" id=widgetHolder1></td></tr>
+        <tr sytle="width: 100%;"><td sytle="width: 100%;" id=widgetHolder2></td></tr>
+    </table>
 
 
 </body>
