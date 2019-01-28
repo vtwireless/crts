@@ -102,7 +102,7 @@ def SendSpectrum(tcpClientSock, tb, iD, tag):
 
 # This is bad code.  There's so much wrong with this.
 #
-def CORNET_3D_Daemon(tcpClientSock, args):
+def CORNET_3D_Run(tcpClientSock, args):
 
     tb = spectrum_sensing_nikita(float(args['freq'])*1e6, \
             int(args['bins']), float(args['bandwidth'])*1e6,\
@@ -151,6 +151,6 @@ if __name__ == '__main__':
     args = vars(parser.parse_args())
     tcpClient = socket(AF_INET,SOCK_STREAM)
     tcpClient.connect((args['address'], int(args['port'])))
-    CORNET_3D_Daemon(tcpClient, args)
+    CORNET_3D_Run(tcpClient, args)
     tcpClient.close()
     print "crts_spectrumFeed Exiting"
