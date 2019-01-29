@@ -12,13 +12,9 @@ span.selectedDigit {
     color: #11E;
     background-color: #85CCEA;
 }
-span.digit, span.ddigit{
+span.digit, span.deadDigit{
     color: #33A;
 }
-span.deadDigit {
-    background-color: #9FD0D5;
-}
-
 span.units {
     color: #111;
 }

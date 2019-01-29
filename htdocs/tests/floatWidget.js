@@ -1,3 +1,6 @@
+// https://github.com/luser/gamepadtest
+//
+
 if(fail === undefined)
     function fail() {
 
@@ -26,7 +29,8 @@ if(assert === undefined)
     }
 
 
-function createFloatWidget(startingValue, max, min, points, opts = { units: '' }) {
+function createFloatWidget(startingValue,
+    max, min, points, opts = { units: '' }) {
 
 
     /******************* parameters in this widget ******************/
@@ -37,8 +41,6 @@ function createFloatWidget(startingValue, max, min, points, opts = { units: '' }
     // derived), as we define them.  We label the derived variables
     // with // derived.
 
-    let value = startingValue; // derived in future.
-
     // TODO: remove these requirements:
     //
     assert(max > 1.0, 'max=' + max);
@@ -48,17 +50,21 @@ function createFloatWidget(startingValue, max, min, points, opts = { units: '' }
 
     //
     // numDigits is the number of digits that are adjustable.
-    let numDigits = max.toFixed(points);
+    let totalDigits = max.toFixed(points).length;
 
-    if(points > 0) --numDigits;
-    
+    if(points > 0)
+        var numDigits = totalDigits - 1;
+    else
+        var numDigits = totalDigits;
 
     // The array of digit object abstraction
     var digits = []; // array of fundamental parameters
 
     // The selected index into the digits array:
-    var selectedDigit = parseInt(numDigits/2) - 1; // fundamental parameter
+    var selectedDigit = parseInt(numDigits/2); // fundamental parameter
     if(selectedDigit < 0) selectedDigit = 0;
+
+    var textArray = []; // text nodes in the widget.
 
     /*****************************************************************/
 
@@ -73,18 +79,25 @@ function createFloatWidget(startingValue, max, min, points, opts = { units: '' }
         div.appendChild(span);
     }
 
-    let text = value.toString();
+    let text = startingValue.toFixed(points);
+    while(text.length < totalDigits)
+        text = '0' + text;
+
     let d = 0;
 
-    for(let i=0; i<text.length; ++i) {
+    for(let i=0; i<totalDigits; ++i) {
 
-        if(text.charAt(i) === '.' || d >= numDigits) {
-            span = document.createElement('span');
+        textArray[i] = document.createTextNode(text.charAt(i));
+
+        if(text.charAt(i) === '.') {
+            let span = document.createElement('span');
             span.className = 'deadDigit';
-            span.appendChild(document.createTextNode(text.charAt(i));
+            span.appendChild(document.createTextNode(text.charAt(i)));
+            div.appendChild(span);
+            continue;
         }
 
-        let digit = digits[d++] = {
+        let digit = digits[d] = {
             span: document.createElement('span'),
             select: function() {
                 span.className = 'selectedDigit';
@@ -92,15 +105,18 @@ function createFloatWidget(startingValue, max, min, points, opts = { units: '' }
             unselect: function() {
                 span.className = 'digit';
             },
-            text: document.createTextNode(text.charAt(i))
+            text: textArray[i]
         };
+
         let span = digit.span;
         span.appendChild(digit.text);
 
-        if(i == selectedDigit)
+        if(d == selectedDigit)
             digit.select();
         else
             digit.unselect();
+
+        ++d;
 
         div.appendChild(span);
     }
@@ -121,33 +137,126 @@ function createFloatWidget(startingValue, max, min, points, opts = { units: '' }
         console.log('Widget is out of focus');
     };
 
-    function selectDigit(fromI, toI) {
+    function getFloatValue() {
 
-        digits[fromI].unselect();
-        digits[toI].select();
-        selectedDigit = toI;
+        var str = '';
+        for(let i=0; i<totalDigits; ++i)
+            str += textArray[i].data;
+        return parseFloat(str);
     }
+
+    function selectDigit(toI) {
+
+        digits[selectedDigit].unselect();
+        selectedDigit = toI;
+        digits[toI].select();
+    }
+
+    // We only use this to set to max or min because
+    // we need to avoid float rounding errors.
+    function setValue(value) {
+
+        let strValue = value.toFixed(points);
+        let len = strValue.length;
+        if(points > 0)
+            --len;
+        let numLeadingZeros = numDigits-len;
+
+        //console.log('len=' + len + ' numDigits =' + numDigits +
+        //    ' numLeadingZeros = ' + numLeadingZeros);
+
+        let i=0;
+        let iStr=0;
+
+        for(; i<numLeadingZeros;)
+            digits[i++].text.data = '0';
+
+        while(i<numDigits) {
+            let ch = strValue.charAt(iStr++);
+            if(ch === '.') ch = strValue.charAt(iStr++);
+            digits[i++].text.data = ch;
+        }
+    }
+
+    function increaseDigit(i, first=true) {
+
+        function checkValue() {
+            if(getFloatValue() > max)
+                setValue(max);
+        }
+
+        if(digits[i].text.data !== '9')
+            digits[i].text.data = (parseInt(digits[i].text.data) + 1).toString();
+        else if(i > 0) {
+            // textArray[i].data === '9'
+            digits[i].text.data = '0';
+            // recurse
+            increaseDigit(i-1, false);
+        } else {
+            // i === 0 and it's a '9' so go to the maximum value.
+            setValue(max);
+            return;
+        }
+
+        if(first)
+            checkValue();
+
+        //console.log('value = ' + getFloatValue());
+    }
+
+    function decreaseDigit(i, first=true) {
+
+        function checkValue() {
+            if(getFloatValue() < min)
+                setValue(min);
+        }
+
+        if(digits[i].text.data !== '0') {
+            digits[i].text.data = (parseInt(digits[i].text.data) - 1).toString();
+        } else if(i > 0) {
+            // textArray[i].data === '0'
+            digits[i].text.data = '9';
+            // recurse
+            decreaseDigit(i-1);
+        } else {
+            // i === 0 and it's a '0' so go to the minimum value.
+            setValue(min);
+            return;
+        }
+
+        if(first)
+            checkValue();
+
+        //console.log('value = ' + getFloatValue());
+    }
+
 
     div.addEventListener('keydown', function(e) {
 
-        console.log('floatWidget got event keydown with (' +
+
+        /*console.log('floatWidget got event keydown with (' +
             typeof(e.code) + ') code: "' +
-            e.code + '" key="' + e.key + '"');
+            e.code + '" key="' + e.key + '"  float='+
+            getFloatValue()); */
 
         switch(e.key) {
 
             case "ArrowLeft":
                 if(selectedDigit > 0)
-                    selectDigit(selectedDigit, selectedDigit-1);
+                    selectDigit(selectedDigit-1);
                 break;
 
             case "ArrowRight":
                 if(selectedDigit < digits.length-1)
-                    selectDigit(selectedDigit, selectedDigit+1);
+                    selectDigit(selectedDigit+1);
                 break;
-
-
-        }
+            case "ArrowUp":
+                increaseDigit(selectedDigit);
+                break;
+            case "ArrowDown":
+                decreaseDigit(selectedDigit);
+                break;
+         }
     });
 
     return div;
