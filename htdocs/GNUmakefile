@@ -2,7 +2,7 @@ SUBDIRS := css js img tests vis
 
 INSTALL_DIR = $(PREFIX)/htdocs
 
-INSTALLED := doc x3dom vi
+INSTALLED := doc x3dom
 BUILD := index.html
 
 # we must tell quickbuild that x3dom is a directory
