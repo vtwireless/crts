@@ -48,7 +48,7 @@ installed files on your system.  Where these scripts install Node JS,
 UHD, and GNU Radio can be changed by
 ```
 cp dependencies/default_prefixes dependencies/prefixes
-gedit dependencies/prefixes # of other editor
+gedit dependencies/prefixes # or other editor
 ```
 or used another test editor (gedit) then the values you put in prefixes
 will be used when the installation scripts install node JS, UHD, and GNU
