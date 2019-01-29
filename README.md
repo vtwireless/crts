@@ -64,7 +64,7 @@ If you choose to you may have the following script install nodeJS from
 the github.com tagged source
 
 ```
-cd depenences/node
+cd dependencies/node
 make download
 make
 make install
@@ -84,7 +84,7 @@ If you choose to you may have the following script install UHD from
 the github.com tagged source:
 
 ```
-cd depenences/uhd
+cd dependencies/uhd
 make download
 make
 make install

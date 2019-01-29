@@ -109,4 +109,4 @@ apt-get -y install ${uhd_dep[@]}
 printf "\nInstalling GNU Radio dependencies\n"
 apt-get -y install ${gnuradio_dep[@]}
 
-printf "Installed all dependencies successfully!"
+printf "\nInstalled all dependencies successfully!\n"
