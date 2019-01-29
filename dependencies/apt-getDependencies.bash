@@ -101,10 +101,12 @@ fi
 
 
 printf "\nInstalling crts packages\n"
-apt-get install ${crts_dep[@]}
+apt-get -y install ${crts_dep[@]}
 
 printf "\nInstalling UHD dependencies\n"
-apt-get install ${uhd_dep[@]}
+apt-get -y install ${uhd_dep[@]}
 
 printf "\nInstalling GNU Radio dependencies\n"
-apt-get install ${gnuradio_dep[@]}
+apt-get -y install ${gnuradio_dep[@]}
+
+printf "Installed all dependencies successfully!"
