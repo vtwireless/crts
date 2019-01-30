@@ -121,12 +121,36 @@ function createFloatWidget(startingValue,
         div.appendChild(span);
     }
 
+    function getFloatValue() {
+
+        var str = '';
+        for(let i=0; i<totalDigits; ++i)
+            str += textArray[i].data;
+        return parseFloat(str);
+    }
+
+
     if(typeof(opts.units) === 'string') {
         let span = document.createElement('span');
         span.appendChild(document.createTextNode(' ' + opts.units));
         span.className = 'units';
         div.appendChild(span);
     }
+
+    var meter = document.createElement('meter');
+    // TODO: How can we make getFloatValue() === startingValue
+    // We can't control how the float is parsed and stored.
+    meter.value = ((getFloatValue() - min)/(max - min)).toFixed(4);
+    meter.className = 'floatWidget';
+    // BUG: or not.  The <meter> seems to work with some
+    // values.
+    meter.max = '1.0';
+    meter.min = '0.0';
+    //meter.innerHTML = 'foo';
+    meter.high = '1.0';
+    meter.low = '0.0';
+
+    div.appendChild(meter);
 
     div.setAttribute("tabIndex", 0);
 
@@ -136,14 +160,6 @@ function createFloatWidget(startingValue,
     div.onblur = function() {
         console.log('Widget is out of focus');
     };
-
-    function getFloatValue() {
-
-        var str = '';
-        for(let i=0; i<totalDigits; ++i)
-            str += textArray[i].data;
-        return parseFloat(str);
-    }
 
     function selectDigit(toI) {
 
@@ -155,6 +171,11 @@ function createFloatWidget(startingValue,
     // We only use this to set to max or min because
     // we need to avoid float rounding errors.
     function setValue(value) {
+
+        assert(value <= max);
+        assert(value >= min);
+
+        meter.value = ((value - min)/(max - min)).toFixed(2);
 
         let strValue = value.toFixed(points);
         let len = strValue.length;
@@ -181,8 +202,11 @@ function createFloatWidget(startingValue,
     function increaseDigit(i, first=true) {
 
         function checkValue() {
-            if(getFloatValue() > max)
+            var val = getFloatValue();
+            if(val > max)
                 setValue(max);
+            else 
+                meter.value = ((val - min)/(max - min)).toFixed(2);
         }
 
         if(digits[i].text.data !== '9')
@@ -207,8 +231,11 @@ function createFloatWidget(startingValue,
     function decreaseDigit(i, first=true) {
 
         function checkValue() {
-            if(getFloatValue() < min)
+            var val = getFloatValue();
+            if(val < min)
                 setValue(min);
+            else
+                meter.value = ((val - min)/(max - min)).toFixed(2);
         }
 
         if(digits[i].text.data !== '0') {
@@ -230,9 +257,7 @@ function createFloatWidget(startingValue,
         //console.log('value = ' + getFloatValue());
     }
 
-
     div.addEventListener('keydown', function(e) {
-
 
         /*console.log('floatWidget got event keydown with (' +
             typeof(e.code) + ') code: "' +
