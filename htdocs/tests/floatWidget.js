@@ -35,7 +35,8 @@ function createFloatWidget(startingValue,
 
     /******************* parameters in this widget ******************/
     
-    // These variables define the state of this widget.
+    // Some of these variables define the state of this widget and some
+    // are dummy variable that are used to calculate intermediate values.
     //
     // Some variables are derived and some are fundamental state (not
     // derived), as we define them.  We label the derived variables
@@ -46,16 +47,24 @@ function createFloatWidget(startingValue,
     assert(max > 1.0, 'max=' + max);
     assert(min > 0.0);
     assert(min < max);
-    assert(points > -1);
 
+    // totalDigits is all digits showing adjustable or not:
     //
-    // numDigits is the number of digits that are adjustable.
-    let totalDigits = max.toFixed(points).length;
+    if(points > -1)
+        var totalDigits = max.toFixed(points).length;
+    else
+        var totalDigits = max.toFixed(0).length;
 
+    // numDigits is the number of digits that are adjustable.  We index an
+    // array of digits that go from 0 to numDigits - 1.
+    //
     if(points > 0)
+        // We don't adjust the decimal point.
         var numDigits = totalDigits - 1;
     else
-        var numDigits = totalDigits;
+        // points can be negative in which case some non-fraction digits
+        // are not adjustable
+        var numDigits = totalDigits + points;
 
     // The array of digit object abstraction
     var digits = []; // array of fundamental parameters
@@ -64,7 +73,16 @@ function createFloatWidget(startingValue,
     var selectedDigit = parseInt(numDigits/2); // fundamental parameter
     if(selectedDigit < 0) selectedDigit = 0;
 
-    var textArray = []; // text nodes in the widget.
+    console.log("totalDigits=" + totalDigits + " numDigits=" + numDigits);
+
+    // textArray is all digits and the decimal point that are showing
+    // in the value as a decimal number.  Not all the characters in
+    // this character array are adjustable, but they are all showing.
+    // Like for example: [ '0', '3', '7', '.', '7', '3' ] for the float 
+    // value 037.73 .  Note we need the leading zero so that we may
+    // adjust that digit.
+    //
+    var textArray = [];
 
     /*****************************************************************/
 
@@ -79,7 +97,7 @@ function createFloatWidget(startingValue,
         div.appendChild(span);
     }
 
-    let text = startingValue.toFixed(points);
+    let text = startingValue.toFixed(points>-1?points:0);
     while(text.length < totalDigits)
         text = '0' + text;
 
@@ -89,7 +107,7 @@ function createFloatWidget(startingValue,
 
         textArray[i] = document.createTextNode(text.charAt(i));
 
-        if(text.charAt(i) === '.') {
+        if(text.charAt(i) === '.' || d === numDigits) {
             let span = document.createElement('span');
             span.className = 'deadDigit';
             span.appendChild(document.createTextNode(text.charAt(i)));
@@ -140,15 +158,15 @@ function createFloatWidget(startingValue,
     var meter = document.createElement('meter');
     // TODO: How can we make getFloatValue() === startingValue
     // We can't control how the float is parsed and stored.
-    meter.value = ((getFloatValue() - min)/(max - min)).toFixed(4);
+    meter.value = getFloatValue();
     meter.className = 'floatWidget';
     // BUG: or not.  The <meter> seems to work with some
     // values.
-    meter.max = '1.0';
-    meter.min = '0.0';
+    meter.max = max;
+    meter.min = min;
     //meter.innerHTML = 'foo';
-    meter.high = '1.0';
-    meter.low = '0.0';
+    meter.high = max;
+    meter.low = min;
 
     div.appendChild(meter);
 
@@ -175,9 +193,9 @@ function createFloatWidget(startingValue,
         assert(value <= max);
         assert(value >= min);
 
-        meter.value = ((value - min)/(max - min)).toFixed(2);
+        meter.value = value;
 
-        let strValue = value.toFixed(points);
+        let strValue = value.toFixed(points>-1?points:0);
         let len = strValue.length;
         if(points > 0)
             --len;
@@ -206,7 +224,7 @@ function createFloatWidget(startingValue,
             if(val > max)
                 setValue(max);
             else 
-                meter.value = ((val - min)/(max - min)).toFixed(2);
+                meter.value = val;
         }
 
         if(digits[i].text.data !== '9')
@@ -235,7 +253,7 @@ function createFloatWidget(startingValue,
             if(val < min)
                 setValue(min);
             else
-                meter.value = ((val - min)/(max - min)).toFixed(2);
+                meter.value = val;
         }
 
         if(digits[i].text.data !== '0') {
