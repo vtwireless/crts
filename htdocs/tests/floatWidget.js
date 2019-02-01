@@ -10,17 +10,15 @@
 // At the time of this code writing the gamepad API has only
 // "gamepadconnected" and "gamepaddisconnected" events, and so we must
 // poll to get the values from the "gamepad" joystick and buttons, and so
-// there's a good chance we'll miss events.  This is a obvious
-// deficiency in the Gamepad API.  Event driven code is much much more
-// efficient than polling code, by orders of magnitude.  Firefox may have
-// a "gamepadchanged" and "gamepadaxischanged" events soon, so someone has
-// a clue.
+// there's a good chance we'll miss events.  This is a obvious deficiency
+// in the Gamepad API.   Firefox may have a "gamepadchanged" and
+// "gamepadaxischanged" or "gamepadaxismove" events soon (at the time I
+// write this).
 //
 
 if(fail === undefined)
     function fail() {
 
-        // TODO: add stack trace or is browser debugger enough?
         var text = "Something has gone wrong:\n";
         for(var i=0; i < arguments.length; ++i)
             text += "\n" + arguments[i];
@@ -44,6 +42,16 @@ if(assert === undefined)
         }
     }
 
+// createFloatWidget() objects may set and unset this
+// as they focus and blur.
+var _joystickEventCB = null;
+// Count the number of float widgets created.
+var _floatWidgetCount = 0;
+// The ID of the current float widget that is in focus.
+var _floatWidgetId = null;
+// This gets set when a gamepad becomes available
+// and a float widget is in focus.
+var _runFrames = null;
 
 function _addGamepad(e) {
     // This is for adding joystick input.
@@ -53,6 +61,28 @@ function _addGamepad(e) {
     console.log('Adding Gamepad[' +
             gamepad.index + ']: ' +
             gamepad.id);
+
+    if(gamepad.axes === undefined || gamepad.axes.length < 2) {
+        console.log('Gamepad[' +
+            gamepad.index + ']: ' +
+            gamepad.id + ' does not have 2 axes');
+        gamepad = null;
+        return;
+    }
+
+
+    addEventListener("gamepaddisconnected", function(e) {
+    
+        if(gamepad)
+            console.log('Removing Gamepad[' +
+                gamepad.index + ']: ' +
+                gamepad.id);
+        gamepad = null;
+        _runFrames = null;
+        return;
+    });
+
+
 
     /* Firefox may have this soon (not at the time of this writing):
     addEventListener("gamepadaxismove", function(e){
@@ -65,31 +95,44 @@ function _addGamepad(e) {
         );
     }); */
 
+    // We do not bother keeping an Animation Frame callback unless
+    // we have a floatWidget with focus, i.e. _joystickEventCB is
+    // set, and we have a gamepad available, i.e. a joystick is plugged
+    // in.
+
+    // We need this flag because _runFrames() needs to do nothing
+    // if we are already running animation frames.
+    var frameRequested = false;
+
+    function runFrame(frameTime) {
+
+        frameRequested = false;
+
+        if(!gamepad || !_joystickEventCB)
+            // no reason to run.
+            return;
+
+        _joystickEventCB(frameTime, gamepad.axes[0], -gamepad.axes[1]);
+
+        // keep running in the next frame.
+        requestAnimationFrame(runFrame);
+        frameRequested = true;
+    }
+
+    _runFrames = function() {
+        if(frameRequested) return;
+        requestAnimationFrame(runFrame);
+        frameRequested = true;
+    };
+
+    if(_joystickEventCB)
+        _runFrames();
 }
 
-
-function _removeGamepad(e) {
-    // This is for adding joystick input.
-
-    var gamepad = e.gamepad;
-
-    console.log('Removing Gamepad[' +
-            gamepad.index + ']: ' +
-            gamepad.id);
-}
-
-
-// TODO: add a API switch to not use the gamepad code.
-
-
-// createFloatWidget() objects may set and unset this
-// as they focus and blur.
-var _focusedFloatWidget = { joystickEventCB: null };
 
 
 if('GamepadEvent' in window) {
     addEventListener("gamepadconnected", _addGamepad);
-    addEventListener("gamepaddisconnected", _removeGamepad);
 }
 
 
@@ -238,12 +281,6 @@ function createFloatWidget(startingValue,
 
     div.setAttribute("tabIndex", 0);
 
-    div.onfocus = function() {
-        console.log('Widget is in focus');
-    };
-    div.onblur = function() {
-        console.log('Widget is out of focus');
-    };
 
     function selectDigit(toI) {
 
@@ -252,14 +289,14 @@ function createFloatWidget(startingValue,
         digits[toI].select();
     }
 
-    function setValue(value) {
+    function setValue(val) {
 
-        assert(value <= max);
-        assert(value >= min);
+        assert(val <= max);
+        assert(val >= min);
 
-        meter.value = value;
+        meter.value = val;
 
-        let strValue = value.toFixed(points>-1?points:0);
+        let strValue = val.toFixed(points>-1?points:0);
         let len = strValue.length;
         if(points > 0)
             --len;
@@ -285,7 +322,7 @@ function createFloatWidget(startingValue,
             digits[i++].text.data = ch;
         }
 
-        //console.log("value=" + getFloatValue());
+        //console.log("val=" + getFloatValue());
     }
 
     function increaseDigit(i, first=true) {
@@ -361,7 +398,6 @@ function createFloatWidget(startingValue,
                 if(selectedDigit > 0)
                     selectDigit(selectedDigit-1);
                 break;
-
             case "ArrowRight":
                 if(selectedDigit < digits.length-1)
                     selectDigit(selectedDigit+1);
@@ -374,6 +410,61 @@ function createFloatWidget(startingValue,
                 break;
          }
     });
+
+
+    // widget controller model parameters
+    var firstFrame = true;
+    var id = _floatWidgetCount++;
+
+    // selectedDigit is a discrete dynamical variable that is
+    // controlled.  selectedDigit ranges from 0 to digits.length-1.  It's
+    // an index to the digits array.
+    //
+    // selected digit value is another discrete dynamical variable.
+    //
+
+    // widget controller model state variables: x, y change with time
+    // based on our widget controller model.
+
+
+    function joystickEventCB(frameTime, xAxis, yAxis) {
+
+        console.log('animation frame[widgetId=' + id + ']' +
+            ' time=' + frameTime +
+            ' axes=' + xAxis + ',' + yAxis);
+    }
+
+    function initJoystickEventCB(frameTime, xAxis, yAxis) {
+
+        // This is the first frame after we got focus.
+        console.log('widget init animation frame[widgetId=' + id + ']' +
+            ' time=' + frameTime +
+            ' axes=' + xAxis + ',' + yAxis);
+
+        // This is initialed, so go the real action now.
+        _joystickEventCB = joystickEventCB
+    }
+
+    div.onfocus = function() {
+        // Grab the joystick callback:
+        _joystickEventCB = initJoystickEventCB;
+        _floatWidgetId = id;
+        console.log('Widget ' + id + ' is in focus');
+        // We reset the frameCount
+        frameCount = 0;
+        if(_runFrames)
+            // We have a gamepad to read.
+            _runFrames();
+    };
+
+    div.onblur = function() {
+        console.log('Widget ' + id + ' is out of focus');
+        if(_floatWidgetId === id) {
+            _joystickEventCB = null;
+            _floatWidgetId = null;
+        }
+    };
+
 
     return div;
 }
