@@ -1,4 +1,20 @@
+// Gamepad references:
+//
 // https://github.com/luser/gamepadtest
+//
+// https://w3c.github.io/gamepad/
+//
+// https://developer.mozilla.org/en-US/docs/Web/API/Gamepad_API/
+//
+//
+// At the time of this code writing the gamepad API has only
+// "gamepadconnected" and "gamepaddisconnected" events, and so we must
+// poll to get the values from the "gamepad" joystick and buttons, and so
+// there's a good chance we'll miss events.  This is a obvious
+// deficiency in the Gamepad API.  Event driven code is much much more
+// efficient than polling code, by orders of magnitude.  Firefox may have
+// a "gamepadchanged" and "gamepadaxischanged" events soon, so someone has
+// a clue.
 //
 
 if(fail === undefined)
@@ -27,6 +43,55 @@ if(assert === undefined)
                 fail("JavaScript failed");
         }
     }
+
+
+function _addGamepad(e) {
+    // This is for adding joystick input.
+
+    var gamepad = e.gamepad;
+
+    console.log('Adding Gamepad[' +
+            gamepad.index + ']: ' +
+            gamepad.id);
+
+    /* Firefox may have this soon (not at the time of this writing):
+    addEventListener("gamepadaxismove", function(e){
+        // Axis move
+        console.log(
+            "Axes move",
+            e.axis,
+            e.value,
+            e.gamepad
+        );
+    }); */
+
+}
+
+
+function _removeGamepad(e) {
+    // This is for adding joystick input.
+
+    var gamepad = e.gamepad;
+
+    console.log('Removing Gamepad[' +
+            gamepad.index + ']: ' +
+            gamepad.id);
+}
+
+
+// TODO: add a API switch to not use the gamepad code.
+
+
+// createFloatWidget() objects may set and unset this
+// as they focus and blur.
+var _focusedFloatWidget = { joystickEventCB: null };
+
+
+if('GamepadEvent' in window) {
+    addEventListener("gamepadconnected", _addGamepad);
+    addEventListener("gamepaddisconnected", _removeGamepad);
+}
+
 
 
 function createFloatWidget(startingValue,
@@ -73,7 +138,7 @@ function createFloatWidget(startingValue,
     var selectedDigit = parseInt(numDigits/2); // fundamental parameter
     if(selectedDigit < 0) selectedDigit = 0;
 
-    console.log("totalDigits=" + totalDigits + " numDigits=" + numDigits);
+    //console.log("totalDigits=" + totalDigits + " numDigits=" + numDigits);
 
     // textArray is all digits and the decimal point that are showing
     // in the value as a decimal number.  Not all the characters in
@@ -85,6 +150,7 @@ function createFloatWidget(startingValue,
     var textArray = [];
 
     /*****************************************************************/
+
 
     // div is the visual container:
     var div = document.createElement('div');
@@ -186,8 +252,6 @@ function createFloatWidget(startingValue,
         digits[toI].select();
     }
 
-    // We only use this to set to max or min because
-    // we need to avoid float rounding errors.
     function setValue(value) {
 
         assert(value <= max);
@@ -199,7 +263,12 @@ function createFloatWidget(startingValue,
         let len = strValue.length;
         if(points > 0)
             --len;
+
         let numLeadingZeros = numDigits-len;
+        if(points < 0)
+            // There are digits that do not change that are before the
+            // decimal point.  numDigits is the changeable digits.
+            numLeadingZeros -= points;
 
         //console.log('len=' + len + ' numDigits =' + numDigits +
         //    ' numLeadingZeros = ' + numLeadingZeros);
@@ -215,6 +284,8 @@ function createFloatWidget(startingValue,
             if(ch === '.') ch = strValue.charAt(iStr++);
             digits[i++].text.data = ch;
         }
+
+        //console.log("value=" + getFloatValue());
     }
 
     function increaseDigit(i, first=true) {
@@ -241,6 +312,7 @@ function createFloatWidget(startingValue,
         }
 
         if(first)
+            // This is the last recurse.
             checkValue();
 
         //console.log('value = ' + getFloatValue());
@@ -262,7 +334,7 @@ function createFloatWidget(startingValue,
             // textArray[i].data === '0'
             digits[i].text.data = '9';
             // recurse
-            decreaseDigit(i-1);
+            decreaseDigit(i-1, false);
         } else {
             // i === 0 and it's a '0' so go to the minimum value.
             setValue(min);
@@ -270,6 +342,7 @@ function createFloatWidget(startingValue,
         }
 
         if(first)
+            // This is the last recurse.
             checkValue();
 
         //console.log('value = ' + getFloatValue());
