@@ -457,6 +457,8 @@ function createFloatWidget(startingValue,
         // This is initialed, so go the real action now.
         _joystickEventCB = joystickEventCB;
         lastTime = frameTime;
+        digitChange = 0.0;
+        digitIncrease = 0.0;
     }
 
     div.onfocus = function() {
