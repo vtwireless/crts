@@ -415,6 +415,12 @@ function createFloatWidget(startingValue,
     // widget controller model parameters
     var firstFrame = true;
     var id = _floatWidgetCount++;
+    var lastTime = 0.0;
+
+    // Joystick dynamic variables:
+    var digitChange = 0.0;
+    var digitIncrease = 0.0;
+
 
     // selectedDigit is a discrete dynamical variable that is
     // controlled.  selectedDigit ranges from 0 to digits.length-1.  It's
@@ -429,9 +435,16 @@ function createFloatWidget(startingValue,
 
     function joystickEventCB(frameTime, xAxis, yAxis) {
 
-        console.log('animation frame[widgetId=' + id + ']' +
-            ' time=' + frameTime +
-            ' axes=' + xAxis + ',' + yAxis);
+        var dt = frameTime - lastTime;
+        
+        /*console.log('animation frame[widgetId=' + id + ']' +
+            ' time=' + frameTime +  ' dt=' + dt +
+            ' axes=' + xAxis + ',' + yAxis);*/
+
+
+
+
+        lastTime = frameTime;
     }
 
     function initJoystickEventCB(frameTime, xAxis, yAxis) {
@@ -442,7 +455,8 @@ function createFloatWidget(startingValue,
             ' axes=' + xAxis + ',' + yAxis);
 
         // This is initialed, so go the real action now.
-        _joystickEventCB = joystickEventCB
+        _joystickEventCB = joystickEventCB;
+        lastTime = frameTime;
     }
 
     div.onfocus = function() {
