@@ -412,14 +412,18 @@ function createFloatWidget(startingValue,
     });
 
 
-    // widget controller model parameters
-    var firstFrame = true;
     var id = _floatWidgetCount++;
     var lastTime = 0.0;
 
     // Joystick dynamic variables:
-    var digitChange = 0.0;
-    var digitIncrease = 0.0;
+    var x = 0; // digitChange
+    var y = 0; // digitIncrease
+    // Joystick  controller model parameters:
+    var firstFrame = true;
+    // These rates are the rates that the digits will change
+    // when the joystick is at full input, like +1 or -1.
+    var xRate = 0.006; // digits/millisecond
+    var yRate = 0.006; // digits/millisecond
 
 
     // selectedDigit is a discrete dynamical variable that is
@@ -442,8 +446,43 @@ function createFloatWidget(startingValue,
             ' axes=' + xAxis + ',' + yAxis);*/
 
 
+        // We solve for the x(t) equations of motion.  Basically solving
+        // via Euler's method.
+        x += xRate * xAxis * dt;
+        let xTick = Math.trunc(x);
+        // We consume any discrete changes in x, be they positive or
+        // negative, keeping any factional changes to keep smooth
+        // motion:
+        x -= xTick;
+        while(xTick > 0) {
+            if(selectedDigit < digits.length-1)
+                selectDigit(selectedDigit+1);
+            --xTick;
+        }
+        while(xTick < 0) {
+            if(selectedDigit > 0)
+                selectDigit(selectedDigit-1);
+            ++xTick;
+        }
 
+        // We solve for the y(t) equations of motion.  Basically solving
+        // via Euler's method (same as x).
+        y += yRate * yAxis * dt;
+        // We consume any discrete changes in y, be they positive or
+        // negative, keeping any factional changes to keep smooth
+        // motion:
+        let yTick = Math.trunc(y);
+        y -= yTick;
+        while(yTick > 0) {
+            increaseDigit(selectedDigit);
+            --yTick;
+        }
+        while(yTick < 0) {
+            decreaseDigit(selectedDigit);
+            ++yTick;
+        }
 
+        // Keep time smooth:
         lastTime = frameTime;
     }
 
@@ -459,6 +498,8 @@ function createFloatWidget(startingValue,
         lastTime = frameTime;
         digitChange = 0.0;
         digitIncrease = 0.0;
+        x = 0.0;
+        y = 0.0;
     }
 
     div.onfocus = function() {
