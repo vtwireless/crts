@@ -1,0 +1,31 @@
+#!/bin/bash
+
+##############################################################
+# configure here
+
+# The git repository tag
+tag=master
+
+
+# The sha512sum is optional.  Get its value by running:
+#    sha512sum webDesktop.tar.gz
+
+sha512sum=
+
+source ../GetSrcFromGithub.bash
+
+
+if [ -e webDesktop/.git ] ; then
+
+    # This is for the case when we wish to develop webDesktop
+    # so there is a git repo checkout in webDesktop/
+
+    # Keep make from doing anything to this directory.
+    touch webDesktop
+
+else
+
+    # Usage: GetSrcFromGithub user package tag tarname [sha512sum]
+    GetSrcFromGithub vtwireless webDesktop $tag webDesktop $sha512sum
+
+fi

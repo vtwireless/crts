@@ -1,0 +1,13 @@
+#!/bin/bash
+
+set -ex
+
+
+# if there is a git repo checkout of webDesktop
+# don't do anything.
+[ -d webDesktop/.git ] && exit 0
+
+rm -rf 
+tar -xvzf webDesktop.tar.gz
+mv vtwireless-webDesktop*/ webDesktop/
+touch webDesktop/

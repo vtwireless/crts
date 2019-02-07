@@ -1,4 +1,5 @@
 Do not check in binary files into the CRTS repository.  Check in a
 download script (*.dl) instead.
 
-For example: myImage.png.dl
+For example of how to add a quickbuild "make download" target see:
+myImage.png.dl
