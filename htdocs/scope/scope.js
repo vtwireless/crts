@@ -29,11 +29,13 @@ function assert(val, msg=null) {
 
 
 
-function _scopeGetGridSpacing(pixPerGrid, min, max, size/*pixels*/) {
+function _GetGridSpacing(pixPerGrid, min, max, pixels/*width or height*/) {
 
-    var delta = max - min;
+    assert(min < max);
 
-    return { start: 0.0, delta: delta };
+    var deltaValue = pixPerGrid*(max - min)/pixels);
+
+    return { start: min, delta: deltaValue };
 }
 
 
@@ -60,9 +62,14 @@ function Scope(period) {
         return render;
     };
 
-
+    // These are the min and max values across the whole canvas.  These
+    // min and max values are not from value that are input, but are the
+    // limiting values at the edges of the canvas.
     var xMin = - period, xMax = 0.0;
     var yMin = -0.1, yMax = 1.0;
+
+    assert(xMin < xMax);
+    assert(yMin < yMax);
 
 
     var ctx = render.getContext('2d');
@@ -79,6 +86,12 @@ function Scope(period) {
     var majPixPerGrid = 40;
     var majPixPerGridX = majPixPerGrid; // for vertical grid lines
     var majPixPerGridY = majPixPerGrid; // for horizontal grid lines
+
+
+    // We define: pixelX = xScale * X_in - xShift
+    // and:       pixelY = yScale * Y_in - yShift
+    //
+    var xScale, yScale, xShift, yShift;
 
     var majGridX = null;
     var majGridY = null;
@@ -99,10 +112,13 @@ function Scope(period) {
             w = canvas.width = canvas.offsetWidth;
             h = canvas.height = canvas.offsetHeight;
 
-            majGridX = _scopeGetGridSpacing(majPixPerGridX, xMin, xMax, w/*pixels*/);
-            majGridY = _scopeGetGridSpacing(majPixPerGridY, yMin, yMax, -h/*pixels*/); 
+            majGridX = _GetGridSpacing(majPixPerGridX, xMin, xMax, w/*pixels*/);
+            majGridY = _GetGridSpacing(majPixPerGridY, yMin, yMax, h/*pixels*/);
 
-
+            xScale =  (w-1)/(xMax - xMin);
+            yScale = -(h-1)/(yMax - yMin);
+            xShift = (w-1)*xMin/(xMax - xMin);
+            yShift = -(h-1)*yMax/(yMax - yMin);
         }
 
         //ctx.drawImage(fg, 0, 0);
