@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang=en>
+<head>
+    <meta charset="utf-8"/>
+
+    <style type="text/css">
+body {
+    background-color:#C0D0E0;
+}
+
+canvas.clock {
+    background-color: #B6ECDC;
+    width: 100%;
+    height: 100%;
+    padding: 0px;
+    margin: 0px;
+}
+
+
+
+    </style>
+    <link rel='stylesheet' href='../webDesktop/webDesktop.css'></link>
+    <link rel='stylesheet' href='scope.css'></link>
+    <script src='../webDesktop/webDesktop.js'></script>
+    <script src='../webDesktop/clock.js'></script>
+    <script src=scope.js></script>
+    <script>
+
+
+onload = function() {
+
+    var scope = new Scope(10/*period in seconds*/);
+    new WDApp('Scope', scope.getElement());
+
+    var clocks = [];
+
+    for(i=0; i<3; ++i) {
+        var clock = new Clock;
+        clocks.push(clock);
+        new WDApp('Clock ' + i, clock.getElement());
+    }
+
+    function run() {
+
+        var now = new Date;
+        for(let i=0; i<clocks.length; ++i)
+            clocks[i].run(now);
+        requestAnimationFrame(run);
+    }
+
+    requestAnimationFrame(run);
+};
+
+    </script>
+
+
+    <title>CRTS</title>
+</head>
+<body>
+
+</body>
+</html>
