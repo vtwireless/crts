@@ -33,7 +33,11 @@ function _GetGridSpacing(pixPerGrid, min, max, pixels/*width or height*/) {
 
     assert(min < max);
 
-    var deltaValue = pixPerGrid*(max - min)/pixels);
+
+    // This is easiest thing one could do, but if max and min are not
+    // nice round values, this is shit.
+    //
+    var deltaValue = pixPerGrid*(max - min)/pixels;
 
     return { start: min, delta: deltaValue };
 }
@@ -75,15 +79,18 @@ function Scope(period) {
     var ctx = render.getContext('2d');
 
     var bg = document.createElement('canvas');
-    render.className = 'bg';
+    bg.className = 'bg';
+    bgCtx = bg.getContext('2d');
+
     var fg = document.createElement('canvas');
-    render.className = 'fg';
+    fg.className = 'fg';
+    fgCtx = fg.getContext('2d');
 
     var oldW = -1, oldH = -1, oldSec = -1;
 
     // Minimum major Grid pixels per grid line.  Larger means the grid
     // lines have more pixels between them.
-    var majPixPerGrid = 40;
+    var majPixPerGrid = 80;
     var majPixPerGridX = majPixPerGrid; // for vertical grid lines
     var majPixPerGridY = majPixPerGrid; // for horizontal grid lines
 
@@ -95,34 +102,86 @@ function Scope(period) {
 
     var majGridX = null;
     var majGridY = null;
+    var majGridXWidth = 20;
+    var majGridYWidth = 2;
+    var majGridXColor = 'rgb(16,102,156)';
+    var majGridYColor = 'rgb(76,60,178)';
 
+    // Functions to convert from user x values to pixel coordinates.
+    function xPix(x) {
+        return xScale * x - xShift;
+    }
+    function yPix(y) {
+        return yScale * y - yShift;
+    }
+
+    function resize() {
+
+        w = render.width = render.offsetWidth;
+        h = render.height = render.offsetHeight;
+        fg.width = bg.width = w;
+        fg.height = bg.height = h;
+
+        majGridX = _GetGridSpacing(majPixPerGridX, xMin, xMax, w/*pixels*/);
+        majGridY = _GetGridSpacing(majPixPerGridY, yMin, yMax, h/*pixels*/);
+
+        xScale =  (w-1)/(xMax - xMin);
+        yScale = -(h-1)/(yMax - yMin);
+        xShift = (w-1)*xMin/(xMax - xMin);
+        yShift = -(h-1)*yMax/(yMax - yMin);
+
+        let n = 0;
+
+        bgCtx.lineWidth = majGridXWidth;
+        bgCtx.strokeStyle = majGridXColor;
+        let max = xPix(xMax) + majGridXWidth/2 + 1;
+        for(let x = xPix(majGridX.start); x <= max;
+            x = xPix(majGridX.start + (++n)*majGridX.delta)) {
+            bgCtx.beginPath();
+            bgCtx.moveTo(x, 0);
+            bgCtx.lineTo(x, h);
+            bgCtx.stroke();      
+        }
+        bgCtx.lineWidth = majGridYWidth;
+        bgCtx.strokeStyle = majGridYColor;
+        n = 0;
+        let min = yPix(yMax) - majGridYWidth/2 + 1;
+        for(let y = yPix(majGridY.start); y >= min;
+            y = yPix(majGridY.start + (++n)*majGridY.delta)) {
+            bgCtx.beginPath();
+            bgCtx.moveTo(0, y);
+            bgCtx.lineTo(w, y);
+            bgCtx.stroke();      
+        }
+     }
+
+    function draw() {
+
+        // Draw the bg grid to the rendered canvas.
+        ctx.drawImage(bg, 0, 0);
+
+    }
 
     function run() {
 
-        var w = canvas.width;
-        var h = canvas.height;
+        var w = render.width;
+        var h = render.height;
 
-        if(canvas.offsetWidth === w && canvas.offsetHeight === h &&
-                majGridX !== null) {
+        //console.log('w= ' + w + '  render.offsetWidth=' + render.offsetWidth);
+
+        if(render.offsetWidth === w && render.offsetHeight === h &&
+                majGridX !== null)
             // Nothing new to draw.  We do not draw if there is no change
             // in what we would draw.
             return;
-        } else {
-            //console.log("w,h=" + w + ',' + h);
-            w = canvas.width = canvas.offsetWidth;
-            h = canvas.height = canvas.offsetHeight;
+        if(render.offsetWidth === 0 || render.offsetHeight === 0)
+            // It must be iconified, or hidden or like thing.
+            return;
 
-            majGridX = _GetGridSpacing(majPixPerGridX, xMin, xMax, w/*pixels*/);
-            majGridY = _GetGridSpacing(majPixPerGridY, yMin, yMax, h/*pixels*/);
-
-            xScale =  (w-1)/(xMax - xMin);
-            yScale = -(h-1)/(yMax - yMin);
-            xShift = (w-1)*xMin/(xMax - xMin);
-            yShift = -(h-1)*yMax/(yMax - yMin);
-        }
-
+        resize();
+        draw();
+ 
         //ctx.drawImage(fg, 0, 0);
-
     }
 
     this.run = run;

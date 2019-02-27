@@ -29,26 +29,26 @@ canvas.clock {
 
 onload = function() {
 
-    var scope = new Scope(10/*period in seconds*/);
-    new WDApp('Scope', scope.getElement());
-
     var clocks = [];
 
-    for(i=0; i<3; ++i) {
+    for(i=0; i<2; ++i) {
         var clock = new Clock;
         clocks.push(clock);
         new WDApp('Clock ' + i, clock.getElement());
     }
+    var scope = new Scope(10/*period in seconds*/);
+    new WDApp('Scope', scope.getElement());
 
     function run() {
 
         var now = new Date;
         for(let i=0; i<clocks.length; ++i)
             clocks[i].run(now);
+        scope.run();
         requestAnimationFrame(run);
     }
 
-    requestAnimationFrame(run);
+    run();
 };
 
     </script>

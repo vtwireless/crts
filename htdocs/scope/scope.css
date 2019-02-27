@@ -4,6 +4,7 @@ canvas.render {
     height: 100%;
     padding: 0px;
     margin: 0px;
+    border: none;
 }
 
 canvas.bg, canvas.fg {
