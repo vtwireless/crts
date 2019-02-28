@@ -10,8 +10,6 @@ function fail() {
         new Error().stack + '\n' + line + '\n';
     console.log(text);
 
-    if(crts) crts.cleanup();
-
     alert(text);
     window.stop();
     throw "javascript error"
@@ -32,14 +30,35 @@ function assert(val, msg=null) {
 function _GetGridSpacing(pixPerGrid, min, max, pixels/*width or height*/) {
 
     assert(min < max);
+    assert(pixPerGrid >= 1.0);
 
+    let delta = pixPerGrid*(max - min)/pixels;
 
-    // This is easiest thing one could do, but if max and min are not
-    // nice round values, this is shit.
+    let p = Math.floor(Math.log10(delta));
+    let upow = Math.pow(10, p);
+
+    let b = Math.ceil(delta/upow);
+
+    /* round up to 1, 2, 5, times 10^N */
+    if(b > 10) delta = 20 * upow; // <-- May be this case can happen?
+    else if(b > 5) delta = 10 * upow;
+    else if(b > 2) delta = 5 * upow;
+    else if(b > 1) delta = 2 * upow;
+    else delta = upow;
+
+    // Now find the start
     //
-    var deltaValue = pixPerGrid*(max - min)/pixels;
+    // If we do not have the width of the lines and they may vary we add
+    // an addition delta behind the min in case the width of the line
+    // would make a grid line behind the min show.
+    let start = Math.trunc((min-delta)/delta) * delta;
 
-    return { start: min, delta: deltaValue };
+    // debug spew
+    //console.log('\n\n pixels=' + pixels + ' min=' + min + ' max=' + max + ' pixPerGrid=' + pixPerGrid + ' delta=' + delta + ' start=' + start);
+    //console.log('delta ~=' +  b + 'x10^' + p);
+    //console.log('calculated pixPerGrid=' + (pixels * delta /(max - min)));
+
+    return { start: start, delta: delta };
 }
 
 
@@ -65,12 +84,12 @@ function Scope(period) {
     this.getElement = function() {
         return render;
     };
-
+    
     // These are the min and max values across the whole canvas.  These
     // min and max values are not from value that are input, but are the
     // limiting values at the edges of the canvas.
-    var xMin = - period, xMax = 0.0;
-    var yMin = -0.1, yMax = 1.0;
+    var xMin = -10.5, xMax = 0.1;
+    var yMin = -0.32, yMax = 1.0;
 
     assert(xMin < xMax);
     assert(yMin < yMax);
@@ -90,7 +109,7 @@ function Scope(period) {
 
     // Minimum major Grid pixels per grid line.  Larger means the grid
     // lines have more pixels between them.
-    var majPixPerGrid = 80;
+    var majPixPerGrid = 50;
     var majPixPerGridX = majPixPerGrid; // for vertical grid lines
     var majPixPerGridY = majPixPerGrid; // for horizontal grid lines
 
@@ -102,17 +121,18 @@ function Scope(period) {
 
     var majGridX = null;
     var majGridY = null;
-    var majGridXWidth = 20;
-    var majGridYWidth = 2;
-    var majGridXColor = 'rgb(16,102,156)';
-    var majGridYColor = 'rgb(76,60,178)';
+    var majGridXWidth = 2.2;
+    var majGridYWidth = 2.2;
+    var majGridXColor = 'rgb(8,8,8)';
+    var majGridYColor = 'rgb(8,8,8)';
+
 
     // Functions to convert from user x values to pixel coordinates.
     function xPix(x) {
-        return xScale * x - xShift;
+        return (xScale * x - xShift);
     }
     function yPix(y) {
-        return yScale * y - yShift;
+        return (yScale * y - yShift);
     }
 
     function resize() {
@@ -125,10 +145,14 @@ function Scope(period) {
         majGridX = _GetGridSpacing(majPixPerGridX, xMin, xMax, w/*pixels*/);
         majGridY = _GetGridSpacing(majPixPerGridY, yMin, yMax, h/*pixels*/);
 
-        xScale =  (w-1)/(xMax - xMin);
-        yScale = -(h-1)/(yMax - yMin);
-        xShift = (w-1)*xMin/(xMax - xMin);
-        yShift = -(h-1)*yMax/(yMax - yMin);
+        let w_1 = parseFloat(w-1);
+        let h_1 = parseFloat(h-1);
+
+        xScale =  w_1/(xMax - xMin);
+        xShift = w_1*xMin/(xMax - xMin);
+
+        yScale = -h_1/(yMax - yMin);
+        yShift = -h_1*yMax/(yMax - yMin);
 
         let n = 0;
 
@@ -145,7 +169,7 @@ function Scope(period) {
         bgCtx.lineWidth = majGridYWidth;
         bgCtx.strokeStyle = majGridYColor;
         n = 0;
-        let min = yPix(yMax) - majGridYWidth/2 + 1;
+        let min = yPix(yMax) - majGridYWidth/2 - 1;
         for(let y = yPix(majGridY.start); y >= min;
             y = yPix(majGridY.start + (++n)*majGridY.delta)) {
             bgCtx.beginPath();
