@@ -65,7 +65,7 @@ function _GetGridSpacing(pixPerGrid, min, max, pixels/*width or height*/) {
 
     let size = Math.max(Math.abs(min),Math.abs(max));
 
-    let digits = Math.ceil(Math.log10(size/delta));
+    let digits = Math.ceil(Math.log10((size+delta)/delta));
     if(b > 1) ++digits;
     if(digits === 0) digits = 1;
 
