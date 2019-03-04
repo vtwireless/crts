@@ -25,7 +25,6 @@ function assert(val, msg=null) {
     }
 }
 
-var count = 0;
 
 function _GetGridSpacing(pixPerGrid, min, max, pixels/*width or height*/) {
 
@@ -77,7 +76,7 @@ function _GetGridSpacing(pixPerGrid, min, max, pixels/*width or height*/) {
     let size = Math.max(Math.abs(min),Math.abs(max));
 
     // TODO: The format of the grid text number labels needs work, it uses
-    // digits which is comuputed here:
+    // digits which is computed here:
     let digits = Math.ceil(Math.log10((size+delta)/delta));
     if(b > 1) ++digits;
 
@@ -99,36 +98,46 @@ function _GetGridSpacing(pixPerGrid, min, max, pixels/*width or height*/) {
         start: start,
         delta: delta,
         pixPerGrid: _pixPerGrid,
-        digits: digits
+        digits: digits, // decimal places
+        n: b // 1, 2, 5
     };
 }
 
 
 
 
-// @param period time to scroll the whole visual canvas.
-
-function Scope(period) {
+function Scope(xMin_in, xMax_in, yMin_in, yMax_in) {
 
     /////////////////////////////// CONFIGURATION /////////////////////////
-    var majGridXWidth = 2.4;
-    var majGridYWidth = 2.4;
 
-    var midGridXWidth = 2.1;
-    var midGridYWidth = 2.1;
+    // Padding space in pixels around the plot.
+    const padWidth = 10;
 
-    var minGridXWidth = 0.4;
-    var minGridYWidth = 0.4;
+
+    // There may be 1, 2, or 3 sets of grid lines depending on the width
+    // and height of the canvas.
+
+    var backgroundColor =  'rgb(134, 186, 228)';
+
+    var majGridXWidth = 2.6;
+    var majGridYWidth = 2.6;
+
+    var midGridXWidth = 1.2;
+    var midGridYWidth = 1.2;
+
+    var minGridXWidth = 0.22;
+    var minGridYWidth = 0.22;
 
     var majGridXColor = 'rgb(8,8,8)';
     var majGridYColor = 'rgb(8,8,8)';
 
-    var midGridXColor = 'rgb(140,40,40)';
-    var midGridYColor = 'rgb(140,40,40)';
+    var midGridXColor = 'rgb(40,40,40)';
+    var midGridYColor = 'rgb(40,40,40)';
 
-    var minGridXColor = 'rgb(80,80,80)';
-    var minGridYColor = 'rgb(80,80,80)';
+    var minGridXColor = 'rgb(100,100,100)';
+    var minGridYColor = 'rgb(100,100,100)';
 
+    // For the number labels on the major
     let gridFont = '20px serif';
     var xGridFont = gridFont;
     var yGridFont = gridFont;
@@ -137,7 +146,7 @@ function Scope(period) {
     // lines have more pixels between them.
     //
     // for major vertical grid lines with number labels
-    var majPixPerGridX = 170.0;
+    var majPixPerGridX = 170.0; // yes a float.
     // for major horizontal grid lines with number labels
     var majPixPerGridY = 100.0;
 
@@ -149,19 +158,21 @@ function Scope(period) {
 
     // These are the min and max values across the whole canvas.  These
     // min and max values are not from value that are input, but are the
-    // limiting values at the edges of the canvas.
-    var xMin = -60.2, xMax = 0.01;
-    var yMin = -0.32, yMax = 1.0;
+    // limiting values at the edges of the canvas and a little padding.
+    var xMin = xMin_in, xMax = xMax_in;
+    var yMin = yMin_in, yMax = yMax_in;
+
+
 
     ///////////////////////////////////////////////////////////////////////
-
+    //
     // This class object has 3 canvases, all the same size.
     //
-    //  1. render:  the canvas that is showing in the window
+    //   1. render:  the canvas that is showing in the window
     //
-    //  2. bg: a canvas (buffer) that we put the constant background on
+    //   2. bg: a canvas (buffer) that we put the constant background on
     //
-    //  3. fg: a canvas (buffer) that we rotate through drawing the plot
+    //   3. fg: a canvas (buffer) that we rotate through drawing the plot
     //
 
     assert(xMin < xMax);
@@ -206,8 +217,7 @@ function Scope(period) {
 
         bgCtx.lineWidth = gridXWidth;
         bgCtx.strokeStyle = gridXColor;
-        bg.fillStyle = gridXColor;
-        bg.fillStyle = gridXColor;
+        bgCtx.fillStyle = gridXColor;
         if(xGridFont)
             bgCtx.font = xGridFont;
 
@@ -234,8 +244,7 @@ function Scope(period) {
 
         bgCtx.lineWidth = gridYWidth;
         bgCtx.strokeStyle = gridYColor;
-        bg.fillStyle = gridYColor;
-        bg.fillStyle = gridYColor;
+        bgCtx.fillStyle = gridYColor;
         if(yGridFont)
             bgCtx.font = yGridFont;
 
@@ -258,7 +267,9 @@ function Scope(period) {
     }
 
 
+
     function resize() {
+
 
         w = render.width = render.offsetWidth;
         h = render.height = render.offsetHeight;
@@ -268,19 +279,21 @@ function Scope(period) {
         let w_1 = w-1;
         let h_1 = h-1;
 
-        xScale =  w_1/(xMax - xMin);
-        xShift = w_1*xMin/(xMax - xMin);
 
-        yScale = -h_1/(yMax - yMin);
-        yShift = -h_1*yMax/(yMax - yMin);
+        xScale =  (w_1 - 2 * padWidth)/(xMax - xMin);
+        xShift = xScale * xMin - padWidth;
 
-function dprint(pre, grid) {
+        yScale = - (h_1 - 2 * padWidth)/(yMax - yMin);
+        yShift = yScale * yMax - padWidth;
 
-    console.log(pre + " delta=" + grid.delta + " pixPerGrid=" + grid.pixPerGrid +
-            ' start=' + grid.start);
-}
 
         function remainder(x) { return Math.abs(x - Math.round(x)); }
+
+        // TODO: We can use clearRect() to make the background transparent
+        //bgCtx.clearRect(0, 0, w, h);
+        bgCtx.fillStyle = backgroundColor;
+        bgCtx.rect(0, 0, w, h);
+        bgCtx.fill();
 
         let majGridX = _GetGridSpacing(majPixPerGridX, xMin, xMax, w/*pixels*/);
         let majGridY = _GetGridSpacing(majPixPerGridY, yMin, yMax, h/*pixels*/);
@@ -293,11 +306,11 @@ function dprint(pre, grid) {
 
         while(remainder(majGridX.pixPerGrid/minGridX.pixPerGrid) > 0.1 &&
                 minGridX.pixPerGrid < majGridX.pixPerGrid)
-            // The two grid lines do not line up, so go to the next size.
+            // The major and minor grid lines do not line up, so go to the next size.
             minGridX = _GetGridSpacing(minGridX.pixPerGrid + 1.0, xMin, xMax, w/*pixels*/);
         while(remainder(majGridY.pixPerGrid/minGridY.pixPerGrid) > 0.1 &&
                 minGridX.pixPerGrid < majGridX.pixPerGrid)
-            // The two grid lines do not line up, so go to the next size.
+            // The major and minor grid lines do not line up, so go to the next size.
             minGridY = _GetGridSpacing(minGridY.pixPerGrid + 1.0, yMin, yMax, h/*pixels*/);
 
         if(minGridX.pixPerGrid < majGridX.pixPerGrid)
@@ -306,7 +319,7 @@ function dprint(pre, grid) {
             drawYgrid(minGridYWidth, minGridYColor, minGridY);
 
         // We draw a 3rd X grid if we can.  This grid is between the size
-        // of the min grid and the major grid.
+        // of the minor grid and the major grid.
         if(minGridX.pixPerGrid < majGridX.pixPerGrid) {
             let midGridX = _GetGridSpacing(minGridX.pixPerGrid + 0.1, xMin, xMax, w/*pixels*/);
             while((remainder(majGridX.pixPerGrid/midGridX.pixPerGrid) > 0.1 ||
@@ -322,7 +335,7 @@ function dprint(pre, grid) {
         }
 
         // We draw a 3rd Y grid if we can.  This grid is between the size
-        // of the min grid and the major grid.
+        // of the minor grid and the major grid.
         if(minGridY.pixPerGrid < majGridY.pixPerGrid) {
             let midGridY = _GetGridSpacing(minGridY.pixPerGrid + 0.1, yMin, yMax, h/*pixels*/);
             while((remainder(majGridY.pixPerGrid/midGridY.pixPerGrid) > 0.1 ||
@@ -330,47 +343,164 @@ function dprint(pre, grid) {
                 midGridY.pixPerGrid < majGridY.pixPerGrid)
                 // The two grid lines do not line up, so go to the next size.
                 midGridY = _GetGridSpacing(midGridY.pixPerGrid + 0.1, yMin, yMax, h/*pixels*/);
-            if(midGridY.pixPerGrid < majGridY.pixPerGrid)
+            if(midGridY.pixPerGrid < majGridY.pixPerGrid) {
                 drawYgrid(midGridYWidth, midGridYColor, midGridY);
+            }
         }
 
-
+        // The major grid gets drawn on the top.
         drawXgrid(majGridXWidth, majGridXColor, majGridX, majGridY, yGridFont);
         drawYgrid(majGridYWidth, majGridYColor, majGridY, majGridX, yGridFont);
      }
 
 
-    function draw() {
+    function drawBackground() {
 
         // Draw the bg grid to the rendered canvas.
+        ctx.clearRect(0, 0, w, h);
         ctx.drawImage(bg, 0, 0);
+    }
+
+
+
+    var plots = {};
+    var plotCreateCount = 0;
+
+    function Plot(id = -1) {
+
+        if(id === -1)
+            this.id = createCount++;
+        else
+            this.id = id;
+
+        // Add this to the list of plots in this scope.
+        plots[this.id] = this;
+
+        function drawPoint(x, y) {
+
+            fgCtx.beginPath();
+            fgCtx.arc(xPix(x), yPix(y), pointDiameter/2, 0, Math.PI * 2, true);
+            fgCtx.closePath();
+            fgCtx.fill();
+        }
+
+        var pointDiameter = 5.2;
+        var lineWidth = 4.3;
+        var lineColor = 'blue';
+        var pointColor = 'red';
+
+        // Last x and y values plotted.
+        var x = null;
+        var y;
+
+
+        // We separate the data update and the draw function so that
+        // we may draw() when there is no new data to draw, like in the
+        // case of a App window/canvas (thingy) resize event.
+        this.updateData = function(x_in, y_in) {
+
+            x = x_in;
+            y = y_in;
+        }
+
+        this.draw = function() {
+
+            assert(x);
+
+            fgCtx.beginPath();
+            fgCtx.moveTo(xPix(x[0]), yPix(y[0]));
+            fgCtx.strokeStyle = lineColor;
+            fgCtx.lineWidth = lineWidth;
+            let l = x.length;
+            for(let i=1; i<l; ++i)
+                fgCtx.lineTo(xPix(x[i]), yPix(y[i]));
+            fgCtx.stroke();
+
+            fgCtx.fillStyle = pointColor;
+            for(let i=0; i<l; ++i)
+                drawPoint(x[i], y[i]);
+        }
 
     }
 
-    var hasRun = false;
 
-    function run() {
+
+    // You may have many plots on a single graph (or scope).
+    // This is the user interface used to make plots.
+    this.makePlot = function() {
+
+        if(arguments.length < 1)
+            var id = plotCreateCount++;
+        else
+            var id = arguments[0];
+
+        return (new Plot(id)).id;
+    }
+
+
+    // Initialize these drawing flags.
+    var needReplot = true;
+    var needBackgroundDraw = true;
+
+
+    // This is the user interface to plot, and will automatically make
+    // a plot if one does not exist with the plotId.
+    //
+    // This function is called with 2 modes:
+    //
+    //    1.  With no arguments to make the app redisplay.
+    //
+    //    2.  With arguments x, y to change a plot.
+    //
+    function draw(x, y, plotId = 0) {
+
+
+        if(plots[plotId] !== undefined)
+            var plot = plots[plotId];
+        else
+            var plot = new Plot(plotId);
+
+
+        // TODO: fix for multiple plots, so draw is called with different
+        // plotId.
+
+        if(arguments.length >= 2) {
+            plot.updateData(x, y);
+            needReplot = true;
+            needBackgroundDraw = true;
+        }
+
+        if(render.offsetWidth === 0 || render.offsetHeight === 0)
+            // It must be iconified, or hidden or like thing so we can't
+            // draw anything.
+            return;
 
         var w = render.width;
         var h = render.height;
 
-        //console.log('w= ' + w + '  render.offsetWidth=' + render.offsetWidth);
 
-        if(render.offsetWidth === w && render.offsetHeight === h && hasRun)
+        if(render.offsetWidth !== w || render.offsetHeight !== h || needBackgroundDraw) {
             // Nothing new to draw.  We do not draw if there is no change
             // in what we would draw.
-            return;
-        if(render.offsetWidth === 0 || render.offsetHeight === 0)
-            // It must be iconified, or hidden or like thing.
-            return;
+            resize();
+            needBackgroundDraw = true;
+            needReplot = true;
+        }
 
-        resize();
-        draw();
+        if(needBackgroundDraw) {
+            drawBackground();
+            needBackgroundDraw = false;
+        }
 
-        if(!hasRun) hasRun = true;
- 
-        //ctx.drawImage(fg, 0, 0);
+        if(needReplot) {
+            fgCtx.clearRect(0, 0, w, h);
+            // TODO: Add more plots.  How do we know which plot to draw?
+            plot.draw();
+            ctx.drawImage(fg, 0, 0);
+        }
+
+        needReplot = false;
     }
 
-    this.run = run;
+    this.draw = draw;
 }

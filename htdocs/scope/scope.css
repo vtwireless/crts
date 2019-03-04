@@ -1,5 +1,4 @@
 canvas.render {
-    background-color: #86BAE4;
     width: 100%;
     height: 100%;
     padding: 0px;
@@ -10,4 +9,5 @@ canvas.render {
 canvas.bg, canvas.fg {
     padding: 0px;
     margin: 0px;
+    background-color: rgba(100,100,100, 1.0);
 }

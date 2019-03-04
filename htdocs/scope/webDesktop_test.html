@@ -29,26 +29,44 @@ canvas.clock {
 
 onload = function() {
 
-    var clocks = [];
-
     for(i=0; i<2; ++i) {
         var clock = new Clock;
-        clocks.push(clock);
         new WDApp('Clock ' + i, clock.getElement());
+        clock.run();
     }
-    var scope = new Scope(10/*period in seconds*/);
+
+    const numPoints = 200;
+    const xMin = -100, xMax = 0, yMin = -1, yMax = 1;
+    const TPI = 2.0*Math.PI;
+
+    var scope = new Scope(xMin, xMax, yMin, yMax);
     new WDApp('Scope', scope.getElement());
+
+    var x = [], y = [];
+    for(let i=0; i<numPoints; ++i) {
+        let t = xMin + i*(xMax - xMin)/(numPoints);
+        x.push(t);
+        // We draw just one full sine wave cycle
+        y.push(Math.sin(t*TPI/(xMax-xMin)));
+    }
+
 
     function run() {
 
-        var now = new Date;
-        for(let i=0; i<clocks.length; ++i)
-            clocks[i].run(now);
-        scope.run();
-        requestAnimationFrame(run);
+        // For this test, we rotate y front to back.
+
+        // Remove from the front of y
+        let endY = y.shift();
+        // Add it to the back of y
+        y.push(endY);
+
+        scope.draw(x, y);
+        //requestAnimationFrame(run);
     }
 
     run();
+
+    setInterval(run, 100);
 };
 
     </script>
