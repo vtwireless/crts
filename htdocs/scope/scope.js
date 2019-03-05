@@ -156,13 +156,92 @@ function Scope(xMin_in, xMax_in, yMin_in, yMax_in) {
     // for minor horizontal grid lines without number labels
     var minPixPerGridY = 14.0;
 
+    // autoScalePeriod is the number of draw cycles for the plot "scale"
+    // to shrink due to input values changing their extent, max and min
+    // values.  Otherwise with noisy data the plot scale will be jumping
+    // in a very distracting fashion.  Some other plotters do not make
+    // good auto-scaled plots when data is like "real-world" noisy data.
+    // We damp motion of the scale when it gets smaller and we buffer the
+    // scale with a threshold, so we don't jump to different scales until
+    // a threshold is crossed.
+    //
+    // autoScalePeriod is a damping period in number of draw cycles.
+    //
+    var autoScalePeriod = 200;
+    // Target dynamical scaling values
+    var XMin = {}, XMax = {}, YMin = {}, YMax = {};
+
+    // Get xMin, xMax, yMin, yMax based on looking at values plotted.
+    //
+    function integrateScalingDynamics() {
+
+        // For each scaling degree of freedom we have an equation of
+        // motion (ODE) ordinary differential equation like:
+        //
+        //       X_dot = - (X- X_target) * t / autoScalePeriod := f(t)
+        //
+        // That is one ODE for each of xMin, xMax, yMin, yMax.  We just
+        // use a simple Euler's method to integrate.  So:
+        //
+        //   X(t+dt) = X(t) + f(t) * dt  =>  X += f(t) with dt = 1
+        //
+        //  TODO: Should it be a second order ODE.
+
+        // Advance the dynamic scaling to the next time step or frame, or
+        // whatever you want to call it.  This should be faster than
+        // computing an exponential, and should be a stable solver.
+
+        if(XMin.target > xMin)
+            // shrinking the graph slowly making xMin larger
+            xMin += (XMin.target - xMin)/autoScalePeriod;
+        else if(xMin > XMin.target)
+            // growing the graph in one step
+            xMin = XMin.target;
+
+        if(xMax > XMax.target)
+            // shrinking the graph slowly by making xMax smaller
+            xMax -= (xMax - XMax.target)/autoScalePeriod;
+        else if(XMax.target > xMax)
+            // growing the graph in one step
+            xMax = XMax.target;
+
+
+        if(YMin.target > yMin)
+            // shrinking the graph slowly making yMin larger
+            yMin += (YMin.target - yMin)/autoScalePeriod;
+        else if(yMin > YMin.target)
+            // growing the graph in one step
+            yMin = YMin.target;
+
+        if(yMax > YMax.target)
+            // shrinking the graph slowly by making yMax smaller
+            yMax -= (yMax - YMax.target)/autoScalePeriod;
+        else if(YMax.target > yMax)
+            // growing the graph in one step
+            yMax = YMax.target;
+
+    }
+    
+
+
     // These are the min and max values across the whole canvas.  These
     // min and max values are not from value that are input, but are the
     // limiting values at the edges of the canvas and a little padding.
-    var xMin = xMin_in, xMax = xMax_in;
-    var yMin = yMin_in, yMax = yMax_in;
+    if(arguments.length >= 4) {
+        var xMin = xMin_in, xMax = xMax_in, yMin = yMin_in, yMax = yMax_in;
+        // In this case the user choose to set the scales.
+        autoScalePeriod = 0;
+    } else {
+        // In this case we are using auto scaling.
+        // The values for xMin, xMax, yMin, and yMax may change before
+        // each draw cycle.
+        var xMin = null, xMax, yMin, yMax;
+    }
 
-
+    if(xMin !== null) {
+        assert(xMin < xMax);
+        assert(yMin < yMax);
+    }
 
     ///////////////////////////////////////////////////////////////////////
     //
@@ -174,9 +253,6 @@ function Scope(xMin_in, xMax_in, yMin_in, yMax_in) {
     //
     //   3. fg: a canvas (buffer) that we rotate through drawing the plot
     //
-
-    assert(xMin < xMax);
-    assert(yMin < yMax);
 
 
     var render = document.createElement('canvas');
@@ -198,20 +274,22 @@ function Scope(xMin_in, xMax_in, yMin_in, yMax_in) {
     fgCtx = fg.getContext('2d');
 
 
-    // We define: pixelX = xScale * X_in - xShift
-    // and:       pixelY = yScale * Y_in - yShift
+    // We define:  pixelX = xScale * X_in - xShift
+    //       and:  pixelY = yScale * Y_in - yShift
+    //
+    // where X_in and Y_in are raw user input values.
     //
     var xScale, yScale, xShift, yShift;
 
 
-    // Functions to convert from user x values to pixel coordinates.
+    // Functions to convert from user x (and y) values to pixel coordinates.
     function xPix(x) {
         return (xScale * x - xShift);
     }
-
     function yPix(y) {
         return (yScale * y - yShift);
     }
+
 
     function drawXgrid(gridXWidth, gridXColor, gridX, gridY=null, xGridFont=null) {
 
