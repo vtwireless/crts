@@ -156,6 +156,8 @@ function Scope(xMin_in, xMax_in, yMin_in, yMax_in) {
     // for minor horizontal grid lines without number labels
     var minPixPerGridY = 14.0;
 
+    var autoScale = false;
+
     // autoScalePeriod is the number of draw cycles for the plot "scale"
     // to shrink due to input values changing their extent, max and min
     // values.  Otherwise with noisy data the plot scale will be jumping
@@ -167,18 +169,32 @@ function Scope(xMin_in, xMax_in, yMin_in, yMax_in) {
     //
     // autoScalePeriod is a damping period in number of draw cycles.
     //
-    var autoScalePeriod = 200;
-    // Target dynamical scaling values
-    var XMin = {}, XMax = {}, YMin = {}, YMax = {};
+    const autoScalePeriod = 200;
+    // deltaEdge is the factional size of the dynamical plot edges, so the
+    // scale will not change if the current extent is within deltaEdge
+    // times max - min.
+    const deltaEdge = 0.1, edgeTrigger = 0.1;
+    // Target dynamical scaling values each one is associated with a
+    // scaling parameter with the similar name, like XMin --> xMin.
+    var XMin = {triggered: false},
+        XMax = {triggered: false},
+        YMin = {triggered: false},
+        YMax = {triggered: false};
 
-    // Get xMin, xMax, yMin, yMax based on looking at values plotted.
+    // Dynamical change xMin, xMax, yMin, yMax based on looking at values
+    // plotted and this dynamical model.
     //
     function integrateScalingDynamics() {
 
-        // For each scaling degree of freedom we have an equation of
-        // motion (ODE) ordinary differential equation like:
+        // For each scaling degree of freedom (xMin, xMax, yMin, yMax), X,
+        // we have an equation of motion (ODE) ordinary differential
+        // equation like:
         //
-        //       X_dot = - (X- X_target) * t / autoScalePeriod := f(t)
+        //    X_dot = - (X- X_target) * t / autoScalePeriod := f(t)
+        //
+        // and we also add upper and lower thresholds so that when X is
+        // between the thresholds we do not change X.
+        //
         //
         // That is one ODE for each of xMin, xMax, yMin, yMax.  We just
         // use a simple Euler's method to integrate.  So:
@@ -191,8 +207,14 @@ function Scope(xMin_in, xMax_in, yMin_in, yMax_in) {
         // whatever you want to call it.  This should be faster than
         // computing an exponential, and should be a stable solver.
 
+
+        
+
+
+
+
         if(XMin.target > xMin)
-            // shrinking the graph slowly making xMin larger
+            // shrinking the graph by slowly making xMin larger
             xMin += (XMin.target - xMin)/autoScalePeriod;
         else if(xMin > XMin.target)
             // growing the graph in one step
@@ -223,19 +245,18 @@ function Scope(xMin_in, xMax_in, yMin_in, yMax_in) {
     }
     
 
-
     // These are the min and max values across the whole canvas.  These
     // min and max values are not from value that are input, but are the
     // limiting values at the edges of the canvas and a little padding.
     if(arguments.length >= 4) {
         var xMin = xMin_in, xMax = xMax_in, yMin = yMin_in, yMax = yMax_in;
         // In this case the user choose to set the scales.
-        autoScalePeriod = 0;
     } else {
         // In this case we are using auto scaling.
         // The values for xMin, xMax, yMin, and yMax may change before
         // each draw cycle.
         var xMin = null, xMax, yMin, yMax;
+        autoScale = true;
     }
 
     if(xMin !== null) {
@@ -245,13 +266,11 @@ function Scope(xMin_in, xMax_in, yMin_in, yMax_in) {
 
     ///////////////////////////////////////////////////////////////////////
     //
-    // This class object has 3 canvases, all the same size.
+    // This class object has 2 canvases, all the same size.
     //
     //   1. render:  the canvas that is showing in the window
     //
     //   2. bg: a canvas (buffer) that we put the constant background on
-    //
-    //   3. fg: a canvas (buffer) that we rotate through drawing the plot
     //
 
 
@@ -268,10 +287,6 @@ function Scope(xMin_in, xMax_in, yMin_in, yMax_in) {
     var bg = document.createElement('canvas');
     bg.className = 'bg';
     bgCtx = bg.getContext('2d');
-
-    var fg = document.createElement('canvas');
-    fg.className = 'fg';
-    fgCtx = fg.getContext('2d');
 
 
     // We define:  pixelX = xScale * X_in - xShift
@@ -351,8 +366,8 @@ function Scope(xMin_in, xMax_in, yMin_in, yMax_in) {
 
         w = render.width = render.offsetWidth;
         h = render.height = render.offsetHeight;
-        fg.width = bg.width = w;
-        fg.height = bg.height = h;
+        bg.width = w;
+        bg.height = h;
 
         let w_1 = w-1;
         let h_1 = h-1;
@@ -454,14 +469,6 @@ function Scope(xMin_in, xMax_in, yMin_in, yMax_in) {
         // Add this to the list of plots in this scope.
         plots[this.id] = this;
 
-        function drawPoint(x, y) {
-
-            fgCtx.beginPath();
-            fgCtx.arc(xPix(x), yPix(y), pointDiameter/2, 0, Math.PI * 2, true);
-            fgCtx.closePath();
-            fgCtx.fill();
-        }
-
         var pointDiameter = 5.2;
         var lineWidth = 4.3;
         var lineColor = 'blue';
@@ -481,20 +488,28 @@ function Scope(xMin_in, xMax_in, yMin_in, yMax_in) {
             y = y_in;
         }
 
+        function drawPoint(x, y) {
+
+            ctx.beginPath();
+            ctx.arc(xPix(x), yPix(y), pointDiameter/2, 0, Math.PI * 2, true);
+            ctx.closePath();
+            ctx.fill();
+        }
+
         this.draw = function() {
 
             assert(x);
 
-            fgCtx.beginPath();
-            fgCtx.moveTo(xPix(x[0]), yPix(y[0]));
-            fgCtx.strokeStyle = lineColor;
-            fgCtx.lineWidth = lineWidth;
+            ctx.beginPath();
+            ctx.moveTo(xPix(x[0]), yPix(y[0]));
+            ctx.strokeStyle = lineColor;
+            ctx.lineWidth = lineWidth;
             let l = x.length;
             for(let i=1; i<l; ++i)
-                fgCtx.lineTo(xPix(x[i]), yPix(y[i]));
-            fgCtx.stroke();
+                ctx.lineTo(xPix(x[i]), yPix(y[i]));
+            ctx.stroke();
 
-            fgCtx.fillStyle = pointColor;
+            ctx.fillStyle = pointColor;
             for(let i=0; i<l; ++i)
                 drawPoint(x[i], y[i]);
         }
@@ -571,10 +586,8 @@ function Scope(xMin_in, xMax_in, yMin_in, yMax_in) {
         }
 
         if(needReplot) {
-            fgCtx.clearRect(0, 0, w, h);
             // TODO: Add more plots.  How do we know which plot to draw?
             plot.draw();
-            ctx.drawImage(fg, 0, 0);
         }
 
         needReplot = false;
