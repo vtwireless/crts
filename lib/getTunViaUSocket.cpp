@@ -76,7 +76,6 @@ static inline int recvfd(int &socket)  // receive fd from socket
 
     close(socket);
 
-#if 1
     // We do not need this socket any more so we'll close it
     // and move the TUN fd to it's value.
     if((fd = dup2(fd, socket)) != socket)
@@ -86,7 +85,6 @@ static inline int recvfd(int &socket)  // receive fd from socket
         socket = -1;
         return -1;
     }
-#endif
 
     socket = -1;
 
@@ -138,9 +136,9 @@ static inline char *getPathTo_CRTS_mkTUN(void)
 
     // for example
     //
-    //     buf = "/home/lance/installed/bin/" + "crts_mkTUN"
+    //     buf = "/home/joe/installed/bin/" + "crts_mkTUN"
     //     
-    //     buf = "/home/lance/git/crts/bin/" + "crts_mkTUN"
+    //     buf = "/home/joe/git/crts/bin/" + "crts_mkTUN"
     //
     //     buf = "/usr/local/encap/crts/bin/" + "crts_mkTUN"
     //
