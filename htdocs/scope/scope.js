@@ -181,6 +181,26 @@ function Scope(xMin_in, xMax_in, yMin_in, yMax_in) {
         YMin = {triggered: false},
         YMax = {triggered: false};
 
+
+    // We define a function to calculate the xScale, yScale, xShift, and
+    // yShift, that are used in functions xPix() and yPix().  We need this
+    // because xMin, xMax, yMin, and yMax change as the canvas
+    // automatically scales as data is input into it.  XPix() and
+    // yPix(), are called frequently and is a linear function with just 2
+    // multiples and 2 adds in each.
+    function calculateScales(w, h) {
+
+        let w_1 = w-1;
+        let h_1 = h-1;
+
+        xScale =  (w_1 - 2 * padWidth)/(xMax - xMin);
+        xShift = xScale * xMin - padWidth;
+
+        yScale = - (h_1 - 2 * padWidth)/(yMax - yMin);
+        yShift = yScale * yMax - padWidth;
+    }
+
+
     // Dynamical change xMin, xMax, yMin, yMax based on looking at values
     // plotted and this dynamical model.
     //
@@ -363,22 +383,12 @@ function Scope(xMin_in, xMax_in, yMin_in, yMax_in) {
 
     function resize() {
 
-
         w = render.width = render.offsetWidth;
         h = render.height = render.offsetHeight;
         bg.width = w;
         bg.height = h;
 
-        let w_1 = w-1;
-        let h_1 = h-1;
-
-
-        xScale =  (w_1 - 2 * padWidth)/(xMax - xMin);
-        xShift = xScale * xMin - padWidth;
-
-        yScale = - (h_1 - 2 * padWidth)/(yMax - yMin);
-        yShift = yScale * yMax - padWidth;
-
+        calculateScales(w, h);
 
         function remainder(x) { return Math.abs(x - Math.round(x)); }
 
