@@ -38,8 +38,9 @@ function _GetGridSpacing(pixPerGrid, min, max, pixels/*width or height*/) {
 
     let b = delta/upow;
 
-    //console.log('pixels=' + pixels + ' p=' + p +' max - min =' + (max - min) + '  pixPerGrid = ' + pixPerGrid + ' delta=' + delta +
-      //  ' upow=' + upow + '  b=' + b);
+    //console.log('pixels=' + pixels + ' p=' + p +' max - min =' +
+    //(max - min) + '  pixPerGrid = ' + pixPerGrid + ' delta=' + delta +
+    //' upow=' + upow + '  b=' + b);
 
     /* round up to b = 1, 2, 5, times 10^p */
     if(b > 10) {
@@ -65,9 +66,13 @@ function _GetGridSpacing(pixPerGrid, min, max, pixels/*width or height*/) {
     } else {
         // b == 1 // assume that b < 1
         // Round up to 1 x 10^p
+        b = 1
         delta = upow;
-        // b = 1
     }
+    // TODO: We could add grid drawing options that let the use choose
+    // between having grids with b= 1,2,5 or 1,5 or 1,2,2.5,5 or just 1 or
+    // whatever.
+
 
     // The pixels per grid is greater than or equal to the requested
     // pixPerGrid
@@ -104,9 +109,16 @@ function _GetGridSpacing(pixPerGrid, min, max, pixels/*width or height*/) {
 }
 
 
-
-
-function Scope(xMin_in, xMax_in, yMin_in, yMax_in) {
+//
+// opts = {
+//      xMin: float,
+//      xMax: float,
+//      yMin: float,
+//      yMax: float,
+//      autoScale: bool
+// }
+//
+function Scope(opts = null) {
 
     /////////////////////////////// CONFIGURATION /////////////////////////
 
@@ -156,30 +168,75 @@ function Scope(xMin_in, xMax_in, yMin_in, yMax_in) {
     // for minor horizontal grid lines without number labels
     var minPixPerGridY = 14.0;
 
-    var autoScale = false;
+    if(opts === null || opts.autoScale !== false)
+        var autoScale = true;
+    else
+        var autoScale = false;
 
-    // autoScalePeriod is the number of draw cycles for the plot "scale"
-    // to shrink due to input values changing their extent, max and min
-    // values.  Otherwise with noisy data the plot scale will be jumping
-    // in a very distracting fashion.  Some other plotters do not make
-    // good auto-scaled plots when data is like "real-world" noisy data.
-    // We damp motion of the scale when it gets smaller and we buffer the
-    // scale with a threshold, so we don't jump to different scales until
-    // a threshold is crossed.
-    //
-    // autoScalePeriod is a damping period in number of draw cycles.
-    //
-    const autoScalePeriod = 200;
-    // deltaEdge is the factional size of the dynamical plot edges, so the
-    // scale will not change if the current extent is within deltaEdge
-    // times max - min.
-    const deltaEdge = 0.1, edgeTrigger = 0.1;
-    // Target dynamical scaling values each one is associated with a
-    // scaling parameter with the similar name, like XMin --> xMin.
-    var XMin = {triggered: false},
-        XMax = {triggered: false},
-        YMin = {triggered: false},
-        YMax = {triggered: false};
+    // Used to set the current xScale, xShift, yScale, yShift
+    // for xPix() and yPix();
+    var xMin = null, xMax, yMin, yMax;
+
+    if(autoScale) {
+
+        // We do not define some variables if dynamic "autoScale" is not
+        // used.
+    
+        // autoScalePeriod is the number of draw cycles for the plot "scale"
+        // to shrink due to input values changing their extent, max and min
+        // values.  Otherwise with noisy data the plot scale will be jumping
+        // in a very distracting fashion.  Some other plotters do not make
+        // good auto-scaled plots when data is like "real-world" noisy data.
+        // We damp motion of the scale when it gets smaller and we buffer the
+        // scale with a threshold, so we don't jump to different scales until
+        // a threshold is crossed.
+        //
+        // autoScalePeriod is a damping period in number of draw cycles.
+        //
+        const autoScalePeriod = 200;
+        // deltaEdge is the factional size of the dynamical plot edges, so the
+        // scale will not change if the current extent is within deltaEdge
+        // times max - min.
+        const deltaEdge = 0.1, edgeTrigger = 0.1;
+        // Target dynamical scaling values each one is associated with a
+        // scaling parameter with the similar name, like XMin --> xMin.
+        var XMin = {triggered: false},
+            XMax = {triggered: false},
+            YMin = {triggered: false},
+            YMax = {triggered: false};
+
+        // Used to dynamically calculate xMin, xMax, yMin, and yMax,
+        // because we can't just change them in one frame, we need to
+        // change xMin, xMax, yMin, and yMax in a smooth fashion (at least
+        // when shrinking the plot) while new* are the current mins and
+        // maxs from the data which are set with each frame, for the
+        // clear/draw mode, which clears the plot before each frame is
+        // drawn.
+        var newXMin = null, newXMax, newYMin, newYMax;
+    }
+
+    // These are the min and max values across the whole canvas.  These
+    // min and max values are not from value that are input, but are the
+    // limiting values at the edges of the canvas and a little padding.
+    if(opts && opts.xMin !== undefined && opts.xMax !== undefined &&
+            opts.yMin !== undefined && opts.yMax !== undefined) {
+        // We may or may not be using autoScale in this case, but in
+        // either case the user passed in starting limit values.
+        xMin = opts.xMin;
+        xMax = opts.xMax;
+        yMin = opts.yMin;
+        yMax = opts.yMax;
+        assert(xMin < xMax);
+        assert(yMin < yMax);
+        // In this case the user choose to set the scales.
+    } else {
+        // In this case we must be using auto scaling.  The values for
+        // xMin, xMax, yMin, and yMax may change before each draw cycle.
+        // These will get set later.
+        assert(autoScale === true,
+                "autoScale is not true and xMin, " +
+                "xMax, yMin, yMax are not all set")
+    }
 
 
     // We define a function to calculate the xScale, yScale, xShift, and
@@ -227,62 +284,11 @@ function Scope(xMin_in, xMax_in, yMin_in, yMax_in) {
         // whatever you want to call it.  This should be faster than
         // computing an exponential, and should be a stable solver.
 
-
-        
-
-
-
-
-        if(XMin.target > xMin)
-            // shrinking the graph by slowly making xMin larger
-            xMin += (XMin.target - xMin)/autoScalePeriod;
-        else if(xMin > XMin.target)
-            // growing the graph in one step
-            xMin = XMin.target;
-
-        if(xMax > XMax.target)
-            // shrinking the graph slowly by making xMax smaller
-            xMax -= (xMax - XMax.target)/autoScalePeriod;
-        else if(XMax.target > xMax)
-            // growing the graph in one step
-            xMax = XMax.target;
-
-
-        if(YMin.target > yMin)
-            // shrinking the graph slowly making yMin larger
-            yMin += (YMin.target - yMin)/autoScalePeriod;
-        else if(yMin > YMin.target)
-            // growing the graph in one step
-            yMin = YMin.target;
-
-        if(yMax > YMax.target)
-            // shrinking the graph slowly by making yMax smaller
-            yMax -= (yMax - YMax.target)/autoScalePeriod;
-        else if(YMax.target > yMax)
-            // growing the graph in one step
-            yMax = YMax.target;
+        // MORE CODE HERE
 
     }
     
 
-    // These are the min and max values across the whole canvas.  These
-    // min and max values are not from value that are input, but are the
-    // limiting values at the edges of the canvas and a little padding.
-    if(arguments.length >= 4) {
-        var xMin = xMin_in, xMax = xMax_in, yMin = yMin_in, yMax = yMax_in;
-        // In this case the user choose to set the scales.
-    } else {
-        // In this case we are using auto scaling.
-        // The values for xMin, xMax, yMin, and yMax may change before
-        // each draw cycle.
-        var xMin = null, xMax, yMin, yMax;
-        autoScale = true;
-    }
-
-    if(xMin !== null) {
-        assert(xMin < xMax);
-        assert(yMin < yMax);
-    }
 
     ///////////////////////////////////////////////////////////////////////
     //
@@ -479,6 +485,7 @@ function Scope(xMin_in, xMax_in, yMin_in, yMax_in) {
         // Add this to the list of plots in this scope.
         plots[this.id] = this;
 
+        // TODO: add plot user optional parameters for sizes and colors.
         var pointDiameter = 5.2;
         var lineWidth = 4.3;
         var lineColor = 'blue';
@@ -496,7 +503,35 @@ function Scope(xMin_in, xMax_in, yMin_in, yMax_in) {
 
             x = x_in;
             y = y_in;
+
+            assert(x.length > 0);
+
+            if(autoScale) {
+
+                let l = x.length;
+                newXMin = newXMax = x[0];
+                newYMin = newYMax = y[0];
+                for(let i=1; i<l; ++i) {
+                    // We get the new min and max values to late to use in
+                    // this draw frame.
+                    //
+                    // TODO: we need to consider getting these new min/max
+                    // values in the loops that we draw in so that we can
+                    // have one less tight loop.
+                    if(x[i] < newXMin) newXMin = x[i];
+                    else if(x[i] > newXMax) newXMax = x[i];
+                    if(y[i] < newYMin) newYMin = y[i];
+                    else if(y[i] > newYMax) newYMax = y[i];
+                }
+                if(xMin === null) {
+                    xMin = newXMin;
+                    xMax = newXMax;
+                    yMin = newYMin;
+                    yMax = newYMax;
+                }
+            }
         }
+
 
         function drawPoint(x, y) {
 
@@ -520,6 +555,7 @@ function Scope(xMin_in, xMax_in, yMin_in, yMax_in) {
             ctx.stroke();
 
             ctx.fillStyle = pointColor;
+            // We must draw points after lines if we wish to see them.
             for(let i=0; i<l; ++i)
                 drawPoint(x[i], y[i]);
         }
@@ -569,20 +605,22 @@ function Scope(xMin_in, xMax_in, yMin_in, yMax_in) {
 
         if(arguments.length >= 2) {
             plot.updateData(x, y);
+            integrateScalingDynamics();
             needReplot = true;
             needBackgroundDraw = true;
         }
+
+        assert(xMin !== null);
 
         if(render.offsetWidth === 0 || render.offsetHeight === 0)
             // It must be iconified, or hidden or like thing so we can't
             // draw anything.
             return;
 
-        var w = render.width;
-        var h = render.height;
 
-
-        if(render.offsetWidth !== w || render.offsetHeight !== h || needBackgroundDraw) {
+        if(render.offsetWidth !== render.width ||
+                render.offsetHeight !== render.height ||
+                needBackgroundDraw) {
             // Nothing new to draw.  We do not draw if there is no change
             // in what we would draw.
             resize();

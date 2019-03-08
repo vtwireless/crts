@@ -17,7 +17,6 @@ canvas.clock {
 }
 
 
-
     </style>
     <link rel='stylesheet' href='../webDesktop/webDesktop.css'></link>
     <link rel='stylesheet' href='scope.css'></link>
@@ -39,7 +38,14 @@ onload = function() {
     const xMin = -100, xMax = 0, yMin = -1, yMax = 1;
     const TPI = 2.0*Math.PI;
 
-    var scope = new Scope(xMin, xMax, yMin, yMax);
+    var scope = new Scope
+    /*({
+            xMin: xMin, xMax: xMax,
+            yMin: yMin, yMax: yMax,
+            autoScale: false
+    })*/
+    ;
+
     new WDApp('Scope', scope.getElement());
 
     var x = [], y = [];
