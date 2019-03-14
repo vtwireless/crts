@@ -179,32 +179,6 @@ function Scope(opts = null) {
 
     if(autoScale) {
 
-        // We do not define some variables if dynamic "autoScale" is not
-        // used.
-    
-        // autoScalePeriod is the number of draw cycles for the plot "scale"
-        // to shrink due to input values changing their extent, max and min
-        // values.  Otherwise with noisy data the plot scale will be jumping
-        // in a very distracting fashion.  Some other plotters do not make
-        // good auto-scaled plots when data is like "real-world" noisy data.
-        // We damp motion of the scale when it gets smaller and we buffer the
-        // scale with a threshold, so we don't jump to different scales until
-        // a threshold is crossed.
-        //
-        // autoScalePeriod is a damping period in number of draw cycles.
-        //
-        const autoScalePeriod = 200;
-        // deltaEdge is the factional size of the dynamical plot edges, so the
-        // scale will not change if the current extent is within deltaEdge
-        // times max - min.
-        const deltaEdge = 0.1, edgeTrigger = 0.1;
-        // Target dynamical scaling values each one is associated with a
-        // scaling parameter with the similar name, like XMin --> xMin.
-        var XMin = {triggered: false},
-            XMax = {triggered: false},
-            YMin = {triggered: false},
-            YMax = {triggered: false};
-
         // Used to dynamically calculate xMin, xMax, yMin, and yMax,
         // because we can't just change them in one frame, we need to
         // change xMin, xMax, yMin, and yMax in a smooth fashion (at least
@@ -213,6 +187,8 @@ function Scope(opts = null) {
         // clear/draw mode, which clears the plot before each frame is
         // drawn.
         var newXMin = null, newXMax, newYMin, newYMax;
+        var xMinTrigger = false, xMaxTrigger = false,
+            yMinTrigger = false, yMaxTrigger = false;
     }
 
     // These are the min and max values across the whole canvas.  These
@@ -257,9 +233,24 @@ function Scope(opts = null) {
         yShift = yScale * yMax - padWidth;
     }
 
+    // We count the number of frames?  We do not care if this int wraps
+    // back to zero, because we on use differences.
+    //var frameCount = 0;
 
-    // Dynamical change xMin, xMax, yMin, yMax based on looking at values
+    // Dynamically change xMin, xMax, yMin, yMax based on looking at values
     // plotted and this dynamical model.
+    //
+    // Or more exactly:
+    // Change xMin, xMax, yMin, yMax based on looking at newXMin, newXMin,
+    // newXMax, newYMin, and newYMax, where newXMin, newXMin, newXMax,
+    // newYMin, and newYMax, are gotten from the current X, Y input values
+    // that will be plotted.
+    //
+    // We want this to be a separate function because it could get a
+    // little complex, with a dynamical model and the like.
+    //
+    // Returns true if a redraw of the background grid and the plots is
+    // needed.
     //
     function integrateScalingDynamics() {
 
@@ -279,12 +270,164 @@ function Scope(opts = null) {
         //   X(t+dt) = X(t) + f(t) * dt  =>  X += f(t) with dt = 1
         //
         //  TODO: Should it be a second order ODE.
+        //
+        //  dt = 1 so ya, this is approximating continuous time with
+        //  decrease time.  We expect the real (wall clock) time that
+        //  passes to be about 1/60 seconds between calls to this
+        //  function.  If this function is not call regularly, that's
+        //  okay, it's just like stopping the clock, and the plot will
+        //  just rescale more slowly.
+        //
+        //  TODO: Add a dynamic reset for when this is posed, so that
+        //  we can make the scaling perfect after it is "stopped and
+        //  restarted".
 
         // Advance the dynamic scaling to the next time step or frame, or
         // whatever you want to call it.  This should be faster than
         // computing an exponential, and should be a stable solver.
 
-        // MORE CODE HERE
+
+        /* We illustrate the dynamic canvas boundary X max.  The other
+         * boundaries X min, Y min, and Y max are similar, just with
+         * independent dynamics, parameters and so on.
+
+
+          delta = max - min (is required to be greater than zero)
+
+
+
+          ------------ max  (for scale purposes)
+          |
+          |
+    ^     |
+    |     ------------ mid -----------------
+    |     |                                |
+    +     ------------ stop                |
+          |                                |
+          |                                |  
+          ------------ lower               |
+                                           |
+                                           V
+                                         force varies 
+
+         ------- current new max
+
+
+
+        This sled thing has 4 levels, max, mid, stop, and lower, all fixed
+        rigidly to the sled.  The so called "force" is only applied to the
+        sled when some threshold conditions are met, and this force only
+        pulls the sled down.  The sled only moves down when the force is
+        applied.  The sled can move up into a new position in one step,
+        but only when another threshold condition is met.  These jerky
+        upward motions are avoided by choosing good values for parameters:
+        autoScalePeriod, edgeFac, and triggerFac.  The sled does change
+        it's size as the x and y, max and min values change.  It's not
+        really a force because the dynamics is only a first order ordinary
+        differential equation (ODE), but maybe it is if we think of it as
+        an over damped dynamical system.  TODO: Maybe we should add a form
+        of inertia to the dynamics.
+
+
+        delta = max - min (is required to be greater than zero, not shown)
+
+
+        max -> is the current scale variable which can be xMax, xMin, yMax,
+              or yMin.
+    
+        lower = max - delta * edgeFac,
+
+        mid = (max - lower)/2.0,
+        
+        stop = mid - (mid - lower) * triggerFac,
+
+        
+        Some of the signs (-) are changed depending on wither it's a max
+        or a min border we are dealing with.
+
+
+        */
+
+        // We do not define some variables if dynamic "autoScale" is not
+        // used.
+    
+        // autoScalePeriod is the number of draw cycles for the plot "scale"
+        // to shrink due to input values changing their extent, max and min
+        // values.  Otherwise with noisy data the plot scale will be jumping
+        // in a very distracting fashion.  Some other plotters do not make
+        // good auto-scaled plots when data is like "real-world" noisy data.
+        // We damp motion of the scale when it gets smaller and we buffer the
+        // scale with a threshold, so we don't jump to different scales until
+        // a threshold is crossed.
+        //
+        // autoScalePeriod is a linear damping period in number of draw
+        // cycles.  When the scaling dynamics is "active" the
+        // autoScalePeriod is like a exponential damping constant.  The
+        // scaling dynamics is "active" when certain thresholds are
+        // reached in the current max and min values user plotted X and Y
+        // input values.
+        //
+        const autoScalePeriod = 200;
+
+        // edgeFac is the factional size of the dynamical plot edges, so the
+        // scale will not change if the current extent is within deltaFac
+        // times max - min.  These are threshold constants that are
+        // used to get what factions used with x,y min and max values.
+        // edgeFac must be positive and greater than zero.
+        // triggerFac must be positive and greater than zero.
+        //
+        const edgeFac = 0.1, triggerFac = 0.1;
+
+
+        let deltaX = xMax - xMin, deltaY = yMax - yMin;
+
+        // Each dynamic variable, xMin, xMax, yMin, and yMax evolve
+        // independent of each other.
+
+        ///////////////////////////////////////////////////////////////
+        // xMax -- Start with checking/changing the xMax
+        ///////////////////////////////////////////////////////////////
+        //
+        let lower = xMax - deltaX * edgeFac;
+        let mid = (xMax - lower)/2.0;
+        let stop = mid - (mid - lower) * triggerFac;
+
+        // Each dynamic variable, xMin, xMax, yMin, and yMax evolve
+        // independent of each other.
+
+        if((newXMax <= xMax && newXMax >= stop) ||
+            (!xMaxTrigger && newXMax >= lower && newXMax <= xMax)) {
+
+            if(xMaxTrigger) xMaxTrigger = false;
+
+            // Do nothing
+
+        } else if((xMaxTrigger && newXMax < stop) || newXMax < lower) {
+
+            if(!xMaxTrigger) xMaxTrigger = true;
+
+            // The slow DYNAMICS: pull the xMax up the mid with a simple
+            // exponential decay like form.
+            //
+            // This actually is like an Euler's method solver.  It just
+            // turns out to be able to be put into this very simple
+            // form:
+            xMax += (mid - xMax)/autoScalePeriod;
+
+            // Moving xMax may have pulled xMax past the stop.
+            if(xMax >= stop) xMaxTrigger = false;
+        } else {
+
+            if(xMax >= stop) xMaxTrigger = false;
+            // This is the jerky case.
+            xMax = mid;
+        }
+
+
+    
+
+
+        return false;
 
     }
     
@@ -386,8 +529,16 @@ function Scope(opts = null) {
     }
 
 
+    function drawBackground() {
 
-    function resize() {
+        // Draw the bg grid from the background canvas, bg, to the
+        // rendered canvas.
+        ctx.clearRect(0, 0, w, h);
+        ctx.drawImage(bg, 0, 0);
+    }
+
+
+    function recreateBackgroundCanvas() {
 
         w = render.width = render.offsetWidth;
         h = render.height = render.offsetHeight;
@@ -460,15 +611,13 @@ function Scope(opts = null) {
         // The major grid gets drawn on the top.
         drawXgrid(majGridXWidth, majGridXColor, majGridX, majGridY, yGridFont);
         drawYgrid(majGridYWidth, majGridYColor, majGridY, majGridX, yGridFont);
+
+
+        // Do not worry, this bg (background canvas) will get transferred
+        // to the main render canvas some time after this function.
+
      }
 
-
-    function drawBackground() {
-
-        // Draw the bg grid to the rendered canvas.
-        ctx.clearRect(0, 0, w, h);
-        ctx.drawImage(bg, 0, 0);
-    }
 
 
 
@@ -507,11 +656,14 @@ function Scope(opts = null) {
             assert(x.length > 0);
 
             if(autoScale) {
-
+                // Get the current x,y max and min values.
                 let l = x.length;
                 newXMin = newXMax = x[0];
                 newYMin = newYMax = y[0];
                 for(let i=1; i<l; ++i) {
+                    // Ya.  This is a computer resource eating loop, limit
+                    // what you do in here.
+                    //
                     // We get the new min and max values to late to use in
                     // this draw frame.
                     //
@@ -523,13 +675,34 @@ function Scope(opts = null) {
                     if(y[i] < newYMin) newYMin = y[i];
                     else if(y[i] > newYMax) newYMax = y[i];
                 }
+
                 if(xMin === null) {
-                    xMin = newXMin;
-                    xMax = newXMax;
-                    yMin = newYMin;
-                    yMax = newYMax;
+                    // This is the first call to this so we add a little
+                    // more edge pixel padding.  This may keep the auto
+                    // scaling from starting with a giggle.
+                    //
+                    // TODO: We may need to consider numbers in
+                    // integrateScalingDynamics() to get better
+                    // initialization here.
+                    //
+                    const fac = 0.0005;
+                    let delta = (newXMax - newXMin) * fac;
+                    xMin = newXMin - delta;
+                    xMax = newXMax + delta;
+                    delta = (newYMax - newYMin) * fac;
+                    yMin = newYMin - delta;
+                    yMax = newYMax + delta;
                 }
+
+                // Based on these values (above) compute the auto scaling
+                // dynamics which may change the current xMin, xMax, yMin,
+                // and yMax values, which the xPix(), and yPix() functions
+                // depend on indirectly through the xScale, xShift,
+                // yScale, and yShift.
+                //
+                return integrateScalingDynamics();
             }
+            return false; // false = do not redraw because of this code.
         }
 
 
@@ -579,7 +752,7 @@ function Scope(opts = null) {
 
     // Initialize these drawing flags.
     var needReplot = true;
-    var needBackgroundDraw = true;
+    var needNewBackground = true;
 
 
     // This is the user interface to plot, and will automatically make
@@ -587,7 +760,8 @@ function Scope(opts = null) {
     //
     // This function is called with 2 modes:
     //
-    //    1.  With no arguments to make the app redisplay.
+    //    1.  With no arguments to make the app redisplay (draw) if it
+    //        needs to.
     //
     //    2.  With arguments x, y to change a plot.
     //
@@ -599,15 +773,23 @@ function Scope(opts = null) {
         else
             var plot = new Plot(plotId);
 
+        // (at the time of this writing 2019, Mar 14) Because there is no
+        // "redraw" or "resize" event in browser javaScript sometimes when
+        // this function is called this function will do nothing.  We
+        // don't draw unless we need to draw.  The mozilla tutorials do
+        // not seem to care about minimising the use of system resource,
+        // and so they draw even when is no pixel color change.  For many
+        // apps pixels do not change until there is a canvas resize.
+
 
         // TODO: fix for multiple plots, so draw is called with different
         // plotId.
 
         if(arguments.length >= 2) {
-            plot.updateData(x, y);
-            integrateScalingDynamics();
+
+            if(plot.updateData(x, y))
+                needNewBackground = true;
             needReplot = true;
-            needBackgroundDraw = true;
         }
 
         assert(xMin !== null);
@@ -619,26 +801,19 @@ function Scope(opts = null) {
 
 
         if(render.offsetWidth !== render.width ||
-                render.offsetHeight !== render.height ||
-                needBackgroundDraw) {
-            // Nothing new to draw.  We do not draw if there is no change
+                render.offsetHeight !== render.height || needNewBackground) {
+            // We do not draw (resize()) if there is no change
             // in what we would draw.
-            resize();
-            needBackgroundDraw = true;
+            recreateBackgroundCanvas();
             needReplot = true;
         }
 
-        if(needBackgroundDraw) {
-            drawBackground();
-            needBackgroundDraw = false;
-        }
-
         if(needReplot) {
+            drawBackground();
             // TODO: Add more plots.  How do we know which plot to draw?
             plot.draw();
+            needReplot = false;
         }
-
-        needReplot = false;
     }
 
     this.draw = draw;
