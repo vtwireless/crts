@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang=en>
+<head>
+    <meta charset="utf-8"/>
+
+    <style type="text/css">
+body {
+    background-color:#C0D0E0;
+}
+
+canvas.clock {
+    background-color: #B6ECDC;
+    width: 100%;
+    height: 100%;
+    padding: 0px;
+    margin: 0px;
+}
+
+
+    </style>
+    <link rel='stylesheet' href='../webDesktop/webDesktop.css'></link>
+    <link rel='stylesheet' href='scope.css'></link>
+    <script src='../webDesktop/webDesktop.js'></script>
+    <script src='../webDesktop/clock.js'></script>
+    <script src=scope.js></script>
+    <script>
+
+
+onload = function() {
+
+    var clock = new Clock;
+    new WDApp('Clock', clock.getElement());
+    clock.run();
+
+    // standing wave parameters
+    const numPoints = 200; // samples per frame = x,y array size.
+    const period = 100.0; // period in seconds
+    const nNodes = 2.0; // number of nodes in the sting standing wave
+    const A = 1.5; // Amplitude of anti-node.
+    const sleepTime = 100; // sleep period in milliseconds
+
+    // Derived constants
+    const k = Math.PI * nNodes/numPoints; // like wave number
+    const omega = 2 * Math.PI/period; // angular frequency
+
+    const cos = Math.cos;
+    const sin = Math.sin;
+
+    var scope = new Scope;
+
+    new WDApp('String', scope.getElement());
+
+    var x = [], y = [];
+    var t = 0.0;
+
+    function run() {
+
+
+        for(let i=0; i<numPoints; ++i) {
+
+            // Switching x and y just to mess with my head.  No
+            // really, we just are testing the auto-scaling of
+            // xMax because that was the first auto-scaling boundary
+            // that was implemented.
+
+            y[i] = i;
+
+            x[i] = A * sin(omega*t) * sin(k*i);
+        }
+
+        scope.draw(x, y);
+
+        // Advance time t, and we don't care if it is not
+        // accurate or precise; this is just a test.
+        t += sleepTime/1000.0;
+        if(t > period)
+            // Cheep way to keep time, t, for getting too large.
+            // And we don't care if this is adds progressive rounding
+            // errors compared to using a counter.
+            t -= period;
+    }
+
+    run();
+
+    setInterval(run, sleepTime/* in milliseconds = 1/1000 */);
+};
+
+    </script>
+
+
+    <title>CRTS</title>
+</head>
+<body>
+
+</body>
+</html>

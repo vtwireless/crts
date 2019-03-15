@@ -350,24 +350,24 @@ function Scope(opts = null) {
 
         // We do not define some variables if dynamic "autoScale" is not
         // used.
-    
-        // autoScalePeriod is the number of draw cycles for the plot "scale"
-        // to shrink due to input values changing their extent, max and min
-        // values.  Otherwise with noisy data the plot scale will be jumping
-        // in a very distracting fashion.  Some other plotters do not make
-        // good auto-scaled plots when data is like "real-world" noisy data.
-        // We damp motion of the scale when it gets smaller and we buffer the
-        // scale with a threshold, so we don't jump to different scales until
-        // a threshold is crossed.
+
+        // autoScalePeriod is the number of draw cycles for the plot
+        // "scale" to shrink due to input values changing their extent,
+        // max and min values.  Otherwise with noisy data the plot scale
+        // will be jumping in a very distracting fashion.  Some other
+        // plotters do not make good auto-scaled plots when data is like
+        // "real-world" noisy data.  We damp motion of the scale when it
+        // gets smaller and we buffer the scale with a threshold, so we
+        // don't jump to different scales until a threshold is crossed.
         //
         // autoScalePeriod is a linear damping period in number of draw
         // cycles.  When the scaling dynamics is "active" the
         // autoScalePeriod is like a exponential damping constant.  The
         // scaling dynamics is "active" when certain thresholds are
         // reached in the current max and min values user plotted X and Y
-        // input values.
+        // input values.  
         //
-        const autoScalePeriod = 200;
+        const autoScalePeriod = 20; // autoScalePeriod must be 1 or greater
 
         // edgeFac is the factional size of the dynamical plot edges, so the
         // scale will not change if the current extent is within deltaFac
@@ -406,20 +406,33 @@ function Scope(opts = null) {
 
             if(!xMaxTrigger) xMaxTrigger = true;
 
-            // The slow DYNAMICS: pull the xMax up the mid with a simple
-            // exponential decay like form.
+            // The slow DYNAMICS: pull the xMax down with a simple
+            // exponential "decay like" form.  The user still sees all the
+            // X,Y data that is plotted, but we slowly zoom in for a
+            // better scaling (view) of the data.
             //
             // This actually is like an Euler's method solver.  It just
-            // turns out to be able to be put into this very simple
-            // form:
-            xMax += (mid - xMax)/autoScalePeriod;
+            // turns out to be able to be put into this very simple form:
+            // remember mid is xMax - constant, so this is like
+            // exponential decay with asymptote of mid (= newXMax) with
+            // the rate being zero if mid = newXMax.  It's a little
+            // weirder because newXMax is changing with each frame, so the
+            // rate may be discontinuous, but xMax and mid is continuous,
+            // like in a digital approximation of a continuous function.
+            // For you ODE purists, maybe this is just an iterative map
+            // with an external input, newXMax.  At some point it is what
+            // it is and it just runs, and behaves nicely if newXMax
+            // is not changing to drastically.
+            xMax -= (mid - newXMax)/autoScalePeriod;
 
             // Moving xMax may have pulled xMax past the stop.
             if(xMax >= stop) xMaxTrigger = false;
         } else {
 
             if(xMax >= stop) xMaxTrigger = false;
-            // This is the jerky case.
+            // This is the jerky case.  We move xMax in one frame.
+            // We do this because otherwise the user could not see all
+            // the data.
             xMax = mid;
         }
 
@@ -555,6 +568,7 @@ function Scope(opts = null) {
         bgCtx.rect(0, 0, w, h);
         bgCtx.fill();
 
+
         let majGridX = _GetGridSpacing(majPixPerGridX, xMin, xMax, w/*pixels*/);
         let majGridY = _GetGridSpacing(majPixPerGridY, yMin, yMax, h/*pixels*/);
 
@@ -661,6 +675,9 @@ function Scope(opts = null) {
                 newXMin = newXMax = x[0];
                 newYMin = newYMax = y[0];
                 for(let i=1; i<l; ++i) {
+
+                    const smallFloat = 1.0e-25;
+
                     // Ya.  This is a computer resource eating loop, limit
                     // what you do in here.
                     //
@@ -674,6 +691,14 @@ function Scope(opts = null) {
                     else if(x[i] > newXMax) newXMax = x[i];
                     if(y[i] < newYMin) newYMin = y[i];
                     else if(y[i] > newYMax) newYMax = y[i];
+
+                    // We cannot have newXMin == newXMax or newYMin == newYMax
+                    // That would give division by zero.  It not fudging
+                    // anything, it's just changing the scales.
+                    if(newXMin + smallFloat >= newXMax)
+                        newXMin = newXMax - smallFloat;
+                    if(newYMin + smallFloat >= newYMax)
+                        newYMin = newYMax - smallFloat;
                 }
 
                 if(xMin === null) {
