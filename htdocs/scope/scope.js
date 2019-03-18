@@ -115,7 +115,9 @@ function _GetGridSpacing(pixPerGrid, min, max, pixels/*width or height*/) {
 //      xMax: float,
 //      yMin: float,
 //      yMax: float,
-//      autoScale: bool
+//      autoScale: bool,
+//      showLines: bool,
+//      showPoints: bool
 // }
 //
 function Scope(opts = null) {
@@ -154,6 +156,13 @@ function Scope(opts = null) {
     var xGridFont = gridFont;
     var yGridFont = gridFont;
 
+    // TODO: this is not implemented yet
+    // We need to fix the Plot::draw() function in order
+    // to be able to make this false.
+    var showLines = true;
+
+    var showPoints = false;
+
     // Minimum major Grid pixels per grid line.  Larger means the grid
     // lines have more pixels between them.
     //
@@ -172,6 +181,14 @@ function Scope(opts = null) {
         var autoScale = true;
     else
         var autoScale = false;
+
+    //if(opts !== null && opts.showLines !== undefined)
+    //    showLines = opt.showLines;
+
+    if(opts !== null && opts.showPoints !== undefined)
+        showPoints = opt.showPoints;
+
+
 
     // Used to set the current xScale, xShift, yScale, yShift
     // for xPix() and yPix();
@@ -365,9 +382,10 @@ function Scope(opts = null) {
         // autoScalePeriod is like a exponential damping constant.  The
         // scaling dynamics is "active" when certain thresholds are
         // reached in the current max and min values user plotted X and Y
-        // input values.  
+        // input values. 
         //
-        const autoScalePeriod = 20; // autoScalePeriod must be 1 or greater
+        // Currently using the number of frames like time.
+        const autoScalePeriod = 8000.0; // autoScalePeriod must be 1 or greater
 
         // edgeFac is the factional size of the dynamical plot edges, so the
         // scale will not change if the current extent is within deltaFac
@@ -380,6 +398,8 @@ function Scope(opts = null) {
 
 
         let deltaX = xMax - xMin, deltaY = yMax - yMin;
+        let ret = false;
+        let lower, mid, stop;
 
         // Each dynamic variable, xMin, xMax, yMin, and yMax evolve
         // independent of each other.
@@ -388,12 +408,13 @@ function Scope(opts = null) {
         // xMax -- Start with checking/changing the xMax
         ///////////////////////////////////////////////////////////////
         //
-        let lower = xMax - deltaX * edgeFac;
-        let mid = (xMax - lower)/2.0;
-        let stop = mid - (mid - lower) * triggerFac;
+        lower = xMax - deltaX * edgeFac;
+        mid = (xMax + lower)/2.0;
+        stop = mid - (mid - lower) * triggerFac;
 
         // Each dynamic variable, xMin, xMax, yMin, and yMax evolve
         // independent of each other.
+
 
         if((newXMax <= xMax && newXMax >= stop) ||
             (!xMaxTrigger && newXMax >= lower && newXMax <= xMax)) {
@@ -427,20 +448,54 @@ function Scope(opts = null) {
 
             // Moving xMax may have pulled xMax past the stop.
             if(xMax >= stop) xMaxTrigger = false;
+
+            ret = true;
+
         } else {
 
             if(xMax >= stop) xMaxTrigger = false;
             // This is the jerky case.  We move xMax in one frame.
             // We do this because otherwise the user could not see all
             // the data.
-            xMax = mid;
+            xMax = newXMax;
+            ret = true;
+        }
+
+        ///////////////////////////////////////////////////////////////
+        // xMin -- checking/changing the xMin
+        ///////////////////////////////////////////////////////////////
+        //
+        lower = xMin + deltaX * edgeFac;
+        mid = (xMin + lower)/2.0;
+        stop = mid + (lower - mid) * triggerFac;
+
+        if((newXMin >= xMin && newXMin <= stop) ||
+            (!xMinTrigger && newXMin <= lower && newXMin >= xMin)) {
+
+            if(xMinTrigger) xMinTrigger = false;
+            // Do nothing
+
+        } else if((xMinTrigger && newXMin > stop) || newXMin > lower) {
+
+            if(!xMinTrigger) xMinTrigger = true;
+
+            // The slow DYNAMICS: pull the xMin larger.
+            xMin += (newXMin - mid)/autoScalePeriod;
+
+            if(xMin <= stop) xMinTrigger = false;
+
+            ret = true;
+
+        } else {
+
+            if(xMin <= stop) xMinTrigger = false;
+            // This is the jerky case.
+            xMin = newXMin;
+            ret = true;
         }
 
 
-    
-
-
-        return false;
+        return ret;
 
     }
     
@@ -670,46 +725,30 @@ function Scope(opts = null) {
             assert(x.length > 0);
 
             if(autoScale) {
-                // Get the current x,y max and min values.
-                let l = x.length;
-                newXMin = newXMax = x[0];
-                newYMin = newYMax = y[0];
-                for(let i=1; i<l; ++i) {
+                if(xMin === null) {
+                    // Get the current x,y max and min values.
+                    let l = x.length;
+                    newXMin = newXMax = x[0];
+                    newYMin = newYMax = y[0];
+                    for(let i=1; i<l; ++i) {
+                        // We get the new min and max values to late to
+                        // use in this draw frame.
+                        if(x[i] < newXMin) newXMin = x[i];
+                        else if(x[i] > newXMax) newXMax = x[i];
+                        if(y[i] < newYMin) newYMin = y[i];
+                        else if(y[i] > newYMax) newYMax = y[i];
+                    }
 
                     const smallFloat = 1.0e-25;
-
-                    // Ya.  This is a computer resource eating loop, limit
-                    // what you do in here.
-                    //
-                    // We get the new min and max values to late to use in
-                    // this draw frame.
-                    //
-                    // TODO: we need to consider getting these new min/max
-                    // values in the loops that we draw in so that we can
-                    // have one less tight loop.
-                    if(x[i] < newXMin) newXMin = x[i];
-                    else if(x[i] > newXMax) newXMax = x[i];
-                    if(y[i] < newYMin) newYMin = y[i];
-                    else if(y[i] > newYMax) newYMax = y[i];
-
-                    // We cannot have newXMin == newXMax or newYMin == newYMax
-                    // That would give division by zero.  It not fudging
-                    // anything, it's just changing the scales.
+                    // We cannot have newXMin == newXMax or newYMin ==
+                    // newYMax That would give division by zero.  It's not
+                    // fudging anything, it's just changing the scales as
+                    // apposed to arbitrary scales.
                     if(newXMin + smallFloat >= newXMax)
                         newXMin = newXMax - smallFloat;
                     if(newYMin + smallFloat >= newYMax)
                         newYMin = newYMax - smallFloat;
-                }
 
-                if(xMin === null) {
-                    // This is the first call to this so we add a little
-                    // more edge pixel padding.  This may keep the auto
-                    // scaling from starting with a giggle.
-                    //
-                    // TODO: We may need to consider numbers in
-                    // integrateScalingDynamics() to get better
-                    // initialization here.
-                    //
                     const fac = 0.0005;
                     let delta = (newXMax - newXMin) * fac;
                     xMin = newXMin - delta;
@@ -748,14 +787,49 @@ function Scope(opts = null) {
             ctx.strokeStyle = lineColor;
             ctx.lineWidth = lineWidth;
             let l = x.length;
-            for(let i=1; i<l; ++i)
-                ctx.lineTo(xPix(x[i]), yPix(y[i]));
+
+            if(autoScale) {
+
+                // Get the "new" scale:
+                newXMin = newXMax = x[0];
+                newYMin = newYMax = y[0];
+
+                for(let i=1; i<l; ++i) {
+                    ctx.lineTo(xPix(x[i]), yPix(y[i]));
+
+                    // For this auto scale case we need to look at all the
+                    // data, so we do it at the same time as when we draw.
+                    // We may not see the edge of a point because the
+                    // scales are set now.  But we'll get it on the next
+                    // frame.  This beats adding a whole other loop on the
+                    // data again.
+                    if(x[i] < newXMin) newXMin = x[i];
+                    else if(x[i] > newXMax) newXMax = x[i];
+                    if(y[i] < newYMin) newYMin = y[i];
+                    else if(y[i] > newYMax) newYMax = y[i];
+                }
+
+                const smallFloat = 1.0e-25;
+                // We cannot have newXMin == newXMax or newYMin ==
+                // newYMax That would give division by zero.  It's not
+                // fudging anything, it's just changing the scales as
+                // apposed to arbitrary scales.
+                if(newXMin + smallFloat >= newXMax)
+                    newXMin = newXMax - smallFloat;
+                if(newYMin + smallFloat >= newYMax)
+                    newYMin = newYMax - smallFloat;
+
+            } else
+                for(let i=1; i<l; ++i)
+                    ctx.lineTo(xPix(x[i]), yPix(y[i]));
             ctx.stroke();
 
-            ctx.fillStyle = pointColor;
-            // We must draw points after lines if we wish to see them.
-            for(let i=0; i<l; ++i)
-                drawPoint(x[i], y[i]);
+            if(showPoints) {
+                ctx.fillStyle = pointColor;
+                // We must draw points after lines if we wish to see them.
+                for(let i=0; i<l; ++i)
+                    drawPoint(x[i], y[i]);
+            }
         }
 
     }
