@@ -412,10 +412,6 @@ function Scope(opts = null) {
         mid = (xMax + lower)/2.0;
         stop = mid - (mid - lower) * triggerFac;
 
-        // Each dynamic variable, xMin, xMax, yMin, and yMax evolve
-        // independent of each other.
-
-
         if((newXMax <= xMax && newXMax >= stop) ||
             (!xMaxTrigger && newXMax >= lower && newXMax <= xMax)) {
 
@@ -494,7 +490,6 @@ function Scope(opts = null) {
             ret = true;
         }
 
-
         ///////////////////////////////////////////////////////////////
         // yMax -- Start with checking/changing the yMax
         ///////////////////////////////////////////////////////////////
@@ -564,7 +559,6 @@ function Scope(opts = null) {
         }
 
         return ret;
-
     }
     
 
