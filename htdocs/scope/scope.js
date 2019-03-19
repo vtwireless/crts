@@ -495,6 +495,74 @@ function Scope(opts = null) {
         }
 
 
+        ///////////////////////////////////////////////////////////////
+        // yMax -- Start with checking/changing the yMax
+        ///////////////////////////////////////////////////////////////
+        //
+        lower = yMax - deltaY * edgeFac;
+        mid = (yMax + lower)/2.0;
+        stop = mid - (mid - lower) * triggerFac;
+
+        if((newYMax <= yMax && newYMax >= stop) ||
+            (!yMaxTrigger && newYMax >= lower && newYMax <= yMax)) {
+
+            if(yMaxTrigger) yMaxTrigger = false;
+
+            // Do nothing
+
+        } else if((yMaxTrigger && newYMax < stop) || newYMax < lower) {
+
+            if(!yMaxTrigger) yMaxTrigger = true;
+
+            // The slow DYNAMICS: pull the yMax down with a simple
+            // exponential "decay like" form.
+            yMax -= (mid - newYMax)/autoScalePeriod;
+
+            if(yMax >= stop) yMaxTrigger = false;
+
+            ret = true;
+
+        } else {
+
+            if(yMax >= stop) yMaxTrigger = false;
+            // This is the jerky case.
+            yMax = newYMax;
+            ret = true;
+        }
+
+        ///////////////////////////////////////////////////////////////
+        // yMin -- checking/changing the yMin
+        ///////////////////////////////////////////////////////////////
+        //
+        lower = yMin + deltaX * edgeFac;
+        mid = (yMin + lower)/2.0;
+        stop = mid + (lower - mid) * triggerFac;
+
+        if((newYMin >= yMin && newYMin <= stop) ||
+            (!yMinTrigger && newYMin <= lower && newYMin >= yMin)) {
+
+            if(yMinTrigger) yMinTrigger = false;
+            // Do nothing
+
+        } else if((yMinTrigger && newYMin > stop) || newYMin > lower) {
+
+            if(!yMinTrigger) yMinTrigger = true;
+
+            // The slow DYNAMICS: pull the yMin larger.
+            yMin += (newYMin - mid)/autoScalePeriod;
+
+            if(yMin <= stop) yMinTrigger = false;
+
+            ret = true;
+
+        } else {
+
+            if(yMin <= stop) yMinTrigger = false;
+            // This is the jerky case.
+            yMin = newYMin;
+            ret = true;
+        }
+
         return ret;
 
     }
