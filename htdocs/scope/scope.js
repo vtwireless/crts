@@ -1,4 +1,5 @@
 
+if(fail === undefined)
 function fail() {
 
     // TODO: add stack trace or is browser debugger enough?
@@ -15,6 +16,7 @@ function fail() {
     throw "javascript error"
 }
 
+if(assert === undefined)
 function assert(val, msg=null) {
 
     if(!val) {

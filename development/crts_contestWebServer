@@ -12,7 +12,7 @@
 set -xe
 cd $(dirname $0)
 
-export CRTS_CONTEST_DIR=$HOME/CRTS_CONTEST
+export CRTS_UPLOAD_DIR=$HOME/CRTS_UPLOAD
 
 exec ../bin/crts_contestWebServer\
  --user=admin --password=adminK2\
@@ -20,6 +20,6 @@ exec ../bin/crts_contestWebServer\
  --user=joe --password=joeK1\
  --user=fred --password=fredK1\
  --launcher_dir webLauncher_programs\
- --contest_dir=$HOME/CRTS_CONTEST\
- --contest_dir_overwrite\
+ --upload_dir=$HOME/CRTS_UPLOAD\
+ --upload_dir_overwrite\
  --debug $*
