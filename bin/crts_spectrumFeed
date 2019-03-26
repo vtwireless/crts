@@ -23,6 +23,7 @@ from gnuradio.fft import window
 import json
 import argparse
 from socket import *
+import platform
 
 
 class spectrum_sensing_nikita(gr.top_block):
@@ -70,10 +71,10 @@ parser.add_argument('-b','--bandwidth',\
         default=0.5)
 parser.add_argument('-n','--bins',\
         help='Number of FFT bins.  More for higher accuracy',\
-        default=15)
+        default=800)
 parser.add_argument('-r','--rate',\
         help='Number of times per second the data is sent',\
-        default=5.0)
+        default=20.0)
 parser.add_argument('-p','--port',\
         help='Server port',\
         default=9282)
@@ -83,20 +84,14 @@ parser.add_argument('-d','--device',\
 parser.add_argument('-a','--address',\
         help='Server address',\
         default='localhost')
-parser.add_argument('-i','--id',\
-        help='Send id with spectrum data',\
-        default=0)
-parser.add_argument('-t','--tag',\
-        help='Send handy human readable tag with spectrum data',\
-        default="tag")
 
 
 # The format is 
 
-def SendSpectrum(tcpClientSock, tb, iD, tag, cFreq, bandwidth, bins):
+def SendSpectrum(tcpClientSock, tb, cFreq, bandwidth, bins, period):
 
-    tcpClientSock.sendall('I{"name":"spectrumUpdate","args":[%d,"%s",%g,%g,%d,%s]}' %\
-             (iD, tag, cFreq, bandwidth, bins, list(tb.blocks_probe_signal_vx_0.level())));
+    tcpClientSock.sendall('I{"name":"spectrumUpdate","args":[%g,%g,%d,%g,%s]}' %\
+             (cFreq, bandwidth, bins, period, list(tb.blocks_probe_signal_vx_0.level())))
 
 
 # This is bad code.  There's so much wrong with this.
@@ -111,14 +106,15 @@ def Run(tcpClientSock, args):
     period = 1.0/float(args['rate'])
     if period < 1.0/60.0:
         period = 1.0/60.0
-    iD = int(args['id'])
-    tag = args['tag']
+
+    tcpClientSock.sendall('I{"name":"spectrumStart","args":["%s:%s"]}' %\
+            (platform.node(), args['device']))
 
     tcpClientSock.settimeout(period)
 
     while True: 
         try:
-            data = tcpClientSock.recv(500)
+            data = tcpClientSock.recv(10000)
             print data
             if data.startswith('{'):
                 params = json.loads(data)
@@ -133,13 +129,13 @@ def Run(tcpClientSock, args):
                     period = 1.0/60.0
                 tcpClientSock.settimeout(period)
                 tb.start()
-                SendSpectrum(tcpClientSock, tb, iD, tag, cFreq, bandwidth, bins)
+                SendSpectrum(tcpClientSock, tb, cFreq, bandwidth, bins, period)
             else:
                 print 'crts_spectrumFeed finishing'
                 tb.stop()
                 break
         except timeout:
-            SendSpectrum(tcpClientSock, tb, iD, tag, cFreq, bandwidth, bins)
+            SendSpectrum(tcpClientSock, tb, cFreq, bandwidth, bins, period)
         except Exception as inst:
             print inst
             tb.stop()

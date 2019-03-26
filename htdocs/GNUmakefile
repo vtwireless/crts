@@ -1,4 +1,4 @@
-SUBDIRS := css js img tests vis
+SUBDIRS := css js img tests vis scope spectrum
 
 INSTALL_DIR = $(PREFIX)/htdocs
 
@@ -21,7 +21,7 @@ ifeq (,$(wildcard ./webDesktop/.git))
   #
   # TODO: For the case when there is a webDesktop/
   # that is a repo we do not need to download the
-  # webDesktop.tar.gz file, but not a bad deal...
+  # webDesktop.tar.gz file, but not a big deal...
   #
   BUILD += webDesktop
   CLEANDIRS += webDesktop

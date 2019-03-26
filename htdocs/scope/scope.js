@@ -92,6 +92,9 @@ function _GetGridSpacing(pixPerGrid, min, max, pixels/*width or height*/) {
     // If we do not have the width of the lines and they may vary we add
     // an addition delta behind the min in case the width of the line
     // would make a grid line behind the min show.
+    //
+    // BUG: when min === 0
+    //
     let start = Math.trunc((min-delta)/delta) * delta;
 
     // debug spew
@@ -574,9 +577,13 @@ function Scope(opts = null) {
     //   2. bg: a canvas (buffer) that we put the constant background on
     //
 
+    var render;
 
-    var render = document.createElement('canvas');
-    render.className = 'render';
+    if(opts === null || opts.canvas === undefined) {
+        render = document.createElement('canvas');
+        render.className = 'render';
+    } else
+        render = opts.canvas;
 
     this.getElement = function() {
         return render;
@@ -587,7 +594,7 @@ function Scope(opts = null) {
 
     var bg = document.createElement('canvas');
     bg.className = 'bg';
-    bgCtx = bg.getContext('2d');
+    var bgCtx = bg.getContext('2d');
 
 
     // We define:  pixelX = xScale * X_in - xShift
@@ -652,11 +659,13 @@ function Scope(opts = null) {
             bgCtx.moveTo(0, ypix);
             bgCtx.lineTo(w, ypix);
             bgCtx.stroke();
-            if(yGridFont)
+            if(yGridFont) {
+                //console.log(y.toPrecision(gridY.digits));
                 // TODO: The format of the text needs work.
                 bgCtx.fillText(y.toPrecision(gridY.digits),
                         xPix(gridX.start + 1.5*gridX.delta) - 10,
                         ypix-4);
+            }
         }
     }
 
@@ -748,7 +757,6 @@ function Scope(opts = null) {
 
         // Do not worry, this bg (background canvas) will get transferred
         // to the main render canvas some time after this function.
-
      }
 
 
@@ -947,6 +955,8 @@ function Scope(opts = null) {
 
         // TODO: fix for multiple plots, so draw is called with different
         // plotId.
+        //
+        // TODO: Add different draw() modes like function plots.
 
         if(arguments.length >= 2) {
 

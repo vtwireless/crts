@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang=en>
+<head>
+    <meta charset="utf-8"/>
+
+    <style type="text/css">
+body {
+    background-color:#C0D0E0;
+    overflow: hidden;
+}
+html, body {
+    width:100%;
+    height:100%;
+    padding: 0px;
+    margin: 0px;
+    border: 0px;
+}
+
+
+canvas {
+    background-color: #B6ECDC;
+    width: 100%;
+    height: 100%;
+    padding: 0px;
+    margin: 0px;
+}
+    </style>
+
+    <link rel='stylesheet' href='scope.css'></link>
+    <script src=scope.js></script>
+    <script>
+
+
+onload = function() {
+
+
+    function saw(x_in) {
+
+        const PI_D2 = Math.PI/2.0;
+        const T_PI = 2.0 * Math.PI;
+
+        // This is a symmetric saw tooth function with amplitude 1 and
+        // period 2 Pi, and 
+
+        // First find a corresponding x that is near zero and differs
+        // by a multiple of 2 pi.
+        //if(x_in < 0.0) {}
+        let y; 
+        let x = x_in % T_PI;
+        if(x < 0.0) x = -x;
+
+        if(x <= Math.PI)
+            y = 1.0 - x / PI_D2;
+        else
+            y = x / PI_D2 - 3.0;
+
+        return y;
+    }
+
+
+    // wave parameters
+    const numPoints = 100; // samples per frame = x,y array size.
+    const xPeriod = 10.0; // period in seconds
+    const yPeriod = 20.0; // period in seconds
+    const xNodes = 1.1; // number of cycles in x mode
+    const yNodes = 1.0; // number of cycles in y mode
+    const sleepTime = 16.77; // sleep period in milliseconds
+    const xA = 1.0; // x direction amplitude like thing
+    const yA = 1.0; // y direction amplitude like thing
+    const timeFunc = saw;
+
+    // Derived constants
+
+    const xOmega = 2 * Math.PI/xPeriod; // angular frequency
+    const yOmega = 2 * Math.PI/yPeriod; // angular frequency
+    const kx = 2.0 * Math.PI * xNodes / numPoints;
+    const ky = 2.0 * Math.PI * yNodes / numPoints;
+
+    const cos = Math.cos;
+    const sin = Math.sin;
+
+    var scope = new Scope({canvas: document.getElementById('canvas')});
+
+    var x = [], y = [];
+    var t = 0.0;
+
+    function run() {
+
+        // We'll keep these amplitudes as positive numbers.
+        var Ax = xA * (2.0 + saw(xOmega * t));
+        var Ay = yA * (2.0 + saw(yOmega * t));
+
+        for(let i=0; i<numPoints; ++i) {
+
+            x[i] = Ax * cos(kx * i);
+            y[i] = Ay * sin(ky * i)
+        }
+
+        scope.draw(x, y);
+
+        // Advance time t, and we don't care if it is not
+        // accurate or precise; this is just a test.
+        t += sleepTime/1000.0;
+        requestAnimationFrame(run);
+    }
+
+    run();
+};
+
+    </script>
+
+    <title>CRTS</title>
+</head>
+<body>
+    <canvas id='canvas'></canvas>
+</body>
+</html>

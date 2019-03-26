@@ -5,8 +5,13 @@ set -ex
 cd $(dirname ${BASH_SOURCE[0]})
 
 crts_radio=../../bin/crts_radio
-tFile=$CRTS_CONTEST_DIR/count_bytesOut_${LAUNCH_ID}
-iFile=$CRTS_CONTEST_DIR/count_bytesIn_${LAUNCH_ID}
+
+if [ -z "$CRTS_UPLOAD_DIR" ] ; then
+    CRTS_UPLOAD_DIR="$HOME/CRTS_UPLOAD"
+fi
+
+tFile=$CRTS_UPLOAD_DIR/count_bytesOut_${LAUNCH_ID}
+iFile=$CRTS_UPLOAD_DIR/count_bytesIn_${LAUNCH_ID}
 
 
 exec $crts_radio\

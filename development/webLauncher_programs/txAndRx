@@ -8,8 +8,8 @@ crts_radio="../../bin/crts_radio"
 
 source usrp_config
 
-tx=$CRTS_CONTEST_DIR/tx_${LAUNCH_ID}
-rx=$CRTS_CONTEST_DIR/rx_${LAUNCH_ID}
+tx=$CRTS_UPLOAD_DIR/tx_${LAUNCH_ID}
+rx=$CRTS_UPLOAD_DIR/rx_${LAUNCH_ID}
 
 
 $crts_radio\

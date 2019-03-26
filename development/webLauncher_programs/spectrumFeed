@@ -6,11 +6,5 @@ cd $(dirname ${BASH_SOURCE[0]})
 
 spectrumFeed="../../bin/crts_spectrumFeed"
 
-#source usrp_config
 
-if [ -z "${LAUNCH_ID}" ] ; then
-    echo "LAUNCH_ID was not set"
-    exit 1
-fi
-
-exec $spectrumFeed --id ${LAUNCH_ID} --tag "sp ${LAUNCH_ID}" $*
+exec $spectrumFeed $*

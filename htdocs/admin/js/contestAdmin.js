@@ -532,6 +532,8 @@ function _addRunningProgramsPanel(io, contestPanel) {
     });
 
 
+    io.Emit('runningPrograms');
+
     io.On('runningPrograms', function(runningPrograms) {
 
         var keys = Object.keys(runningPrograms);
@@ -547,6 +549,7 @@ function _addRunningProgramsPanel(io, contestPanel) {
 function contestAdminInit(io) {
 
 
+
     var contestPanel = document.createElement('div');
     contestPanel.className = "contestPanel";
 
@@ -556,10 +559,12 @@ function contestAdminInit(io) {
     h.className = 'contestPanel';
     contestPanel.appendChild(h);
 
-    getElementById('bottom').appendChild(contestPanel);
+    getElementById('contestAdminPanel').appendChild(contestPanel);
     makeShowHide(contestPanel, {header:  h});
 
     console.log('created contest panel');
+
+    io.Emit('addUsers');
 
     io.On('addUsers', function(users, urls) {
 

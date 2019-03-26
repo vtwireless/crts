@@ -117,6 +117,23 @@ function makeShowHide(container,
 }
 
 
+function _showUser(user) {
+
+    let sessionStatusDiv = document.getElementById('sessionStatus');
+    let userDiv = document.getElementById('user');
+
+    if(sessionStatusDiv && userDiv) {
+        if(user === null) {
+            sessionStatusDiv.innerHTML = "Not logged in";
+            userDiv.innerHTML = '';
+        } else {
+            sessionStatusDiv.innerHTML = "Authenticated as user: ";
+            userDiv.innerHTML = user.name;
+        }
+    }
+}
+
+
 // We did not want to expose this function so we put an underscore
 // in the start of it's name.
 //
@@ -168,8 +185,6 @@ function _client(user, connectCallback=null) {
         // say we are completely connected and ready to go.  I.E. waiting
         // for a reply to the send above is pointless.
 
-        getElementById('sessionStatus').innerHTML = "Connected as user: ";
-
         if(connectCallback) {
 
             connectCallback(io);
@@ -180,9 +195,7 @@ function _client(user, connectCallback=null) {
 
         console.log('closed webSocket to: ' + url);
 
-        getElementById('sessionStatus').innerHTML = "Not logged in";
-        getElementById('user').innerHTML = '';
-
+        _showUser(null);
 
         // Here is how we could erase the passcode cookie:
         //document.cookie = 'passcode=; Max-Age=-99999999;';
@@ -224,8 +237,7 @@ function createClient(connectCallback=null) {
         assert(typeof(user.name) === 'string' && user.name.length > 0);
         assert(typeof(user.password) === 'string' && user.password.length > 0);
 
-        getElementById('sessionStatus').innerHTML = "Authenticated as user: ";
-        getElementById('user').innerHTML = user.name;
+        _showUser(user);
 
         return user;
     }
@@ -234,7 +246,8 @@ function createClient(connectCallback=null) {
 
     console.log("We are authenticated as user: " + user.name);
 
-    if(user.name !== 'admin') {
+    if(user.name !== 'admin' ||
+        !document.getElementById('contestAdminPanel')) {
 
         _client(user, connectCallback);
         return;
@@ -291,8 +304,8 @@ function createClient(connectCallback=null) {
 
     if(doRun)
         //
-        onload = function() { createClient(); };
-        //window.addEventListener('load', function() { createClient(); });
+        //onload = function() { createClient(); };
+        addEventListener('load', function() { createClient(); });
         //document.addEventListener("DOMContentLoaded", function() { createClient(); });
 })();
 
