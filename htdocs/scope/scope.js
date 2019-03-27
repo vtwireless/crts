@@ -93,9 +93,7 @@ function _GetGridSpacing(pixPerGrid, min, max, pixels/*width or height*/) {
     // an addition delta behind the min in case the width of the line
     // would make a grid line behind the min show.
     //
-    // BUG: when min === 0
-    //
-    let start = Math.trunc((min-delta)/delta) * delta;
+    let start = Math.floor(min/delta - 0.05) * delta;
 
     // debug spew
     //console.log('\n\n pixels=' + pixels + ' min=' + min + 
@@ -624,6 +622,13 @@ function Scope(opts = null) {
 
         let n = 0;
         let max = xMax + gridX.delta;
+        let drawYNum;
+
+        if(xGridFont) {
+            drawYNum = yPix(gridY.start + gridY.delta) - gridY.pixPerGrid/2 + 4;
+            if(drawYNum > render.offsetHeight - 40)
+                drawYNum = yPix(gridY.start) - gridY.pixPerGrid/2 + 4;
+        }
 
         for(let x = gridX.start; x <= max;
             x = gridX.start + (++n)*gridX.delta) {
@@ -633,11 +638,9 @@ function Scope(opts = null) {
             bgCtx.lineTo(xpix, h);
             bgCtx.stroke();
             if(xGridFont)
-                // TODO: The format of the text needs work.
+                // TODO: The format and placement of the text needs work.
                 bgCtx.fillText(x.toPrecision(gridX.digits),
-                        xpix+3,
-                        yPix(gridY.start + 1*gridY.delta) -
-                        gridY.pixPerGrid/2 + 4);
+                        xpix+3, drawYNum);
         }
     }
 
@@ -646,8 +649,11 @@ function Scope(opts = null) {
         bgCtx.lineWidth = gridYWidth;
         bgCtx.strokeStyle = gridYColor;
         bgCtx.fillStyle = gridYColor;
-        if(yGridFont)
+        let drawXNum;
+        if(yGridFont) {
             bgCtx.font = yGridFont;
+            drawXNum = xPix(gridX.start + 1.2*gridX.delta) - 10
+        }
 
         let n = 0;
         let max = yMax + gridY.delta;
@@ -663,8 +669,7 @@ function Scope(opts = null) {
                 //console.log(y.toPrecision(gridY.digits));
                 // TODO: The format of the text needs work.
                 bgCtx.fillText(y.toPrecision(gridY.digits),
-                        xPix(gridX.start + 1.5*gridX.delta) - 10,
-                        ypix-4);
+                        drawXNum, ypix-4);
             }
         }
     }
@@ -777,7 +782,7 @@ function Scope(opts = null) {
 
         // TODO: add plot user optional parameters for sizes and colors.
         var pointDiameter = 5.2;
-        var lineWidth = 4.3;
+        var lineWidth = 2.6;
         var lineColor = 'blue';
         var pointColor = 'red';
 
