@@ -1,0 +1,29 @@
+#!/bin/bash
+
+
+source ../common.bash
+
+
+# The sha512sum is optional.  Get its value by running:
+#    sha512sum thrift.tar.gz
+
+sha512sum=
+
+case "$THRIFT_TAG" in
+
+    "v0.12.0")
+        sha512sum=4a9f01009fbbdf834cc8c2bd3cf840c6b43929\
+e201d0e772d6b9ecd035a88f0aab3dcf4aa8179e7fa244cee342f0ac\
+be38269b0c40791a1ad74321ab5a2d3a3e
+        ;;
+esac
+
+
+##############################################################
+
+
+source ../../GetSrcFromGithub.bash
+
+#Usage: GetSrcFromGithub user package tag tarname [sha512sum]
+
+GetSrcFromGithub apache thrift $THRIFT_TAG thrift $sha512sum

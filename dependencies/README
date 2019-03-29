@@ -37,11 +37,13 @@ apt-getDependencies.bash script and install the packages yourself.
 
 
 
-2.  CRTS currently depends on (as of Nov 19 2018):
+2.  CRTS currently depends on (as of Mar 29 2019):
 
     node
 
     uhd
+
+    thrift
 
     gnuradio
 
@@ -105,7 +107,7 @@ Instructions for installing any of those packages:
 
 
 
-Another way via LinuxBrew:
+Another way via LinuxBrew (TODO??):
 
   1.  You need to install those software packages that are available through the operating
       system package manager, see above, and
