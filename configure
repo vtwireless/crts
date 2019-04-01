@@ -27,10 +27,53 @@
 # generated files that depend on these make configuration variables.
 
 
-PREFIX=/usr/local/crts
+# TODO: Add options to remove spew and DEBUG macros.
+
+
+DEFAULT_PREFIX=/usr/local/crts
+
+function usage() {
+
+    cat << EOF
+
+      Usage: $0 [-prefix PREFIX|--prefix=PREFIX]
+
+      Configure the CRTS package.  The default PREFIX is $DEFAULT_PREFIX
+
+EOF
+
+    exit 1
+}
 
 
 set -e
+
+PREFIX="$DEFAULT_PREFIX"
+
+while [ -n "$1" ] ; do
+    case "$1" in
+        -prefix|--prefix)
+            shift 1
+            if [ -n "$1" ] ; then
+                PREFIX="$1"
+            else
+                usage
+            fi
+        ;;
+        --prefix=*|-prefix=*)
+            PREFIX="${1#-*prefix=}"
+        ;;
+        *)
+            usage
+        ;;
+    esac
+
+    shift 1
+done
+
+echo "PREFIX=$PREFIX"
+
+
 
 # Get in this directory where this file is:
 dir="$(dirname ${BASH_SOURCE[0]})"
