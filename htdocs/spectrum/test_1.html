@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang=en>
+<head>
+    <meta charset="utf-8"/>
+
+    <style type="text/css">
+body {
+    background-color:#C0D0E0;
+    padding: 40px;
+}
+
+h1 {
+    border-radius: 10px;
+    border-style: solid;
+    background-color: #70B5D8;
+    color: #600;
+    padding: 10px;
+    text-align: center;
+}
+
+
+canvas.clock {
+    background-color: #B6ECDC;
+    width: 100%;
+    height: 100%;
+    padding: 0px;
+    margin: 0px;
+}
+    </style>
+
+    <link rel='stylesheet' href='../webDesktop/webDesktop.css'></link>
+    <link rel='stylesheet' href='../scope/scope.css'></link>
+    <script src='../webDesktop/webDesktop.js'></script>
+    <script src='../webDesktop/clock.js'></script>
+    <script src='../scope/scope.js'></script>
+    <script src='../js/socketIO.js'></script>
+    <script src='../js/session.js'></script>
+
+    <script>
+
+
+onload = function() {
+
+    var clock = new Clock;
+    new WDApp('Clock', clock.getElement());
+    clock.run();
+
+    var spectrumList = {};
+
+    function SpectrumDisplay(desc, onclose_in = null) {
+
+        var onclose = onclose_in;
+
+        var scope = new Scope;
+
+        var app = new WDApp('Spectrum ' + desc,
+                scope.getElement(), function() {
+            console.log('Removing scope: ' + desc);
+            if(onclose) onclose();
+            app = null;
+        });
+
+        this.destroy = function() {
+            if(app) app.close();
+            app = null;
+        };
+        this.draw = scope.draw;
+    }
+
+
+    createClient(function(io) {
+
+        var spectrums = {};
+
+        io.On("spectrumUpdate", function(id, cFreq, bandwidth, bins,
+                updatePeriod, data) {
+
+            if(spectrums[id] === undefined) {
+                io.Emit('spectrumUnsubscribe', id);
+                return;
+            }
+
+            /*
+            console.log('got spectrumFeed(' + id + '): ' +
+                        ' cFreq=' + cFreq + ' bandwidth=' + bandwidth +
+                        ' bins=' + bins + ' period=' +  updatePeriod +
+                        ' amplitudes=' + data + "\n\n");
+                        */
+
+            let deltaFreq = bandwidth/(bins-1);
+            let startX = cFreq - bandwidth/(bins-1);
+            if(bins === 1) {
+                startX = cFreq;
+                deltaFreq = 0.0;
+            }
+            let x = [];
+            for(let i=0 ;i<bins; ++i) {
+                x[i] = startX + i * deltaFreq;
+            }
+            spectrums[id].draw(x, data);
+        });
+
+        io.On('spectrumEnd', function(spectrumId) {
+            if(spectrums[spectrumId] !== undefined) {
+                spectrums[spectrumId].destroy();
+                delete spectrums[spectrumId];
+            }
+        });
+
+        io.On('newSpectrum', function(id, description)  {
+
+            console.log('Got "newSpectrum" [' + id + ']: "' +
+                    description + '"');
+
+            assert(spectrums[id] === undefined, "We have spectrum id="
+                    + id + " already");
+
+            spectrums[id] = new SpectrumDisplay(description, function() {
+                io.Emit('spectrumUnsubscribe', id);
+            });
+
+            io.Emit('spectrumSubscribe', id);
+        });
+
+    });
+
+}
+    </script>
+
+
+    <title>CRTS</title>
+</head>
+<body>
+
+    <h1>Cognitive Radio Test System</h1>
+
+    <p>This is a test of the Cognitive Radio Test System (CRTS);
+    this is only a test.  Had this been a real running of
+    the cognitive radio test system this text would not be here.</p>
+
+    <p><a href="..">Back to index</a></p>
+
+</body>
+</html>
