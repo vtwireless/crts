@@ -13,7 +13,7 @@ This software package is not ready for general public use.
 
 Currently developing on: 
   - Debian GNU/Linux 9.3 (stretch)
-  - Ubuntu 16.04
+  - Ubuntu 16.04, 18.04
 
 ## Dependencies
 
@@ -39,23 +39,29 @@ in downloading, building, and installing these dependencies, and is used in
 building and installing CRTS.  quickbuild.make is just one small make file.
 
 The downloading, building and installing of Node JS, UHD (libUHD), and GNU
-Radio may be done using scripts in this directory tree in the
+Radio may be done using scripts in this directory tree in the dependencies
 sub-directory.  All of these packages we download, build and install using
 particular tagged releases from github.com.  You may for-go using these
 scripts and install them yourself.  The building and installing of CRTS
 will use pkg-conf and the installed programs in your path to find the
 installed files on your system.  Where these scripts install Node JS,
-UHD, and GNU Radio can be changed by
+UHD, and GNU Radio can be changed by running:
 ```
 cp dependencies/default_prefixes dependencies/prefixes
 gedit dependencies/prefixes # or other editor
 ```
-or used another test editor (gedit) then the values you put in prefixes
+or use another test editor (gedit) then the values you put in prefixes
 will be used when the installation scripts install node JS, UHD, and GNU
 Radio.  Also this file has the git tags (version tag) of the packages that
 are will be installed via these scripts.  This prefixes (or
 default_prefix) file is only accessed by the optional node JS, UHD, and
 GNU Radio installation scripts, and is not used by this CRTS package.
+
+## "make download" for code re-usability
+
+Not unique to CRTS, we introduce the idea of downloading all the files
+needed, before starting to build the software, so we have a "download"
+make target as in running ``make download`` as you'll see below.
 
 
 ### Building and Installing NodeJS
@@ -96,6 +102,22 @@ pkg-config system:
 ```
 pkg-config --modversion uhd
 ```
+
+### Building and Installing Thrift
+
+We are using GNU radio with the "CrtlPort Performance Monitor" in some
+projects and GNU radio with "CrtlPort Performance Monitor" requires
+Thrift.  So here's a way to install Thrift:
+
+```
+cd depenences/thrift
+make download
+make
+make install
+cd -
+```
+Now you need to make the installed Thrift files accessable on you system
+so that when you install GNU radio cmake can find Thrift.
 
 
 ### Building and Installing GNU Radio
