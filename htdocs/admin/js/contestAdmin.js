@@ -584,7 +584,7 @@ function contestAdminInit(io) {
         let p = document.createElement('p');
         p.className = 'userLinks';
         p.appendChild(document.createTextNode(
-            'Contest participants  may login an access the' +
+            'Contest participants  may login and access the ' +
             'contest with the following URLs:'));
         div.appendChild(p);
 
