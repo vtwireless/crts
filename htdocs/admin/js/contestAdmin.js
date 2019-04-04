@@ -555,7 +555,7 @@ function contestAdminInit(io) {
 
     var h = document.createElement('h3');
     h.appendChild(document.createTextNode('CRTS ' +
-            'Contest Control Panel'));
+            'Administrator Control Panel'));
     h.className = 'contestPanel';
     contestPanel.appendChild(h);
 
@@ -590,23 +590,52 @@ function contestAdminInit(io) {
 
         urls.forEach(function(url) {
 
-            var ul = document.createElement('ul');
-            ul.className = 'userLinks';
-            div.appendChild(ul);
+            var h3 = document.createElement('h3');
+            h3.className = 'userLinks';
+            h3.appendChild(document.createTextNode(url));
+            div.appendChild(h3);
+
+            var table = document.createElement('table');
+            table.className = 'userLinks';
+            div.appendChild(table);
 
             userNames.forEach(function(userName) {
 
-                if(userName === 'admin') return;
-
-                var li = document.createElement('li');
-                li.className = 'userLinks';
-                ul.appendChild(li);
-                var a = document.createElement('a');
+                let tr = document.createElement('tr');
+                tr.className = 'userLinks';
+                table.appendChild(tr);
+                let td = document.createElement('td');
+                td.className = 'userLinks';
+                let a = document.createElement('a');
                 a.className = 'userLinks';
-                a.href = url + '/?user=' + userName +
+                let link = a.href = url + '/?user=' + userName +
                     '&password=' + users[userName].password;
-                a.appendChild(document.createTextNode(a.href));
-                li.appendChild(a);
+                a.appendChild(document.createTextNode(userName));
+                td.appendChild(a);
+                tr.appendChild(td);
+
+
+                if(url.match(/^https\:/) == null)
+                    return;
+
+                // this is a https server url.
+                // so add email to user option.
+
+                td = document.createElement('td');
+                td.className = 'userLinks';
+                a = document.createElement('a');
+                a.href='mailto:' + userName + '?to&subject=CRTS%20URL&body=Hello%20' +
+                    userName + '%2C%0A%0AYour%20CRTS%20Contest%20Link%20' +
+                    'is%3A%20' + link.replace(/\&/,'%26') + '%0A%0A';
+                a.appendChild(document.createTextNode(
+                    'Send email with contest link to ' + userName));
+                td.appendChild(a);
+                tr.appendChild(td);
+
+                //let email = 
+
+
+
             });
         });
 

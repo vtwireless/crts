@@ -52,13 +52,13 @@ img.controller {
     min-width: 300px;
     margin: 8px;
 }
-div.launcher, div.programs, div.userLinks {
+div.launcher, div.programs {
     background-color:#9FC6E3;
 }
-table.launcher {
+table.launcher, table.userLinks {
     border: 2px solid black;
 }
-th.launcher, td.launcher, td.args, td.runCount, td.numRunning {
+th.launcher, td.launcher, td.args, td.runCount, td.numRunning, td.userLinks{
     border: 1px solid black;
 }
 
