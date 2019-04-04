@@ -1,18 +1,16 @@
-SUBDIRS := css js img tests vis scope spectrum
+SUBDIRS := css js img tests scope spectrum
 
 INSTALL_DIR = $(PREFIX)/htdocs
 
-INSTALLED := doc x3dom
+INSTALLED := doc
 BUILD := index.html
 
-# we must tell quickbuild that x3dom is a directory
-CLEANDIRS := x3dom
 
 ifeq (,$(wildcard ./webDesktop/.git))
 
   # The file ./webDesktop/.git does not exist.
 
-  # We build and remove webDesktop/ if it is not a
+  # We build and clean webDesktop/ if it is not a
   # git repo checkout.  webDesktop is special in
   # that we may be developing it with CRTS and
   # not just downloading it.  So by default the
@@ -35,8 +33,6 @@ endif
 
 $(warning BUILD=$(BUILD))
 
-
-CLEANERFILES := x3dom.tar.gz.BAD_SHA512
 
 index.html: index.htm session_footer.htm
 	cat $^ > $@

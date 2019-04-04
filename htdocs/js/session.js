@@ -1,4 +1,7 @@
 require('/js/socketIO.js');
+
+// if this loads '/admin/js/contestAdmin.js' below
+// we'll need /js/util.js
 require('/js/util.js');
 
 

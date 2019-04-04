@@ -1,6 +1,7 @@
 
 This directory provides scripts that install software packages that CRTS
 depends on.  You need to run ../bootstrap before using these scripts.
+It will download a make file that is needed.
 
 Each package is in a different directory.  We made an effort to configure
 all of the packages for use by CRTS.  All of these packages can be built
@@ -8,7 +9,7 @@ and installed from GitHub source with the git tags that are listed in
 default_prefixes, or (overridden) in prefixes if found.  The size of all
 the files in this directory is intended to be small until the packages
 are downloaded and built.  At the time of this writing the total file
-space in this directory was 220 Kilo bytes (Nov 19 2018), so we see no
+space in this directory was 220 Kbytes (Nov 19 2018), so we see no
 need to put these files in a different repository.
 
 
@@ -17,8 +18,15 @@ Some of the package versions may be newer than what is available from APT
 exists.
 
 
-Some of the packages listed in this directory are not required except for
-CRTS development.  Some may never be required.
+This directory is not used in the parent directories "build process".  Put
+another way, this directory is not accessed when building and installing
+the CTRS package.  This directory is a convenience for building and
+installing software packages that the CRTS package depends on.  The
+contents of the directory maybe needed because the CTRS package depends on
+some software packages that can't be installed by the operating system
+package manager.  The needed software packages maybe too new a version to be
+supported by the operating system package manager.  That will change with
+time as the versions of theses package dependencies become more available.
 
 
 There are two levels of software package perquisites:
@@ -27,6 +35,7 @@ There are two levels of software package perquisites:
       system package manager, APT (apt-get install), and
 
    2. those software packages that are not available through APT.
+      Hence this directory exists.
 
 
 
@@ -48,71 +57,41 @@ apt-getDependencies.bash script and install the packages yourself.
     gnuradio
 
 
-    the rest of the directories may or may not end up be required in
-    the future.
+Directories (PACKAGE_DIR) and package repository:
 
-
-
-
-
-Directories (PACKAGE_DIR):
-
-
-  gnuradio            - https://github.com/gnuradio/gnuradio
-
-  hiredis             - https://github.com/redis/hiredis
-
-  libwebsockets       - https://github.com/warmcat/libwebsockets
-
-  mosquitto           - https://github.com/eclipse/mosquitto
-
-  mosquitto-auth-plug - https://github.com/jpmens/mosquitto-auth-plug
-
-  mqttc (paho.mqtt.c) - https://github.com/eclipse/paho.mqtt.c
 
   node                - https://github.com/nodejs/node
 
-  redis               - https://github.com/antirez/redis
-
-  slurm               - https://github.com/SchedMD/slurm
-
   uhd                 - https://github.com/EttusResearch/uhd
+
+  thrift              - https://github.com/apache/thrift
+
+  gnuradio            - https://github.com/gnuradio/gnuradio
 
 
 
 The order of things:
 
-  gnuradio depends on uhd
-
-  mosquitto depends on libwebsockets
-
-  mosquitto-auth-plug depends on mosquitto, redis, and hiredis
+  gnuradio depends on uhd and thrift
 
 
 
-Instructions for installing any of those packages: 
+Instructions (run) for installing any of those packages:
 
 
-  cp default_prefixes prefixes
-  
+    ../bootstrap
+
+    cp default_prefixes prefixes
+
   Edit the file prefixes to set your installation prefix directories to
   suit your preferences.
 
-  For each package:
+  For each PACKAGE_DIR in (node uhd thrift gnuradio):
 
-  cd PACKAGE_DIR && make && make install && cd ..
+     cd PACKAGE_DIR && make && make install && cd ..
+     # Do what you need to to make the installed package accessible
+
 
   Then you need to make the package accessible by setting your PATH, or
   use other means.
-
-
-
-Another way via LinuxBrew (TODO??):
-
-  1.  You need to install those software packages that are available through the operating
-      system package manager, see above, and
-
-  2.  The script in ../INSTALL_via_LinuxBrew can be used to install the
-      those software packages that are not available through APT including
-      this CRTS.  Run `../INSTALL_via_LinuxBrew --help` for options.
 

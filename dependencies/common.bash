@@ -1,4 +1,4 @@
-# This file is sourced from subdirectories uhd/, gnuradio/, and node/.
+# This file is sourced from subdirectories uhd/, gnuradio/, thrift/ and node/.
 
 currentDir=$(dirname ${BASH_SOURCE[0]})
 

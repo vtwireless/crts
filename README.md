@@ -17,45 +17,10 @@ Currently developing on:
 
 ## Dependencies
 
-You can run the script
-```
-sudo dependencies/apt-getDependencies.bash
-```
-In this script we keep a running list of dependencies that can be
-installed via apt-get.  You can install them yourself or run the script
-which will run apt-get install for you.
+See README in dependencies/ subdirectory.  Installing the dependencies is
+more involved than installing CRTS, so we provide a separate dependencies
+directory.
 
-At the time of this writing the debian/ubuntu packages "node",
-"libuhd-dev" and "gnuradio-dev" are not current enough to be used.  Also
-the node JS package is not current enough, so we provide scripts to build
-and install them from git tagged github.com repositories.
-
-These installation scripts depend on running
-```
-./bootstrap
-```
-This bootstrap downloads the GNU make file, quickbuild.make, which is used
-in downloading, building, and installing these dependencies, and is used in
-building and installing CRTS.  quickbuild.make is just one small make file.
-
-The downloading, building and installing of Node JS, UHD (libUHD), and GNU
-Radio may be done using scripts in this directory tree in the dependencies
-sub-directory.  All of these packages we download, build and install using
-particular tagged releases from github.com.  You may for-go using these
-scripts and install them yourself.  The building and installing of CRTS
-will use pkg-conf and the installed programs in your path to find the
-installed files on your system.  Where these scripts install Node JS,
-UHD, and GNU Radio can be changed by running:
-```
-cp dependencies/default_prefixes dependencies/prefixes
-gedit dependencies/prefixes # or other editor
-```
-or use another test editor (gedit) then the values you put in prefixes
-will be used when the installation scripts install node JS, UHD, and GNU
-Radio.  Also this file has the git tags (version tag) of the packages that
-are will be installed via these scripts.  This prefixes (or
-default_prefix) file is only accessed by the optional node JS, UHD, and
-GNU Radio installation scripts, and is not used by this CRTS package.
 
 ## "make download" for code re-usability
 
@@ -64,102 +29,19 @@ needed, before starting to build the software, so we have a "download"
 make target as in running ``make download`` as you'll see below.
 
 
-### Building and Installing NodeJS
-
-If you choose to you may have the following script install nodeJS from
-the github.com tagged source
-
-```
-cd dependencies/node
-make download
-make
-make install
-cd -
-```
-Now you need to put node in your PATH.
-
-Test that node is installed in your path:
-```
-node --version
-```
-
-
-### Building and Installing UHD
-
-If you choose to you may have the following script install UHD from
-the github.com tagged source:
-
-```
-cd dependencies/uhd
-make download
-make
-make install
-cd -
-```
-
-Now you may want to test that this UHD installation is accessible via the
-pkg-config system:
-```
-pkg-config --modversion uhd
-```
-
-### Building and Installing Thrift
-
-We are using GNU radio with the "CrtlPort Performance Monitor" in some
-projects and GNU radio with "CrtlPort Performance Monitor" requires
-Thrift.  So here's a way to install Thrift:
-
-```
-cd depenences/thrift
-make download
-make
-make install
-cd -
-```
-Now you need to make the installed Thrift files accessable on you system
-so that when you install GNU radio cmake can find Thrift.
-
-
-### Building and Installing GNU Radio
-
-If you choose to you may have the following script install GNU Radio from
-the github.com tagged source:
-
-```
-cd depenences/gnuradio
-make download
-make
-make install
-cd -
-```
-
-Now you may want to test that this GNU Radio installation is accessible
-via the pkg-config system:
-```
-pkg-config --modversion gnuradio-blocks
-```
-
-
 ## Building and Installing CRTS (this package)
 
 
 Then run
 ```
-./configure
-make download
-make
-make install
-```
-
-You may want to run the configure script with the --prefix option like so:
-```
+./bootstrap
 ./configure --prefix /usr/local/my_CRTS
 make download
 make
 make install
 ```
-where you pick a better prefix than /usr/local/my_CRTS.
 
+where you pick a better prefix than /usr/local/my_CRTS.
 
 
 ## Up grading Firmware and FPGA Images with Pre-built Images
@@ -168,18 +50,18 @@ With a browser go to relative to your UHD installation prefix
 installation directory, UHD_PREFIX
 
 ```
-UHD_PREFIX/share/doc/uhd/doxygen/html/page_images.html
+$UHD_PREFIX/share/doc/uhd/doxygen/html/page_images.html
 ```
 
 Download files by running:
 
 ```
-UHD_PREFIX/bin/uhd_images_downloader
+$UHD_PREFIX/bin/uhd_images_downloader
 ```
 
 This will download files to:
 ```
-UHD_PREFIX/share/uhd/images/
+$UHD_PREFIX/share/uhd/images/
 ```
 
 Read some more on the web pages.  In my case I had a USRP N210 and I ran:
@@ -206,20 +88,4 @@ For the X310
 $UHD_PREFIX/utils/uhd_images_downloader.py
 
 $UHD_PREFIX//bin/uhd_image_loader" --args="type=x300,addr=192.168.12.2"
-
-
-## Tests
-
-```
-cd interactiveTests
-```
-
-and look at and run test programs in that directory.
-
-
-## Running the CRTS server
-
-```
-crts_contestWebServer
-```
 
