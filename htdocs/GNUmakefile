@@ -1,4 +1,4 @@
-SUBDIRS := css js img tests scope spectrum
+SUBDIRS := css js admin img tests scope spectrum
 
 INSTALL_DIR = $(PREFIX)/htdocs
 
