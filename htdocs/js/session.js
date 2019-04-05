@@ -1,97 +1,89 @@
 require('/js/socketIO.js');
 
-// if this loads '/admin/js/contestAdmin.js' below
-// we'll need /js/util.js
-require('/js/util.js');
+function createSession(connectCallback=null) {
 
+    function _showUser(user) {
 
-function _showUser(user) {
+        let sessionStatusDiv = document.getElementById('sessionStatus');
+        let userDiv = document.getElementById('user');
 
-    let sessionStatusDiv = document.getElementById('sessionStatus');
-    let userDiv = document.getElementById('user');
-
-    if(sessionStatusDiv && userDiv) {
-        if(user === null) {
-            sessionStatusDiv.innerHTML = "Not logged in";
-            userDiv.innerHTML = '';
-        } else {
-            sessionStatusDiv.innerHTML = "Authenticated as user: ";
-            userDiv.innerHTML = user.name;
+        if(sessionStatusDiv && userDiv) {
+            if(user === null) {
+                sessionStatusDiv.innerHTML = "Not logged in";
+                userDiv.innerHTML = '';
+            } else {
+                sessionStatusDiv.innerHTML = "Authenticated as user: ";
+                userDiv.innerHTML = user.name;
+            }
         }
     }
-}
 
 
-// We did not want to expose this function so we put an underscore
-// in the start of it's name.
-//
-function _client(user, connectCallback=null) {
+    function _client(user, connectCallback=null) {
 
-    var url = location.protocol.replace(/^http/, 'ws') +
-        '//' + location.hostname + ':' + location.port + '/';
+        var url = location.protocol.replace(/^http/, 'ws') +
+            '//' + location.hostname + ':' + location.port + '/';
 
-    var ws = new WebSocket(url);
+        var ws = new WebSocket(url);
 
-    assert(typeof(createSocketIOObject) === 'function',
-        'script /js/socketIO.js was not loaded yet');
+        assert(typeof(createSocketIOObject) === 'function',
+            'script /js/socketIO.js was not loaded yet');
 
-    // This function call will add the, socketIO like, On() and Emit()
-    // methods to ws.  Also adds ws.CheckForSocketIOMessage() which eats
-    // messages if they of a form that we use to make this socketIO like
-    // On() interfaces.
+        // This function call will add the, socketIO like, On() and Emit()
+        // methods to ws.  Also adds ws.CheckForSocketIOMessage() which
+        // eats messages if they of a form that we use to make this
+        // socketIO like On() interfaces.
 
-    // io will be the exposed "public" object.
-    var io = createSocketIOObject(function(msg) { ws.send(msg); });
+        // io will be the exposed "public" object.
+        var io = createSocketIOObject(function(msg) { ws.send(msg); });
 
-    ws.onmessage = function(e) {
+        ws.onmessage = function(e) {
 
-        var message = e.data;
+            var message = e.data;
 
-        if(io.CheckForSocketIOMessage(message))
-            // We got a socketIO like message and it was
-            // handled.
-            return;
+            if(io.CheckForSocketIOMessage(message))
+                // We got a socketIO like message and it was
+                // handled.
+                return;
 
-        console.log("got webSocket message=" + message);
-    };
+            console.log("got webSocket message=" + message);
+        };
 
 
-    ws.onopen = function(e) {
+        ws.onopen = function(e) {
 
-        console.log('created webSocket to: ' + url);
+            console.log('created webSocket to: ' + url);
 
-        // If this is an invalid attempt than the server will disconnect.
+            // If this is an invalid attempt than the server will disconnect.
 
-        ws.send(JSON.stringify({
-            name: user.name, password: user.password
-        }));
+            ws.send(JSON.stringify({
+                name: user.name, password: user.password
+            }));
 
-        // It is possible that a browser client can be trying to spoof the
-        // web server with in-correct info, but in that case the webSocket
-        // connection will be dropped unless they can guess a correct
-        // password and ws.send() it correctly.  So at this point we can
-        // say we are completely connected and ready to go.  I.E. waiting
-        // for a reply to the send above is pointless.
+            // It is possible that a browser client can be trying to spoof
+            // the web server with in-correct info, but in that case the
+            // webSocket connection will be dropped unless they can guess
+            // a correct password and ws.send() it correctly.  So at this
+            // point we can say we are completely connected and ready to
+            // go.  i.e. waiting for a reply to the send above is
+            // pointless.
 
-        if(connectCallback) {
+            if(connectCallback) {
 
-            connectCallback(io);
-        }
-    };
+                connectCallback(io);
+            }
+        };
 
-    ws.onclose = function(e) {
+        ws.onclose = function(e) {
 
-        console.log('closed webSocket to: ' + url);
+            console.log('closed webSocket to: ' + url);
 
-        _showUser(null);
+            _showUser(null);
 
-        // Here is how we could erase the passcode cookie:
-        //document.cookie = 'passcode=; Max-Age=-99999999;';
-    };
-}
-
-
-function createClient(connectCallback=null) {
+            // Here is how we could erase the passcode cookie:
+            //document.cookie = 'passcode=; Max-Age=-99999999;';
+        };
+    }
 
 
     // returns the user as an object and prepends a <div> the user header

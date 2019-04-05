@@ -28,22 +28,26 @@ canvas.clock {
 }
     </style>
 
-    <link rel='stylesheet' href='../webDesktop/webDesktop.css'></link>
-    <link rel='stylesheet' href='../scope/scope.css'></link>
-    <script src='../webDesktop/webDesktop.js'></script>
-    <script src='../webDesktop/clock.js'></script>
-    <script src='../scope/scope.js'></script>
-    <script src='../js/socketIO.js'></script>
-    <script src='../js/session.js'></script>
+    <script src='/load.js?/spectrum/spectrum.js'></script>
 
-    <script>
 
+<script>
+
+// Note: In order to keep webDesktop and scope usable by other software
+// projects we cannot use require() in them so we must put a longer list
+// of dependences in this CRTS specific code.
+
+require('/webDesktop/webDesktop.css');
+require('/webDesktop/webDesktop.js');
+require('/webDesktop/clock.js');
 
 onload = function() {
 
     var clock = new Clock;
     new WDApp('Clock', clock.getElement());
     clock.run();
+
+    // TODO: Move this code to spectrum.js
 
     var spectrumList = {};
 
@@ -68,7 +72,7 @@ onload = function() {
     }
 
 
-    createClient(function(io) {
+    createSession(function(io) {
 
         var spectrums = {};
 
@@ -138,7 +142,7 @@ onload = function() {
     this is only a test.  Had this been a real running of
     the cognitive radio test system this text would not be here.</p>
 
-    <p><a href="..">Back to index</a></p>
+    <p><a href=".">Back to index</a></p>
 
 </body>
 </html>

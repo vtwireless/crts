@@ -3,7 +3,6 @@ SUBDIRS := css js admin img tests scope spectrum
 INSTALL_DIR = $(PREFIX)/htdocs
 
 INSTALLED := doc
-BUILD := index.html
 
 
 ifeq (,$(wildcard ./webDesktop/.git))
@@ -27,14 +26,7 @@ ifeq (,$(wildcard ./webDesktop/.git))
 
 webDesktop: webDesktop.build
 	./$<
-
 endif
 
-
-$(warning BUILD=$(BUILD))
-
-
-index.html: index.htm session_footer.htm
-	cat $^ > $@
 
 include ../quickbuild.make
