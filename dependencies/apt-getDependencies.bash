@@ -80,7 +80,7 @@ declare -a gnuradio_dep=(
  "python-zmq"
 )
 
-OS = "$(lsb_release -is)"
+OS="$(lsb_release -is)"
 
 if ($OS="Ubuntu"); then
 
