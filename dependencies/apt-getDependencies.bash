@@ -82,7 +82,7 @@ declare -a gnuradio_dep=(
 
 OS="$(lsb_release -is)"
 
-if ($OS=="Ubuntu"); then
+if ("$OS"=="Ubuntu"); then
 
 	if(uname -r |grep 4.15); then
 		printf "Ubuntu 18.04 OR kernel version 4.15 detected, where python-imaging pkg is not supported. hence we add python-pil\n"
@@ -94,7 +94,7 @@ if ($OS=="Ubuntu"); then
 		gnuradio_dep+=('python-imaging')
 		gnuradio_dep+=('python-weblib')
 	fi
-elif ($OS=="Debian"); then
+elif ("$OS"=="Debian"); then
 	printf "Debian detected, add python-imaging and python-webencodings"
 	gnuradio_dep+=('python-imaging')
 	gnuradio_dep+=('python-webencodings')
