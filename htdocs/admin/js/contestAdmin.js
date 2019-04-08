@@ -560,7 +560,7 @@ function contestAdminInit(io) {
     contestPanel.appendChild(h);
 
     getElementById('contestAdminPanel').appendChild(contestPanel);
-    makeShowHide(contestPanel, {header:  h});
+    let showHide = makeShowHide(contestPanel, {header:  h, startShow: false});
 
     console.log('created contest panel');
 
@@ -632,11 +632,6 @@ function contestAdminInit(io) {
                     'Email participant link to ' + userName));
                 td.appendChild(a);
                 tr.appendChild(td);
-
-                //let email = 
-
-
-
             });
         });
 
@@ -646,5 +641,9 @@ function contestAdminInit(io) {
         _addLauncherPanel(io, contestPanel);
         _addRunningProgramsPanel(io, contestPanel);
         _addControllerPanels(io, contestPanel, userNames);
+
+        // This could not be hidden until all the child widgets where
+        // added.  Now that we are done we can hide it.
+        showHide.hide();
     });
 }

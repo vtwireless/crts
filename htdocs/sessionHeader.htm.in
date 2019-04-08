@@ -1,0 +1,25 @@
+
+<table summary="header menu" class=header>
+  <tr>
+
+    <td class=header1 style="width:50%">
+        Cognitive Radio Test System
+    </td>
+
+    <td class=headerVersion style="white-space:nowrap;width:20%">
+           CRTS Version @VERSION@
+    </td>
+
+    <td class=header>
+        <span class=login id=sessionStatus>Unknown login state.</span>
+        <span id=user class=login></span>
+    </td>
+
+
+  </tr>
+</table>
+
+
+    <p>This is a test of the Cognitive Radio Test System (CRTS);
+    this is only a test.  Had this been a real running of
+    the cognitive radio test system this text would not be here.</p>

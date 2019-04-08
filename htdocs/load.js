@@ -90,12 +90,17 @@ function require(url, callback = function() {}) {
     // TODO: make this efficient, and this compile the javaScript into
     // one compressed file, to server the next time.
 
-    require.pendingCallbacks.push(callback);
 
     function callCallbacks() {
         console.log('CALLING require() CALLBACKS');
-        while(require.pendingCallbacks.length > 0)
-            require.pendingCallbacks.shift()();
+        while(require.pendingCallbacks.length > 0) {
+            let cb = require.pendingCallbacks.shift();
+            // Call the callback with argument being the
+            // content.
+            assert(require.content[cb.path] !== undefined,
+                'require.content["' + cb.path + '"] is not defined');
+            cb.callback(require.content[cb.path]);
+        }
     }
 
     function getFileType(src) {
@@ -103,7 +108,8 @@ function require(url, callback = function() {}) {
         let file = src.replace(/\?.*$/, ''); // strip off the query
         if(file.substr(file.length-3) === '.js') return 'js';
         if(file.substr(file.length-4) === '.css') return 'css';
-        fail('Unknown file type for src=' + src);
+        if(file.substr(file.length-4) === '.htm') return 'htm';
+         fail('Unknown file type for src=' + src);
     }
 
 
@@ -135,36 +141,52 @@ function require(url, callback = function() {}) {
         }, timeoutSecs*1000/* milliseconds  1/1000*/);
 
         let src = require.pendingSrcs.shift();
-        console.log("START loading: " + src);
+        console.log("START loading: " + src.url);
 
         function onLoad() {
 
             require.waiting = false;
-            console.log('FINISHED loading: ' + src);
+            console.log('FINISHED loading: ' + src.url);
             clearTimeout(timeout);
             // recurse
             load();
         }
 
-        let content;
+        let content = false;
 
-        switch(getFileType(src)) {
+        switch(getFileType(src.path)) {
             case 'js':
+                // loading javaScript
                 content = document.createElement('script');
-                content.src = src;
+                content.src = src.url;
                 content.onload = onLoad;
                 break;
             case 'css':
+                // loading CSS (cascading style sheet)
                 content = document.createElement('link');
-                content.setAttribute("rel", "stylesheet")
-                content.setAttribute("type", "text/css")
-                content.setAttribute("href", src)
+                content.setAttribute("rel", "stylesheet");
+                content.setAttribute("type", "text/css");
+                content.setAttribute("href", src.url);
                 content.onload = onLoad;
                 break;
+            case 'htm':
+                // loading a fragment of html that we define as htm
+                var req = new XMLHttpRequest();
+                req.open('get', src.url);
+                req.send();
+                req.addEventListener('readystatechange', function(e) {
+                    if(req.readyState != 4) return;
+                    require.content[src.path] = req.response;
+                    onLoad();
+                });
+                break;
             default:
-                fail('require(url="' + url + '")');
+                fail('require(url="' + src.url + '")');
         }
-        document.head.append(content);
+        if(content !== false) {
+            document.head.append(content);
+            require.content[src.path] = content;
+        }
     }
 
 
@@ -203,16 +225,19 @@ function require(url, callback = function() {}) {
     if(p.match(/\/\.\.\//) !== null || p.substr(0,1) !== '/')
         fail('Bad path in URL argument to require(url="' + url + '")');
 
-    if(require.paths.findIndex(function(path) {
-        return p === path;
-        }) >= 0) {
+    if(require.paths[p] !== undefined) {
         console.log('found javaScript[' + url +
             '] path "' + p + '" is ALREADY loaded');
     } else {
         console.log('adding: ' +  p);
-        require.paths.push(p);
-        require.pendingSrcs.push(url);
+        // We save paths forever.
+        require.paths[p] = p;
+        // These we'll remove as we use them:
+        // path is unique as a key, url may include a query part.
+        require.pendingSrcs.push({path: p, url: url});
     }
+
+    require.pendingCallbacks.push({path: p, callback: callback});
 
     load();
 }
@@ -222,10 +247,12 @@ assert(require.paths === undefined, "this this was loaded twice");
 
 // Initialize some static variables for the function require().  It'd be
 // nice if they where private too.
-require.paths = []; // array of unique paths associated with src (url)
+require.paths = {}; // array of unique paths associated with src (url)
 require.pendingCallbacks = [];
 require.pendingSrcs = [];
 require.waiting = false;
+// So we can find content after it is loaded.
+require.content = {}; // { src: content }
 
 
 (function() {

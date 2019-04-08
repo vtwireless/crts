@@ -126,9 +126,18 @@ function createSession(connectCallback=null) {
 
     console.log("We are authenticated as user: " + user.name);
 
+    // Now that we know who the user is we can setup the session header
+    require('/sessionHeader.css');
+    require('/sessionHeader.htm', function(htm) {
+        // We pull this html at the top of the body:
+        var header = document.createElement('div');
+        header.innerHTML = htm;
+        document.body.insertBefore(header, document.body.firstChild);
+        _showUser(user);
+    });
+
     if(user.name !== 'admin' ||
         !document.getElementById('contestAdminPanel')) {
-
         _client(user, connectCallback);
         return;
     }
@@ -138,32 +147,22 @@ function createSession(connectCallback=null) {
     // and other stuff for the admin.
     /////////////////////////////////////////////////////////////////
 
-    var head = document.getElementsByTagName('head')[0];
+    require('/admin/css/contestAdmin.css');
+    require('/admin/js/contestAdmin.js', function() {
 
-    var link = document.createElement('link');
-    link.href = '/admin/css/contestAdmin.css';
-    link.rel = "stylesheet";
-    link.type = 'text/css';
-    head.appendChild(link);
-    // Note how we nest the onload callbacks to avoid file loading and
-    // function calling race conditions.
-    link.onload = function() { 
-        var script= document.createElement('script');
-        script.src= '/admin/js/contestAdmin.js';
-        head.appendChild(script);
-        script.onload = function() { 
-            
-            _client(user, function(client) {
+        // This gets called after /admin/css/contestAdmin.css and /admin/js/contestAdmin.js
+        // and all that they require() are loaded:
+        //
+        _client(user, function(client) {
 
-                // contestAdminInit() is from '/admin/js/contestAdmin.js'
-                // and it needs the client webSocket.  "This code here"
-                // is being called before the webSocket receives any data,
-                // but after the webSocket connection is open.
-                contestAdminInit(client);
+            // contestAdminInit() is from '/admin/js/contestAdmin.js'
+            // and it needs the client webSocket.  "This code here"
+            // is being called before the webSocket receives any data,
+            // but after the webSocket connection is open.
+            contestAdminInit(client);
 
-                if(connectCallback)
-                    connectCallback(client);
-            });
-        };
-    };
+            if(connectCallback)
+                connectCallback(client);
+        });
+    });
 }

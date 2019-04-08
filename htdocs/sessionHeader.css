@@ -1,0 +1,44 @@
+table.header {
+    width:100%;
+    padding-top:0px;
+    padding-bottom:2px;
+    left:0px;
+    margin:0px;
+    width:100%;
+    background-image:url('/img/sessionFooterBackground.png');
+    border: solid 3px #7C82B9;
+    border-radius: 10px;
+    border-style: solid;
+    background-color: #70B5D8;
+    color: #600;
+    padding: 0px;
+    text-align: center;
+}
+td.header1 {
+    text-align:center;
+    white-space:nowrap;
+    font-weight: bold;
+    font-size:160%;
+    background-color:#8E9EDD;
+    border-radius:8px;
+    -moz-border-radius:8px;
+    border: solid 1px #45454F;
+}
+td.headerVersion {
+    text-align:center;
+    white-space:nowrap;
+    font-weight: bold;
+    border-radius:8px;
+    -moz-border-radius:8px;
+    border: solid 1px #45454F;
+}
+td.header {
+    text-align:center;
+    white-space:nowrap;
+    font-weight: bold;
+    font-size:120%;
+    background-color:#8E9EDD;
+    border-radius:8px;
+    -moz-border-radius:8px;
+    border: solid 1px #45454F;
+}
