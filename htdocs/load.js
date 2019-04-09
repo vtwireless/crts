@@ -281,6 +281,8 @@ require.content = {}; // { src: content }
 
     console.log('require.rootDir=' + require.rootDir);
 
+    if(src.match(/\?/) == null) return;
+
     let urls = src.replace(/^.*\?/,'').split('+');
 
     urls.forEach(function(url) {

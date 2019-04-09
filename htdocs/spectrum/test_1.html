@@ -8,7 +8,6 @@ body {
     background-color:#C0D0E0;
     padding: 40px;
 }
-
 canvas.clock {
     background-color: #B6ECDC;
     width: 100%;
@@ -18,15 +17,15 @@ canvas.clock {
 }
     </style>
 
-    <script src='/load.js?/spectrum/spectrum.js'></script>
+    <script src='/load.js'></script>
 
-
-<script>
+    <script>
 
 // Note: In order to keep webDesktop and scope usable by other software
 // projects we cannot use require() in them so we must put a longer list
 // of dependences in this CRTS specific code.
 
+require('/spectrum/spectrum.js');
 require('/webDesktop/webDesktop.css');
 require('/webDesktop/webDesktop.js');
 require('/webDesktop/clock.js');
@@ -37,10 +36,6 @@ onload = function() {
     new WDApp('Clock', clock.getElement());
     clock.run();
 
-    // TODO: Move this code to spectrum.js
-
-    var spectrumList = {};
-
     function SpectrumDisplay(desc, onclose_in = null) {
 
         var onclose = onclose_in;
@@ -49,7 +44,7 @@ onload = function() {
 
         var app = new WDApp('Spectrum ' + desc,
                 scope.getElement(), function() {
-            console.log('Removing scope: ' + desc);
+            console.log('Removing spectrum scope: ' + desc);
             if(onclose) onclose();
             app = null;
         });
@@ -61,64 +56,13 @@ onload = function() {
         this.draw = scope.draw;
     }
 
-
     createSession(function(io) {
 
-        var spectrums = {};
+        //createSpectrumFeeds(io);
 
-        io.On("spectrumUpdate", function(id, cFreq, bandwidth, bins,
-                updatePeriod, data) {
-
-            if(spectrums[id] === undefined) {
-                io.Emit('spectrumUnsubscribe', id);
-                return;
-            }
-
-            /*
-            console.log('got spectrumFeed(' + id + '): ' +
-                        ' cFreq=' + cFreq + ' bandwidth=' + bandwidth +
-                        ' bins=' + bins + ' period=' +  updatePeriod +
-                        ' amplitudes=' + data + "\n\n");
-                        */
-
-            let deltaFreq = bandwidth/(bins-1);
-            let startX = cFreq - bandwidth/(bins-1);
-            if(bins === 1) {
-                startX = cFreq;
-                deltaFreq = 0.0;
-            }
-            let x = [];
-            for(let i=0 ;i<bins; ++i) {
-                x[i] = startX + i * deltaFreq;
-            }
-            spectrums[id].draw(x, data);
-        });
-
-        io.On('spectrumEnd', function(spectrumId) {
-            if(spectrums[spectrumId] !== undefined) {
-                spectrums[spectrumId].destroy();
-                delete spectrums[spectrumId];
-            }
-        });
-
-        io.On('newSpectrum', function(id, description)  {
-
-            console.log('Got "newSpectrum" [' + id + ']: "' +
-                    description + '"');
-
-            assert(spectrums[id] === undefined, "We have spectrum id="
-                    + id + " already");
-
-            spectrums[id] = new SpectrumDisplay(description, function() {
-                io.Emit('spectrumUnsubscribe', id);
-            });
-
-            io.Emit('spectrumSubscribe', id);
-        });
-
+        createSpectrumFeeds(io, SpectrumDisplay);
     });
-
-}
+};
     </script>
 
 

@@ -10,6 +10,41 @@ div.contestPanel {
 }
 h3.contestPanel {
 }
+div.launcher {
+    background-color:#9FC6E3;
+}
+div.programs {
+    background-color:#9FC6E3;
+    margin: 4px;
+}
+th.programs, td.programs {
+    border: 1px solid black;
+}
+table.programs {
+    border: 2px solid black;
+}
+span.program_signal {
+    cursor: pointer;
+    color: #55A;
+}
+span.program_signal {
+    margin: 2px;
+    border: solid;
+    border-width: 2px;
+    border-radius: 4px;
+}
+span.program_signal:hover {
+    color: #A59;
+}
+span.program_signal:focus {
+    border-color: #D59;
+}
+span.program_signal:active {
+    border-color: #F59;
+}
+span.program_signal:hover {
+    border-color: #A58;
+}
 
 div.controller {
     background-color:#80D0E0;
@@ -51,9 +86,6 @@ img.controller {
     border: 2px solid black;
     min-width: 300px;
     margin: 8px;
-}
-div.launcher, div.programs {
-    background-color:#9FC6E3;
 }
 table.launcher, table.userLinks {
     border: 2px solid black;

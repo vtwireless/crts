@@ -1,4 +1,5 @@
 require('/js/showHide.js');
+require('/admin/css/contestAdmin.css');
 
 function contestAdminInit(io) {
 

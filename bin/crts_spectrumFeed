@@ -88,10 +88,10 @@ parser.add_argument('-a','--address',\
 
 # The format is 
 
-def SendSpectrum(tcpClientSock, tb, cFreq, bandwidth, bins, period):
+def SendSpectrum(tcpClientSock, tb, cFreq, bandwidth, period):
 
-    tcpClientSock.sendall('I{"name":"spectrumUpdate","args":[%g,%g,%d,%g,%s]}' %\
-             (cFreq, bandwidth, bins, period, list(tb.blocks_probe_signal_vx_0.level())))
+    tcpClientSock.sendall('I{"name":"spectrumUpdate","args":[%g,%g,%g,%s]}' %\
+             (cFreq, bandwidth, period, list(tb.blocks_probe_signal_vx_0.level())))
 
 
 # This is bad code.  There's so much wrong with this.
@@ -129,13 +129,13 @@ def Run(tcpClientSock, args):
                     period = 1.0/60.0
                 tcpClientSock.settimeout(period)
                 tb.start()
-                SendSpectrum(tcpClientSock, tb, cFreq, bandwidth, bins, period)
+                SendSpectrum(tcpClientSock, tb, cFreq, bandwidth, period)
             else:
                 print 'crts_spectrumFeed finishing'
                 tb.stop()
                 break
         except timeout:
-            SendSpectrum(tcpClientSock, tb, cFreq, bandwidth, bins, period)
+            SendSpectrum(tcpClientSock, tb, cFreq, bandwidth, period)
         except Exception as inst:
             print inst
             tb.stop()

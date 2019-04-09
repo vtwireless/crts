@@ -1,8 +1,7 @@
 All the files in this directory and subdirectories can be "seen" from the
 web.  Put another way, this is the "root" directory of the static files
 that are served via HTTP GET via the NodeJS program crts_server.  The
-crts_server program also uses the WebSockets protocol and in the future
-will use the WebRTC protocol (as of Mon, Jun 11 2018 it does not).
+crts_server program also uses the WebSockets protocol.
 
 On many web server systems this directory would be named /var/www/htdocs,
 but that does not work for our development scheme, since we require that
@@ -18,3 +17,33 @@ As a consequence of this strict file structure we can run all the CRTS
 programs from the source directory without installing it.  That saves a
 lot of development and user time, and makes guessing the path to source
 files easy.
+
+
+
+Files
+-------------------------------------------------------------------------
+
+
+admin/       - contains javaScript and CSS files that are only served to
+               user admin.
+
+js/          - contains javaScript files
+
+css/         - contains CSS (cascading style sheets)
+
+img/         - contains images
+
+webDesktop/  - contains an independent web desktop project, a strictly
+               client side desktop made with just client side javaScript,
+               and CSS.  This webDesktop directory cannot and will not
+               depend on any other code in the CRTS project.  CRTS depends
+               on webDesktop, but webDesktop does not depend on CRTS.
+               See: https://github.com/vtwireless/webDesktop
+
+scope/       - contains the independent scope plotter project.  scope is
+               strictly client side plotter made with just client side
+               javaScript, and CSS.  We add webSocket feeds to this
+               separately, and not in this directory.  The scope.js code
+               should not depend on webDesktop, though some of the test
+               code in scope/ may depend on code in webDesktop/.
+
