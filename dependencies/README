@@ -80,8 +80,15 @@ Instructions (run) for installing any of those packages:
 
 
     ../bootstrap
-
     cp default_prefixes prefixes
+      > vi prefixes
+      > #change 'root' to installation path of your choice, you can stick to the default /usr/local
+    cd uhd && make && sudo make install && cd ..
+    cd thrift && make && sudo make install && cd ..
+    cd gnuradio && make && sudo make install && cd ..
+    cd node && make && sudo make install & cd ..
+    make 
+    sudo make install 
 
   Edit the file prefixes to set your installation prefix directories to
   suit your preferences.
