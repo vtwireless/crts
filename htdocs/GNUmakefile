@@ -1,4 +1,4 @@
-SUBDIRS := css js admin img tests scope spectrum
+SUBDIRS := css js admin img tests scope spectrum floatWidget
 
 INSTALL_DIR = $(PREFIX)/htdocs
 

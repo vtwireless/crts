@@ -63,7 +63,7 @@ function createSpectrumFeeds(io, createDisplay = null) {
             spectrum.bins = bins;
         }
 
-        spectrums[id].draw(spectrum.x, data);
+        spectrums[id].draw(spectrum.x, data, cFreq, bandwidth, updatePeriod);
     });
 
 

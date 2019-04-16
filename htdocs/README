@@ -20,9 +20,23 @@ files easy.
 
 
 
+Modules:
+
+We require that the javaScript, CSS and html files in webDesktop, scope,
+and floatWidget are independent of the file in other directories.   We
+wish to keep them as independent modules.  There may be some test pages
+that have interdependence between modules, but that's just for testing.
+We want as far as to make webDesktop a separate independent software
+package.
+
+
 Files
 -------------------------------------------------------------------------
 
+
+load.js      - defines javaScript functions require(), fail(), assert().
+               Because this defines require() this should be the first
+               <script> in a web page.
 
 admin/       - contains javaScript and CSS files that are only served to
                user admin.
@@ -33,17 +47,19 @@ css/         - contains CSS (cascading style sheets)
 
 img/         - contains images
 
-webDesktop/  - contains an independent web desktop project, a strictly
-               client side desktop made with just client side javaScript,
-               and CSS.  This webDesktop directory cannot and will not
-               depend on any other code in the CRTS project.  CRTS depends
-               on webDesktop, but webDesktop does not depend on CRTS.
-               See: https://github.com/vtwireless/webDesktop
+webDesktop/  - Module: contains an independent web desktop project, a
+               strictly client side desktop made with just client side
+               javaScript, and CSS.  This webDesktop directory cannot and
+               will not depend on any other code in the CRTS project.
+               CRTS depends on webDesktop, but webDesktop does not depend
+               on CRTS.  See: https://github.com/vtwireless/webDesktop
 
-scope/       - contains the independent scope plotter project.  scope is
-               strictly client side plotter made with just client side
-               javaScript, and CSS.  We add webSocket feeds to this
+scope/       - Module: contains the independent scope plotter project.
+               scope is strictly client side plotter made with just client
+               side javaScript, and CSS.  We add webSocket feeds to this
                separately, and not in this directory.  The scope.js code
                should not depend on webDesktop, though some of the test
                code in scope/ may depend on code in webDesktop/.
+
+floatWidget/ - Module: contains an independent input widget.
 

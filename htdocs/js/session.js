@@ -1,4 +1,18 @@
+require('/css/main.css');
 require('/js/socketIO.js');
+
+// The big question should session (this javaScript file) depend on
+// desktop?  Well maybe we could just commit to requiring a desktop, and
+// then let the code vary how desktop manifests itself to the user.  Maybe
+// even port it to Android and IPhone with a minimal app-window swapper
+// like the common photo swapper but with photos replaced by "app
+// windows".
+//
+require('/webDesktop/webDesktop.js');
+// webDesktop.js cannot require webDesktop.css because it is not
+// part of the CRTS package we we require webDesktop.css too.
+require('/webDesktop/webDesktop.css');
+
 
 function createSession(connectCallback=null) {
 
@@ -12,7 +26,7 @@ function createSession(connectCallback=null) {
                 sessionStatusDiv.innerHTML = "Not logged in";
                 userDiv.innerHTML = '';
             } else {
-                sessionStatusDiv.innerHTML = "Authenticated as user: ";
+                sessionStatusDiv.innerHTML = "User: ";
                 userDiv.innerHTML = user.name;
             }
         }
@@ -136,26 +150,28 @@ function createSession(connectCallback=null) {
         _showUser(user);
     });
 
-    if(user.name !== 'admin' ||
-        !document.getElementById('contestAdminPanel')) {
+    if(user.name !== 'admin') {
         _client(user, connectCallback);
         return;
     }
 
     /////////////////////////////////////////////////////////////////
-    // At this point we are an "admin" so load /js/contestAdmin.js
+    // At this point we are an "admin" so load contestAdmin.js
     // and other stuff for the admin.
     /////////////////////////////////////////////////////////////////
 
-    require('/admin/css/contestAdmin.css');
-    require('/admin/js/contestAdmin.js', function() {
+    // TODO: It would be hard to compile these require() calls out.
+    // Currently the server will not get files from /admin/ for none
+    // admin users.
+    //
+    require('/admin/contestAdmin.js', function() {
 
-        // This gets called after /admin/css/contestAdmin.css and /admin/js/contestAdmin.js
+        // This gets called after /admin/contestAdmin.css and /admin/contestAdmin.js
         // and all that they require() are loaded:
         //
         _client(user, function(client) {
 
-            // contestAdminInit() is from '/admin/js/contestAdmin.js'
+            // contestAdminInit() is from '/admin/contestAdmin.js'
             // and it needs the client webSocket.  "This code here"
             // is being called before the webSocket receives any data,
             // but after the webSocket connection is open.

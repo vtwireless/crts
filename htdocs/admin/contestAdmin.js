@@ -1,7 +1,7 @@
 require('/js/showHide.js');
-require('/admin/css/contestAdmin.css');
+require('/admin/contestAdmin.css');
 
-function contestAdminInit(io) {
+function contestAdminInit(io, parentElement=null) {
 
     function _addControllerPanels(io, contestPanel, users) {
 
@@ -560,8 +560,28 @@ function contestAdminInit(io) {
     h.className = 'contestPanel';
     contestPanel.appendChild(h);
 
-    getElementById('contestAdminPanel').appendChild(contestPanel);
-    let showHide = makeShowHide(contestPanel, {header:  h, startShow: false});
+    if(typeof(WDApp) === 'function' && false/* this does not work yet*/) {
+
+        // It's just not compatible yet.
+        new WDApp('Control Panel', contestPanel);
+
+    } else {
+        if(parentElement) parentElement.appendChild(contestPanel);
+        else {
+            parentElement = document.getElementById('contestAdminPanel');
+            if(parentElement)
+                parentElement.appendChild(contestPanel);
+            else
+                document.body.appendChild(contestPanel);
+        }
+    }
+
+    // We user could add this  contestPanel <div> as a child to whatever
+    // they like.
+    this.getElement = function() { return contestPanel; };
+
+
+    let showHide = makeShowHide(contestPanel, {header: h, startShow: false});
 
     console.log('created contest panel');
 

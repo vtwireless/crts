@@ -123,9 +123,34 @@ function _GetGridSpacing(pixPerGrid, min, max, pixels/*width or height*/) {
 //      showPoints: bool
 // }
 //
-function Scope(opts = null) {
+// Intended Public Interfaces:
+//
+//   obj = new Scope(opts = {})
+//
+//   obj.getElement() get the top container element
+//
+//   obj.draw(x[], y[], id = 0) or obj.draw(y[], id = 0) function plot
+//
+//   obj.draw() to trigger draw when there is more than one plot.
+//
+//   obj.config(opts={}, id = 0) configure a plot
+//
+//   obj.remove(id) remove a plot
+//
+//
+function Scope(opts = {}) {
+
+    var plots = {};
+    var numPlots = 0;
 
     /////////////////////////////// CONFIGURATION /////////////////////////
+
+    // Default colors:
+    const numLineColors = 6;
+    const lineColors = [ "#00F", "#0F0", "#0F0", "#009", "#090", "#090" ]
+    const numPointColors = 6;
+    const pointColors = [ "#0FF", "#FF0", "#F0F", "#0F9", "#F90", "#09F" ]
+ 
 
     // Padding space in pixels around the plot.
     const padWidth = 10;
@@ -159,13 +184,6 @@ function Scope(opts = null) {
     var xGridFont = gridFont;
     var yGridFont = gridFont;
 
-    // TODO: this is not implemented yet
-    // We need to fix the Plot::draw() function in order
-    // to be able to make this false.
-    var showLines = true;
-
-    var showPoints = false;
-
     // Minimum major Grid pixels per grid line.  Larger means the grid
     // lines have more pixels between them.
     //
@@ -180,16 +198,12 @@ function Scope(opts = null) {
     // for minor horizontal grid lines without number labels
     var minPixPerGridY = 14.0;
 
-    if(opts === null || opts.autoScale !== false)
-        var autoScale = true;
-    else
-        var autoScale = false;
 
-    //if(opts !== null && opts.showLines !== undefined)
-    //    showLines = opt.showLines;
+    var autoScale = (opts.autoScale !== false)?true:false;
 
-    if(opts !== null && opts.showPoints !== undefined)
-        showPoints = opt.showPoints;
+    var _showLines = (opts.showLines !== false)?true:false;
+
+    var _showPoints = (opts.showPoints !== false)?true:false;
 
 
 
@@ -206,7 +220,12 @@ function Scope(opts = null) {
         // maxs from the data which are set with each frame, for the
         // clear/draw mode, which clears the plot before each frame is
         // drawn.
-        var newXMin = null, newXMax, newYMin, newYMax;
+        var newXMin = Number.MAX_VALUE;
+        var newYMin = Number.MAX_VALUE;
+        var newXMax = Number.MIN_VALUE;
+        var newYMax = Number.MIN_VALUE;
+
+
         var xMinTrigger = false, xMaxTrigger = false,
             yMinTrigger = false, yMaxTrigger = false;
     }
@@ -561,6 +580,12 @@ function Scope(opts = null) {
             ret = true;
         }
 
+        // Reset newXMin newXMax newYMin newYMax
+        newXMin = Number.MAX_VALUE;
+        newYMin = Number.MAX_VALUE;
+        newXMax = Number.MIN_VALUE;
+        newYMax = Number.MIN_VALUE;
+
         return ret;
     }
     
@@ -568,7 +593,7 @@ function Scope(opts = null) {
 
     ///////////////////////////////////////////////////////////////////////
     //
-    // This class object has 2 canvases, all the same size.
+    // This class object has 2 canvas's, all the same size.
     //
     //   1. render:  the canvas that is showing in the window
     //
@@ -765,26 +790,20 @@ function Scope(opts = null) {
      }
 
 
+    // Initialize these drawing flags.
+    var needReplot = true;
+    var needNewBackground = true;
 
 
-    var plots = {};
-    var plotCreateCount = 0;
-
-    function Plot(id = -1) {
-
-        if(id === -1)
-            this.id = createCount++;
-        else
-            this.id = id;
-
-        // Add this to the list of plots in this scope.
-        plots[this.id] = this;
+    function Plot(id, opts = {}) {
 
         // TODO: add plot user optional parameters for sizes and colors.
         var pointDiameter = 5.2;
         var lineWidth = 2.6;
-        var lineColor = 'blue';
-        var pointColor = 'red';
+        var lineColor = lineColors[numPlots % numLineColors];
+        var pointColor = pointColors[numPlots % numPointColors];
+        var showLines = _showLines;
+        var showPoints = _showPoints;
 
         // Last x and y values plotted.
         var x = null;
@@ -804,12 +823,14 @@ function Scope(opts = null) {
             if(autoScale) {
                 if(xMin === null) {
                     // Get the current x,y max and min values.
+                    //
+                    // We do this on the first updateData() in the
+                    // first plot.
+                    //
                     let l = x.length;
                     newXMin = newXMax = x[0];
                     newYMin = newYMax = y[0];
                     for(let i=1; i<l; ++i) {
-                        // We get the new min and max values to late to
-                        // use in this draw frame.
                         if(x[i] < newXMin) newXMin = x[i];
                         else if(x[i] > newXMax) newXMax = x[i];
                         if(y[i] < newYMin) newYMin = y[i];
@@ -841,9 +862,7 @@ function Scope(opts = null) {
                 // depend on indirectly through the xScale, xShift,
                 // yScale, and yShift.
                 //
-                return integrateScalingDynamics();
             }
-            return false; // false = do not redraw because of this code.
         }
 
 
@@ -859,27 +878,71 @@ function Scope(opts = null) {
 
             assert(x);
 
-            ctx.beginPath();
-            ctx.moveTo(xPix(x[0]), yPix(y[0]));
-            ctx.strokeStyle = lineColor;
-            ctx.lineWidth = lineWidth;
-            let l = x.length;
+            let l;
 
-            if(autoScale) {
+            if(showLines) {
 
-                // Get the "new" scale:
-                newXMin = newXMax = x[0];
-                newYMin = newYMax = y[0];
+                ctx.beginPath();
+                ctx.moveTo(xPix(x[0]), yPix(y[0]));
+                ctx.strokeStyle = lineColor;
+                ctx.lineWidth = lineWidth;
+                l = x.length;
 
+                if(autoScale) {
+
+                    // With the autoScale check.
+                    
+                    if(x[0] < newXMin) newXMin = x[0];
+                    else if(x[0] > newXMax) newXMax = x[0];
+                    if(y[0] < newYMin) newYMin = y[0];
+                    else if(y[0] > newYMax) newYMax = y[0];
+
+                    for(let i=1; i<l; ++i) {
+                        ctx.lineTo(xPix(x[i]), yPix(y[i]));
+
+                        // For this auto scale case we need to look at all the
+                        // data, so we do it at the same time as when we draw.
+                        // We may not see the edge of a point because the
+                        // scales are set now.  But we'll get it on the next
+                        // frame.  This beats adding a whole other loop on the
+                        // data again.
+                        if(x[i] < newXMin) newXMin = x[i];
+                        else if(x[i] > newXMax) newXMax = x[i];
+                        if(y[i] < newYMin) newYMin = y[i];
+                        else if(y[i] > newYMax) newYMax = y[i];
+                    }
+
+                    const smallFloat = 1.0e-25;
+                    // We cannot have newXMin == newXMax or newYMin ==
+                    // newYMax That would give division by zero.  It's not
+                    // fudging anything, it's just changing the scales as
+                    // apposed to arbitrary scales.
+                    if(newXMin + smallFloat >= newXMax)
+                        newXMin = newXMax - smallFloat;
+                    if(newYMin + smallFloat >= newYMax)
+                        newYMin = newYMax - smallFloat;
+
+                } else
+                    //
+                    // Without the autoScale check.
+                    //
+                    for(let i=1; i<l; ++i)
+                        ctx.lineTo(xPix(x[i]), yPix(y[i]));
+                
+                ctx.stroke();
+            }
+    
+            // We must draw points after lines if we wish to see them.
+            
+            if(showPoints && autoScale && (!showLines)) {
+
+                // With the autoScale check.
+
+                ctx.fillStyle = pointColor;
+                drawPoint(x[0], y[0]);
                 for(let i=1; i<l; ++i) {
-                    ctx.lineTo(xPix(x[i]), yPix(y[i]));
+                    drawPoint(x[i], y[i]);
 
-                    // For this auto scale case we need to look at all the
-                    // data, so we do it at the same time as when we draw.
-                    // We may not see the edge of a point because the
-                    // scales are set now.  But we'll get it on the next
-                    // frame.  This beats adding a whole other loop on the
-                    // data again.
                     if(x[i] < newXMin) newXMin = x[i];
                     else if(x[i] > newXMax) newXMax = x[i];
                     if(y[i] < newYMin) newYMin = y[i];
@@ -894,79 +957,82 @@ function Scope(opts = null) {
                 if(newXMin + smallFloat >= newXMax)
                     newXMin = newXMax - smallFloat;
                 if(newYMin + smallFloat >= newYMax)
-                    newYMin = newYMax - smallFloat;
+                        newYMin = newYMax - smallFloat;
 
-            } else
-                for(let i=1; i<l; ++i)
-                    ctx.lineTo(xPix(x[i]), yPix(y[i]));
-            ctx.stroke();
+            } else if(showPoints) {
 
-            if(showPoints) {
+                // Without the autoScale check.
+
                 ctx.fillStyle = pointColor;
                 // We must draw points after lines if we wish to see them.
                 for(let i=0; i<l; ++i)
                     drawPoint(x[i], y[i]);
             }
         }
-
     }
 
-
-
-    // You may have many plots on a single graph (or scope).
-    // This is the user interface used to make plots.
-    this.makePlot = function() {
-
-        if(arguments.length < 1)
-            var id = plotCreateCount++;
-        else
-            var id = arguments[0];
-
-        return (new Plot(id)).id;
-    }
-
-
-    // Initialize these drawing flags.
-    var needReplot = true;
-    var needNewBackground = true;
 
 
     // This is the user interface to plot, and will automatically make
     // a plot if one does not exist with the plotId.
     //
-    // This function is called with 2 modes:
+    // This function has many modes:
     //
     //    1.  With no arguments to make the app redisplay (draw) if it
     //        needs to.
     //
-    //    2.  With arguments x, y to change a plot.
+    //    2.  With arguments x, y, id to change a plot.
     //
-    function draw(x, y, plotId = 0) {
+    function draw() {
+
+        let x, y = null, id, plot = null;
+
+        if(arguments.length >= 3) {
+            x = arguments[0];
+            y = arguments[1];
+            id = arguments[2];
+            assert(Array.isArray(arguments[0]) &&
+                    Array.isArray(arguments[1]));
+        } else if(arguments.length === 2) {
+            x = arguments[0];
+            if(Array.isArray(arguments[1])) {
+                y = arguments[1];
+                id = 0;
+            } else {
+                // must be a function plot
+                id = arguments[1];
+            }
+        } else if(arguments.length === 1) {
+            assert(Array.isArray(arguments[0]));
+            x = arguments[1];
+            id = 0;
+        }
 
 
-        if(plots[plotId] !== undefined)
-            var plot = plots[plotId];
-        else
-            var plot = new Plot(plotId);
+        if(arguments.length > 0) {
+            if(plots[id] !== undefined)
+                plot = plots[id];
+            else {
+                plot = new Plot(id);
+                plots[id] = plot;
+                ++numPlots;
+            }
+        }
 
         // (at the time of this writing 2019, Mar 14) Because there is no
         // "redraw" or "resize" event in browser javaScript sometimes when
         // this function is called this function will do nothing.  We
         // don't draw unless we need to draw.  The mozilla tutorials do
-        // not seem to care about minimising the use of system resource,
+        // not seem to care about minimising the use of system resources,
         // and so they draw even when is no pixel color change.  For many
-        // apps pixels do not change until there is a canvas resize.
+        // apps, like a simple static image, pixels do not change until
+        // there is a canvas resize.
 
 
-        // TODO: fix for multiple plots, so draw is called with different
-        // plotId.
-        //
         // TODO: Add different draw() modes like function plots.
 
-        if(arguments.length >= 2) {
-
-            if(plot.updateData(x, y))
-                needNewBackground = true;
+        if(plot) {
+            plot.updateData(x, y);
             needReplot = true;
         }
 
@@ -977,19 +1043,24 @@ function Scope(opts = null) {
             // draw anything.
             return;
 
+        if(numPlots === 1 || plot === null) {
+            if(integrateScalingDynamics())
+                needNewBackground = true;
+        }
+
 
         if(render.offsetWidth !== render.width ||
                 render.offsetHeight !== render.height || needNewBackground) {
-            // We do not draw (resize()) if there is no change
-            // in what we would draw.
+            // We do not draw (resize()) if there is no need to draw
             recreateBackgroundCanvas();
             needReplot = true;
         }
 
         if(needReplot) {
             drawBackground();
-            // TODO: Add more plots.  How do we know which plot to draw?
-            plot.draw();
+            Object.keys(plots).forEach(function(id) {
+                plots[id].draw();
+            });
             needReplot = false;
         }
     }

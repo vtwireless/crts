@@ -2,6 +2,16 @@
 <html lang=en>
 <head>
     <meta charset="utf-8"/>
+    <script src='/load.js'></script>
+    <script>
+        require('/js/session.js');
+
+        onload = function() {
+
+            createSession();
+        }
+    </script>
+
     <link rel='stylesheet' href='../css/main.css'></link>
     <title>CRTS</title>
 </head>
@@ -10,7 +20,7 @@
     <h1>CRTS Development Tests</h1>
 
     <ul>
-        <li><a href="floatWidget.html">float widget</a></li>
+        <li><a href="../floatWidget/floatWidget.html">float widget test</a></li>
         <li><a href="../webDesktop/">Web Desktop test page</a></li>
         <li><a href="../scope/">Scope tests</a></li>
         <li><a href="../spectrum/index.html">Spectrum Tests</a></li>

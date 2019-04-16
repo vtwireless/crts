@@ -4,24 +4,14 @@
     <meta charset="utf-8"/>
 
     <style type="text/css">
-body {
-    background-color:#C0D0E0;
-}
-
-canvas.clock {
-    background-color: #B6ECDC;
-    width: 100%;
-    height: 100%;
-    padding: 0px;
-    margin: 0px;
-}
-
-
+        body {
+            background-color:#C0D0E0;
+        }
     </style>
+
     <link rel='stylesheet' href='../webDesktop/webDesktop.css'></link>
     <link rel='stylesheet' href='scope.css'></link>
     <script src='../webDesktop/webDesktop.js'></script>
-    <script src='../webDesktop/clock.js'></script>
     <script src=scope.js></script>
     <script>
 
@@ -53,21 +43,18 @@ onload = function() {
     }
 
 
-    var clock = new Clock;
-    new WDApp('Clock', clock.getElement());
-    clock.run();
-
     // standing wave parameters
-    const numPoints = 200; // samples per frame = x,y array size.
+    const numPoints = 50; // samples per frame = x,y array size.
     const period = 10.0; // period in seconds
     const nNodes = 4.5; // number of nodes in the sting standing wave
-    const A = 1.5; // Amplitude of anti-node.
-    const sleepTime = 30; // sleep period in milliseconds
+    const A = 1.0; // Amplitude of anti-node.
+    const sleepTime = 16.6667; // sleep period in milliseconds
     const timeFunc = saw;
     
     // Derived constants
     const k = Math.PI * nNodes/numPoints; // like wave number
     const omega = 2 * Math.PI/period; // angular frequency
+    const phaseShift = 0.32 * 2.0 * Math.PI
 
     const cos = Math.cos;
     const sin = Math.sin;
@@ -76,24 +63,27 @@ onload = function() {
 
     new WDApp('String', scope.getElement());
 
-    var x = [], y = [];
+    var x1 = [], y1 = [];
+    var x2 = [], y2 = [];
     var t = period/4;
 
     function run() {
 
         for(let i=0; i<numPoints; ++i) {
 
-            // Switching x and y just to mess with my head.  No
-            // really, we just are testing the auto-scaling of
-            // xMax because that was the first auto-scaling boundary
-            // that was implemented.
+            y1[i] = i/numPoints - 0.5;
+            x1[i] = A * timeFunc(omega*t) * sin(k*i);
 
-            y[i] = i;
+            y2[i] = i/numPoints - 0.5;
+            x2[i] = A * timeFunc(omega*t + phaseShift) * sin(k*i);
 
-            x[i] = A * timeFunc(omega*t) * sin(k*i);
         }
 
-        scope.draw(x, y);
+        scope.draw(x1, y1, 0);
+        scope.draw(y1, x1, 1);
+        scope.draw(x2, y2, 2);
+        scope.draw(y2, x2, 3);
+        scope.draw();
 
         // Advance time t, and we don't care if it is not
         // accurate or precise; this is just a test.
@@ -103,11 +93,10 @@ onload = function() {
             // And we don't care if this is adds progressive rounding
             // errors compared to using a counter.
             t -= period;
+        requestAnimationFrame(run)
     }
 
-    run();
-
-    setInterval(run, sleepTime/* in milliseconds = 1/1000 */);
+    requestAnimationFrame(run);
 };
 
     </script>

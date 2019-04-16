@@ -28,11 +28,9 @@ canvas.clock {
 
 onload = function() {
 
-    for(i=0; i<2; ++i) {
-        var clock = new Clock;
-        new WDApp('Clock ' + i, clock.getElement());
-        clock.run();
-    }
+    var clock = new Clock;
+    new WDApp('Clock', clock.getElement());
+    clock.run();
 
     const numPoints = 200;
     const xMin = -100, xMax = 0, yMin = -1, yMax = 1;
@@ -66,7 +64,7 @@ onload = function() {
         // Add it to the back of y
         y.push(endY);
 
-        scope.draw(x, y);
+        scope.draw(x, y, 0/*plot id*/);
         //requestAnimationFrame(run);
     }
 
@@ -81,6 +79,10 @@ onload = function() {
     <title>CRTS</title>
 </head>
 <body>
+
+    <h1>Simple Scope Test</h1>
+
+    <p><a href='.'>back all scope tests</a></p>
 
 </body>
 </html>
