@@ -65,7 +65,7 @@ cmake .. -G"Unix Makefiles"\
  -DENABLE_DEFAULT=true\
  -DENABLE_DOXYGEN:BOOL=true\
  -DENABLE_GR_CTRLPORT=true\
- -DENABLE_PYTHON_THRIFT\
+ -DENABLE_PYTHON_THRIFT=true\
  -DENABLE_PERFORMANCE_COUNTERS=true
 
 make VERBOSE=1 -j $(nproc || echo '3')
