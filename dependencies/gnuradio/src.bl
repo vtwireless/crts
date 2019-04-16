@@ -56,8 +56,8 @@ cmake .. -G"Unix Makefiles"\
  -DENABLE_GR_UHD=true\
  -DENABLE_GR_WXGUI=true\
  -DENABLE_DEFAULT=true\
- -DENABLE_DOXYGEN:BOOL=true
-
+ -DENABLE_DOXYGEN:BOOL=true\
+ -DENABLE_GR_CTRLPORT=true
 
 make VERBOSE=1 -j $(nproc || echo '3')
 
