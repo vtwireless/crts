@@ -32,7 +32,8 @@ declare -a crts_dep=(
 declare -a thrift_dep=(
  "bison"
  "flex"
- "libevent-dev")
+ "libevent-dev"
+ "python-twisted")
 
 
 #Dependencies for installing libuhd from source
