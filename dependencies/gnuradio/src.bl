@@ -41,10 +41,17 @@ cd BUILD
 # Installed programs should be able to run no matter what the installation
 # prefix directory is.
 
+if [ -n "${PKG_CONFIG_PATH}" ] ; then
+    export PKG_CONFIG_PATH="${PKG_CONFIG_PATH}:${THRIFT_PREFIX}/lib:${UHD_PREFIX}/lib"
+else
+    export PKG_CONFIG_PATH="${THRIFT_PREFIX}/lib:${UHD_PREFIX}/lib"
+fi
+
+
 cmake .. -G"Unix Makefiles"\
  -DCMAKE_INSTALL_PREFIX:PATH="${GNURADIO_PREFIX}"\
- -DCMAKE_INSTALL_RPATH:PATH="${GNURADIO_PREFIX}/lib:${UHD_PREFIX}/lib"\
- -DGNURADIO_RUNTIME_PYTHONPATH="${GNURADIO_PREFIX}/lib/python2.7/dist-packages/gnuradio/gr:${GNURADIO_PREFIX}/lib/python2.7/dist-packages/gnuradio/uhd"\
+ -DCMAKE_INSTALL_RPATH:PATH="${GNURADIO_PREFIX}/lib:${UHD_PREFIX}/lib:${THRIFT_PREFIX}/lib"\
+ -DGNURADIO_RUNTIME_PYTHONPATH="${THRIFT_PREFIX}/lib/lib/python2.7/site-packages/thrift:${GNURADIO_PREFIX}/lib/python2.7/dist-packages/gnuradio/gr:${GNURADIO_PREFIX}/lib/python2.7/dist-packages/gnuradio/uhd"\
  -DENABLE_GR_PYTHON_INSTALL_PROGRAMS=true\
  -DENABLE_PYTHON=true\
  -DENABLE_GR_FFT=true\
