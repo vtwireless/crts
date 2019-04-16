@@ -5,7 +5,7 @@
 
 set -ex
 
-#Dependencies for CRTS
+#Dependencies for CRTS in addition to 
 
 declare -a crts_dep=(
  "build-essential"
@@ -26,15 +26,13 @@ declare -a crts_dep=(
  "libmunge-dev"
  "libc-ares-dev")
 
-# libwebsockets is needed for mosquitto
 
-# netloc lua man2html munge libcurl-dev may be needed by slurm
-
-# Wed Sep 19 2018, libwebsockets is broken
-# and lws_service_fd_tsi () from /usr/lib/x86_64-linux-gnu/libwebsockets.so.8
-# just seg-faults, so we add a build and install of libwebsockets
-# from source.  This adds a need for libev-dev and libuv1-dev which
-# automatically came with libwebsockets.
+#Dependencies for installing apache thrift
+#Some modules in GNU radio depend on thrift
+declare -a thrift_dep=(
+ "bison"
+ "flex"
+ "libevent-dev")
 
 
 #Dependencies for installing libuhd from source
@@ -84,7 +82,7 @@ OS="$(lsb_release -is)"
 
 if [ "$OS" = "Ubuntu" ]; then
 	if(uname -r |grep 4.15); then
-		printf "Ubuntu 18.04 OR kernel version 4.15 detected, where python-imaging pkg is not supported. hence we add python-pil\n"
+		printf "Ubuntu 18.04 OR kernel version 4.15 detected, where python-imaging pkg is not supported, hence we add python-pil\n"
 		gnuradio_dep+=('python-pil')
 		printf "webencodings is required for debian as well"
 		gnuradio_dep+=('python-webencodings')
@@ -113,6 +111,9 @@ fi
 
 printf "\nInstalling crts packages\n"
 apt-get -y install ${crts_dep[@]}
+
+printf "\nInstalling apache thrift dependencies\n"
+apt-get -y install ${thrift_dep[@]}
 
 printf "\nInstalling UHD dependencies\n"
 apt-get -y install ${uhd_dep[@]}

@@ -23,7 +23,7 @@ cd src
 export PY_PREFIX=$THRIFT_PREFIX/lib
 
 ./bootstrap.sh
-CXXFLAGS=-fPIC ./configure --prefix=$THRIFT_PREFIX
+CXXFLAGS=-fPIC ./configure --prefix=$THRIFT_PREFIX --with-cpp --with-python CXXFLAGS="-DNDEBUG"
 make -j$(nproc||4)
 
 set +x
