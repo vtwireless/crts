@@ -47,12 +47,12 @@ else
     export PKG_CONFIG_PATH="${THRIFT_PREFIX}/lib:${UHD_PREFIX}/lib"
 fi
 
+export PYTHONPATH=${THRIFT_PREFIX}/lib/lib/python2.7/site-packages/thrift
 
 cmake .. -G"Unix Makefiles"\
  -DCMAKE_INSTALL_PREFIX:PATH="${GNURADIO_PREFIX}"\
  -DCMAKE_INSTALL_RPATH:PATH="${GNURADIO_PREFIX}/lib:${UHD_PREFIX}/lib:${THRIFT_PREFIX}/lib"\
  -DGNURADIO_RUNTIME_PYTHONPATH="${THRIFT_PREFIX}/lib/lib/python2.7/site-packages/thrift:${GNURADIO_PREFIX}/lib/python2.7/dist-packages/gnuradio/gr:${GNURADIO_PREFIX}/lib/python2.7/dist-packages/gnuradio/uhd"\
- -DENABLE_GR_PYTHON_INSTALL_PROGRAMS=true\
  -DENABLE_PYTHON=true\
  -DENABLE_GR_FFT=true\
  -DENABLE_GRC=true\
@@ -65,8 +65,9 @@ cmake .. -G"Unix Makefiles"\
  -DENABLE_DEFAULT=true\
  -DENABLE_DOXYGEN:BOOL=true\
  -DENABLE_GR_CTRLPORT=true\
- -DENABLE_PYTHON_THRIFT=true\
- -DENABLE_PERFORMANCE_COUNTERS=true
+ -DENABLE_PERFORMANCE_COUNTERS=true\
+ -DENABLE_CTRLPORT_THRIFT=true
+
 
 make VERBOSE=1 -j $(nproc || echo '3')
 

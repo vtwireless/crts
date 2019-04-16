@@ -20,10 +20,18 @@ cd src
 
 # Where to install the python
 # Got this from src/lib/py/Makefile.am
-export PY_PREFIX=$THRIFT_PREFIX/lib
 
 ./bootstrap.sh
-CXXFLAGS=-fPIC ./configure --prefix=$THRIFT_PREFIX --with-cpp --with-python CXXFLAGS="-DNDEBUG"
+
+#CXXFLAGS=-fPIC
+
+./configure\
+ --prefix=$THRIFT_PREFIX\
+ PY_PREFIX=$THRIFT_PREFIX\
+ --with-cpp\
+ --with-python\
+ CXXFLAGS="-DNDEBUG"
+
 make -j$(nproc||4)
 
 set +x
