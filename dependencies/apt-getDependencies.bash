@@ -97,7 +97,7 @@ elif [ "$OS" = "Debian" ]; then
 	printf "Debian detected, add python-imaging and python-webencodings"
 	gnuradio_dep+=('python-imaging')
 	gnuradio_dep+=('python-webencodings')
-
+	thrift_dep+=('libssl1.0-dev')
 else
 	printf "$OS detected, support will be added for this in the future"
 fi

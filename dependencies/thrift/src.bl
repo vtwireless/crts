@@ -23,7 +23,7 @@ cd src
 
 ./bootstrap.sh
 
-#CXXFLAGS=-fPIC
+export CPPFLAGS=-DHAVE_NETINET_IN_H
 
 export PY_PREFIX=$THRIFT_PREFIX
 
