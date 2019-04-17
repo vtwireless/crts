@@ -47,12 +47,14 @@ else
     export PKG_CONFIG_PATH="${THRIFT_PREFIX}/lib:${UHD_PREFIX}/lib"
 fi
 
-export PYTHONPATH=${THRIFT_PREFIX}/lib/python2.7/site-packages/thrift
+export PYTHONPATH="${THRIFT_PREFIX}/lib/python2.7/site-packages"
+export PATH="${THRIFT_PREFIX}/bin:${UHD_PREFIX}/bin:$PATH"
+
 
 cmake .. -G"Unix Makefiles"\
  -DCMAKE_INSTALL_PREFIX:PATH="${GNURADIO_PREFIX}"\
  -DCMAKE_INSTALL_RPATH:PATH="${GNURADIO_PREFIX}/lib:${UHD_PREFIX}/lib:${THRIFT_PREFIX}/lib"\
- -DGNURADIO_RUNTIME_PYTHONPATH="${THRIFT_PREFIX}/lib/python2.7/site-packages/thrift:${GNURADIO_PREFIX}/lib/python2.7/dist-packages/gnuradio/gr:${GNURADIO_PREFIX}/lib/python2.7/dist-packages/gnuradio/uhd"\
+ -DGNURADIO_RUNTIME_PYTHONPATH="${THRIFT_PREFIX}/lib/python2.7/site-packages:${GNURADIO_PREFIX}/lib/python2.7/dist-packages/gnuradio/gr:${GNURADIO_PREFIX}/lib/python2.7/dist-packages/gnuradio/uhd"\
  -DENABLE_PYTHON=true\
  -DENABLE_GR_FFT=true\
  -DENABLE_GRC=true\
