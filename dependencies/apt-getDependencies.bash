@@ -33,7 +33,8 @@ declare -a thrift_dep=(
  "bison"
  "flex"
  "libevent-dev"
- "python-twisted")
+ "python-twisted"
+ "libcrypto++-dev")
 
 
 #Dependencies for installing libuhd from source

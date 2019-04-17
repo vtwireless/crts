@@ -25,14 +25,16 @@ cd src
 
 #CXXFLAGS=-fPIC
 
+export PY_PREFIX=$THRIFT_PREFIX
+
 ./configure\
  --prefix=$THRIFT_PREFIX\
- PY_PREFIX=$THRIFT_PREFIX\
  --with-cpp\
  --with-python\
  CXXFLAGS="-DNDEBUG"
 
 make -j$(nproc||4)
+
 
 set +x
 

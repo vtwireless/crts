@@ -7,7 +7,7 @@ CLEANDIRS := src
 
 # After we install nothing here, we do this to install thrift using the build
 # system in the thrift package.
-POST_INSTALL_COMMAND = cd src && $(MAKE) install
+POST_INSTALL_COMMAND = ./install.bash
 
 
 include ../../quickbuild.make
