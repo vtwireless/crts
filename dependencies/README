@@ -52,8 +52,6 @@ apt-getDependencies.bash script and install the packages yourself.
 
     uhd
 
-    thrift
-
     gnuradio
 
 
@@ -64,15 +62,13 @@ Directories (PACKAGE_DIR) and package repository:
 
   uhd                 - https://github.com/EttusResearch/uhd
 
-  thrift              - https://github.com/apache/thrift
-
   gnuradio            - https://github.com/gnuradio/gnuradio
 
 
 
 The order of things:
 
-  gnuradio depends on uhd and thrift
+  gnuradio depends on uhd
 
 
 
@@ -81,23 +77,28 @@ Instructions (run) for installing any of those packages:
   Edit the file prefixes to set your installation prefix directories to
   suit your preferences.
 
-  For each PACKAGE_DIR in (node uhd thrift gnuradio):
+  For each PACKAGE_DIR in (node uhd gnuradio):
 
      cd PACKAGE_DIR && make && make install && cd ..
      # Do what you need to to make the installed package accessible
 
 
   Then you need to make the package accessible by setting your PATH, or
-  use other means.
+  use other means.  You may or may not require root (sudo) in the
+  following things to run:
 
   ../bootstrap
   cp default_prefixes prefixes
     > vi prefixes
     > #change 'root' to installation path of your choice, you can stick to the default /usr/local
+
+  # You may need to do some thing between install uhd and gnuradio,
+  # depending how and what prefixes you use to install them in.
+
   cd uhd && make && sudo make install && cd ..
-  cd thrift && make && sudo make install && cd ..
   cd gnuradio && make && sudo make install && cd ..
   cd node && make && sudo make install & cd ..
-  make 
-  sudo make install 
+
+Now make sure that you have the following programs in your PATH:
+  uhd_find_devices, uhd_fft, and node.  CRTS will use them.
 
