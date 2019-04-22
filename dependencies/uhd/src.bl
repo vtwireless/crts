@@ -40,7 +40,7 @@ cmake .. -G"Unix Makefiles"\
  -DENABLE_B200=TRUE\
  -DENABLE_USRP2=TRUE\
  -DENABLE_X300=TRUE\
- -DLIBUSB_INCLUDE_DIRS=/usr/include
+ -DLIBUSB_INCLUDE_DIRS=/usr/include/libusb-1.0
 
 
 make -j $(nproc || echo '3')
