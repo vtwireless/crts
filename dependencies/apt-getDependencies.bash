@@ -70,6 +70,7 @@ declare -a gnuradio_dep=(
  "python-pyparsing"
  "python-qt4"
  "python-qwt5-qt4"
+ "python-requests"
  "python-scipy"
  "python-sip"
  "python-subprocess32"
