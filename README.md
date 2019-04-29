@@ -87,5 +87,9 @@ For the X310
 
 $UHD_PREFIX/utils/uhd_images_downloader.py
 
-$UHD_PREFIX//bin/uhd_image_loader" --args="type=x300,addr=192.168.12.2"
+$UHD_PREFIX/bin/uhd_image_loader" --args="type=x300,addr=192.168.12.2"
+
+
+For USB USRP devices
+https://files.ettus.com/manual/page_transport.html#transport_usb_udev
 
