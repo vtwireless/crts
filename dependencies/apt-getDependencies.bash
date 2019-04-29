@@ -46,6 +46,7 @@ declare -a uhd_dep=(
  "qt4-dev-tools"
  "libqwt5-qt4-dev"
  "python-requests"
+ "python-setuptools"
  "libusb-dev"
  "libusb-1.0-0-dev"
  "swig"
