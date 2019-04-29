@@ -2,7 +2,6 @@
 SUBDIRS :=\
  node\
  uhd\
- thrift\
  gnuradio
 
 
