@@ -42,16 +42,8 @@ if(assert === undefined)
         }
     }
 
-// createFloatWidget() objects may set and unset this
-// as they focus and blur.
-var _joystickEventCB = null;
-// Count the number of float widgets created.
-var _floatWidgetCount = 0;
-// The ID of the current float widget that is in focus.
-var _floatWidgetId = null;
-// This gets set when a gamepad becomes available
-// and a float widget is in focus.
-var _runFrames = null;
+
+
 
 function _addGamepad(e) {
     // This is for adding joystick input.
@@ -78,7 +70,7 @@ function _addGamepad(e) {
                 gamepad.index + ']: ' +
                 gamepad.id);
         gamepad = null;
-        _runFrames = null;
+        createFloatWidget._runFrames = null;
         return;
     });
 
@@ -96,11 +88,11 @@ function _addGamepad(e) {
     }); */
 
     // We do not bother keeping an Animation Frame callback unless
-    // we have a floatWidget with focus, i.e. _joystickEventCB is
-    // set, and we have a gamepad available, i.e. a joystick is plugged
-    // in.
+    // we have a floatWidget with focus, i.e.
+    // createFloatWidget._joystickEventCB is set, and we have a gamepad
+    // available, i.e. a joystick is plugged in.
 
-    // We need this flag because _runFrames() needs to do nothing
+    // We need this flag because createFloatWidget._runFrames() needs to do nothing
     // if we are already running animation frames.
     var frameRequested = false;
 
@@ -108,25 +100,32 @@ function _addGamepad(e) {
 
         frameRequested = false;
 
-        if(!gamepad || !_joystickEventCB)
+        if(!gamepad || !createFloatWidget._joystickEventCB)
             // no reason to run.
             return;
 
-        _joystickEventCB(frameTime, gamepad.axes[0], -gamepad.axes[1]);
+        let x = gamepad.axes[0], y = -gamepad.axes[1];
+
+        // We must clip the values at a threshold or else we drift.
+        if(Math.abs(x) < 0.3) x = 0.0;
+        if(Math.abs(y) < 0.3) y = 0.0;
+
+        if(x !== 0.0 || y !== 0.0)
+            createFloatWidget._joystickEventCB(frameTime, x, y);
 
         // keep running in the next frame.
         requestAnimationFrame(runFrame);
         frameRequested = true;
     }
 
-    _runFrames = function() {
+    createFloatWidget._runFrames = function() {
         if(frameRequested) return;
         requestAnimationFrame(runFrame);
         frameRequested = true;
     };
 
-    if(_joystickEventCB)
-        _runFrames();
+    if(createFloatWidget._joystickEventCB)
+        createFloatWidget._runFrames();
 }
 
 
@@ -136,9 +135,36 @@ if('GamepadEvent' in window) {
 }
 
 
+// Set to true to add a div with text that spews X and Y axis values.
+var _debugAxis = false;
+
+/**
+ *  @return a div
+ *
+ *
+ *
+ *
+ *
+ *
+ *  @param points number of decimal points.  0 is like an int.
+ *             -1 is like value 123 the 3 will not change.
+ *             -2 is like value 123 the 2 will not change.
+ *
+ *
+ *
+ *
+ *
+ */
 
 function createFloatWidget(startingValue,
-    max, min, points, opts = { units: '' }) {
+    max, min, points, opts = {}) {
+
+    let defaultOpts = { units: '', label: '', onchange: null};
+    // setup user opts to defaults if not given
+    Object.keys(defaultOpts).forEach(function(key) {
+        if(opts[key] === undefined)
+            opts[key] = defaultOpts[key];
+    });
 
 
     /******************* parameters in this widget ******************/
@@ -248,6 +274,7 @@ function createFloatWidget(startingValue,
         div.appendChild(span);
     }
 
+
     function getFloatValue() {
 
         var str = '';
@@ -291,8 +318,8 @@ function createFloatWidget(startingValue,
 
     function setValue(val) {
 
-        assert(val <= max);
-        assert(val >= min);
+        assert(val <= max, "val=" + val + " > " + max + ' (=max)');
+        assert(val >= min, "val=" + val + " < " + min + ' (=min)');
 
         meter.value = val;
 
@@ -328,7 +355,7 @@ function createFloatWidget(startingValue,
     function increaseDigit(i, first=true) {
 
         function checkValue() {
-            var val = getFloatValue();
+            let val = getFloatValue();
             if(val > max)
                 setValue(max);
             else 
@@ -355,10 +382,11 @@ function createFloatWidget(startingValue,
         //console.log('value = ' + getFloatValue());
     }
 
+
     function decreaseDigit(i, first=true) {
 
         function checkValue() {
-            var val = getFloatValue();
+            let val = getFloatValue();
             if(val < min)
                 setValue(min);
             else
@@ -385,6 +413,45 @@ function createFloatWidget(startingValue,
         //console.log('value = ' + getFloatValue());
     }
 
+    // These three functions increase(), decrease(), and setValue(), are a
+    // point at which all value changes happen.  If a value is "pegged" at
+    // a max or min it will not change.
+
+    function increase() {
+        let value;
+        if(opts.onchange)
+            value = getFloatValue();
+        increaseDigit(selectedDigit);
+        if(value !== getFloatValue() && opts.onchange)
+            opts.onchange(getFloatValue(), opts);
+    }
+
+    function decrease() {
+        let value;
+        if(opts.onchange)
+            value = getFloatValue();
+        decreaseDigit(selectedDigit);
+        if(value !== getFloatValue() && opts.onchange)
+            opts.onchange(getFloatValue(), opts);
+    }
+
+    assert(div.setValue === undefined, 'div.setValue is set');
+    assert(div.getValue === undefined, 'div.getValue is set');
+
+
+    div.setValue = function(val) {
+        let value;
+        if(val > max) val = max;
+        else if(val < min) val = min;
+        setValue(val);
+    }
+
+
+    div.getValue = function(val) {
+        return getFloatValue();
+    }
+
+
     div.addEventListener('keydown', function(e) {
 
         /*console.log('floatWidget got event keydown with (' +
@@ -403,16 +470,16 @@ function createFloatWidget(startingValue,
                     selectDigit(selectedDigit+1);
                 break;
             case "ArrowUp":
-                increaseDigit(selectedDigit);
+                increase();
                 break;
             case "ArrowDown":
-                decreaseDigit(selectedDigit);
+                decrease();
                 break;
          }
     });
 
 
-    var id = _floatWidgetCount++;
+    var id =  createFloatWidget.floatWidgetCount++;
     var lastTime = 0.0;
 
     // Joystick dynamic variables:
@@ -422,8 +489,8 @@ function createFloatWidget(startingValue,
     var firstFrame = true;
     // These rates are the rates that the digits will change
     // when the joystick is at full input, like +1 or -1.
-    var xRate = 0.006; // digits/millisecond
-    var yRate = 0.006; // digits/millisecond
+    var xRate = 0.003; // digits/millisecond
+    var yRate = 0.015; // digits/millisecond
 
 
     // selectedDigit is a discrete dynamical variable that is
@@ -436,14 +503,22 @@ function createFloatWidget(startingValue,
     // widget controller model state variables: x, y change with time
     // based on our widget controller model.
 
+    if(_debugAxis === true) {
+        _debugAxis = document.createElement('div');
+        document.body.appendChild(_debugAxis);
+        _debugAxis.style.border = "2px solid black";
+        _debugAxis.appendChild(_debugAxis = document.createTextNode('X, Y'));
+    }
 
     function joystickEventCB(frameTime, xAxis, yAxis) {
 
         var dt = frameTime - lastTime;
-        
-        /*console.log('animation frame[widgetId=' + id + ']' +
-            ' time=' + frameTime +  ' dt=' + dt +
-            ' axes=' + xAxis + ',' + yAxis);*/
+
+        if(_debugAxis)
+            console.log('animation frame[widgetId=' + id + ']' +
+                ' time=' + frameTime +  ' dt=' + dt +
+                ' axes=' + xAxis + ',' + yAxis);
+        _debugAxis.data = ' axes=' + xAxis + ',' + yAxis;
 
 
         // We solve for the x(t) equations of motion.  Basically solving
@@ -474,11 +549,11 @@ function createFloatWidget(startingValue,
         let yTick = Math.trunc(y);
         y -= yTick;
         while(yTick > 0) {
-            increaseDigit(selectedDigit);
+            increase();
             --yTick;
         }
         while(yTick < 0) {
-            decreaseDigit(selectedDigit);
+            decrease();
             ++yTick;
         }
 
@@ -489,12 +564,12 @@ function createFloatWidget(startingValue,
     function initJoystickEventCB(frameTime, xAxis, yAxis) {
 
         // This is the first frame after we got focus.
-        console.log('widget init animation frame[widgetId=' + id + ']' +
+        console.log('floatWidget init animation frame[widgetId=' + id + ']' +
             ' time=' + frameTime +
             ' axes=' + xAxis + ',' + yAxis);
 
         // This is initialed, so go the real action now.
-        _joystickEventCB = joystickEventCB;
+        createFloatWidget._joystickEventCB = joystickEventCB;
         lastTime = frameTime;
         digitChange = 0.0;
         digitIncrease = 0.0;
@@ -504,24 +579,39 @@ function createFloatWidget(startingValue,
 
     div.onfocus = function() {
         // Grab the joystick callback:
-        _joystickEventCB = initJoystickEventCB;
-        _floatWidgetId = id;
-        console.log('Widget ' + id + ' is in focus');
+        createFloatWidget._joystickEventCB = initJoystickEventCB;
+        createFloatWidget.floatWidgetId = id;
+        console.log('floatWidget ' + id + ' is in focus');
         // We reset the frameCount
         frameCount = 0;
-        if(_runFrames)
+        if(createFloatWidget._runFrames)
             // We have a gamepad to read.
-            _runFrames();
+            createFloatWidget._runFrames();
     };
 
     div.onblur = function() {
-        console.log('Widget ' + id + ' is out of focus');
-        if(_floatWidgetId === id) {
-            _joystickEventCB = null;
-            _floatWidgetId = null;
+        console.log('floatWidget ' + id + ' is out of focus');
+        if(createFloatWidget.floatWidgetId === id) {
+            createFloatWidget._joystickEventCB = null;
+            createFloatWidget.floatWidgetId = null;
         }
     };
 
-
     return div;
 }
+
+
+
+// createFloatWidget() objects may set and unset this
+// as they focus and blur.
+createFloatWidget._joystickEventCB = null;
+
+// Count the number of float widgets created.
+createFloatWidget.floatWidgetCount = 0;
+
+// The ID of the current float widget that is in focus.
+createFloatWidget.floatWidgetId = null;
+
+// This gets set when a gamepad becomes available
+// and a float widget is in focus.
+createFloatWidget._runFrames = null;

@@ -11,7 +11,6 @@
 #include <sys/socket.h>
 #include <sys/stat.h>
 #include <string.h>
-#include <sys/socket.h>
 #include <arpa/inet.h>
 #include <errno.h>
 #include <fcntl.h>
@@ -28,13 +27,16 @@
 #include <crts/Filter.hpp>
 
 
-#define MUTEX_LOCK(client)                                               \
-    ASSERT((errno = pthread_mutex_lock(&client->mutex)) == 0,            \
+#define MUTEX_LOCK(mutexPtr)                                               \
+    ASSERT((errno = pthread_mutex_lock(mutexPtr)) == 0,                    \
             "pthread_mutex_lock() failed")
 
-#define MUTEX_UNLOCK(client)                                             \
-    ASSERT((errno = pthread_mutex_unlock(&client->mutex)) == 0,          \
+#define MUTEX_UNLOCK(mutexPtr)                                             \
+    ASSERT((errno = pthread_mutex_unlock(mutexPtr)) == 0,                  \
             "pthread_mutex_unlock() failed")
+
+
+#define DEFAULT_PERIOD  (0.5) // in seconds
 
 // Default address of crts_contestWebServer that this code connects to:
 #define DEFAULT_ADDRESS "127.0.0.1"
@@ -51,7 +53,7 @@
  *
  *    and
  *
- *    There's the BIGGER issue of stream restart.
+ *    There's also the BIGGER issue of stream restart.
  *
  *************************************************************************/
 
@@ -78,6 +80,10 @@ static void usage(void)
 "   --help             print this help\n"
 "\n"
 "\n"
+"   --period PERIOD    set the period in seconds that his writes to the web.  The\n"
+"                      default PERIOD is %g\n"
+"\n"
+"\n"
 "   --server_address ADDRESS set the server address to connect to.  The default\n"
 "                            server address is " DEFAULT_ADDRESS "\n"
 "\n"
@@ -85,7 +91,7 @@ static void usage(void)
 "   --server_port PORT       set the server port to connect to.  The default port\n"
 "                            port is %u\n"
 "\n",
-name, DEFAULT_PORT);
+name, DEFAULT_PERIOD, DEFAULT_PORT);
 
 }
 
@@ -109,9 +115,10 @@ class Client: public CRTSController
             return getControl<CRTSControl *>(name, /*addController*/false);
         };
 
-        unsigned short getPortAndAddressFromArgs(int argc, const char **argv);
+        unsigned short getOptions(int argc, const char **argv);
 
-        pthread_mutex_t mutex;
+        pthread_mutex_t readerMutex;
+        pthread_mutex_t writerMutex;
 
         std::atomic<bool> *isRunning; // pointer to the stream running flag 
 
@@ -127,10 +134,29 @@ class Client: public CRTSController
 
         CRTSTcpClient socket;
 
+        double period;
+
+
+        // We store a list of parameters that have not been pushed to the
+        // server yet.  These are parameters that the web clients
+        // subscribe to.
+        std::map<const std::string, double> parameterChanges;
+
+        std::atomic<bool> runThread;
+
+
     private:
+
+
 
         // This function sends a parameter changing event to
         // the web server.
+        //
+        // TODO: This needs major work.  This is called in the
+        // flow stream every time a packet goes from one filter
+        // to another.  The socket write call take an order of
+        // magnitude longer than the stream inputs.
+        //
         void getParameterCB(const char *controlName,
                 const std::string parameterName, double value)
         {
@@ -140,19 +166,65 @@ class Client: public CRTSController
             str += "\",\"";
             str += parameterName;
             str += "\",";
-            str += std::to_string(value);
-            str += "]}\004";
-            socket.send(str.c_str());
-        }
+
+            MUTEX_LOCK(&writerMutex);
+            parameterChanges[str] = value;
+            MUTEX_UNLOCK(&writerMutex);
+        };
+
 };
 
 
 
-unsigned short Client::getPortAndAddressFromArgs(int argc, const char **argv)
+// This is the thread that writes the socket to the web server for
+// web clients that subscribe to "get" parameters.
+//
+static void *parameterSender(Client *client) {
+
+    std::atomic<bool> &runThread = client->runThread;
+    std::map<const std::string, double> &parameterChanges = (client->parameterChanges);
+    useconds_t usec = client->period * 1000000;
+    pthread_mutex_t *writerMutex = &client->writerMutex;
+    CRTSTcpClient &socket = client->socket;
+
+    while(runThread)
+    {
+        // TODO: use interval timer in place of usleep().
+        // or maybe nanosleep().
+        //
+        usleep(usec);
+
+        MUTEX_LOCK(writerMutex);
+        auto it = parameterChanges.begin();
+
+        while(it != parameterChanges.end())
+        {
+            std::string str = it->first;
+            double value = it->second;
+            parameterChanges.erase(it);
+            MUTEX_UNLOCK(writerMutex);
+            str += std::to_string(value);
+            str += "]}\004";
+            socket.send(str.c_str());
+            //SPEW("%s", str.c_str());
+            MUTEX_LOCK(writerMutex);
+            it = parameterChanges.begin();
+        }
+        MUTEX_UNLOCK(writerMutex);
+    }
+    DSPEW("parameterSender thread returning");
+    return 0;
+}
+
+
+
+unsigned short Client::getOptions(int argc, const char **argv)
 {
     CRTSModuleOptions opt(argc, argv, usage);
 
     address = opt.get("--server_address", DEFAULT_ADDRESS);
+
+    period = opt.get("--period", DEFAULT_PERIOD);
 
     return (port = opt.get("--server_port", DEFAULT_PORT));
 }
@@ -166,6 +238,7 @@ static void *receiver(Client *client)
     CRTSTcpClient &socket = client->socket;
     std::atomic<bool> &isRunning = *(client->isRunning);
     json_t *root;
+    pthread_mutex_t *readerMutex = &client->readerMutex;
 
     while((root = socket.receiveJson(isRunning)))
     {
@@ -184,7 +257,10 @@ static void *receiver(Client *client)
             {
                 if(commands && json_typeof(commands) == JSON_ARRAY)
                 {
+                    MUTEX_LOCK(readerMutex);
                     client->commands[crtsControl].push_back(commands);
+                    MUTEX_UNLOCK(readerMutex);
+
                     DSPEW("control %s commands:", controlName);
                     json_dumpf(commands, stderr, 0);
                     fprintf(stderr, "\n");
@@ -202,10 +278,13 @@ static void *receiver(Client *client)
 
 
 Client::Client(int argc, const char **argv):
-    mutex(PTHREAD_MUTEX_INITIALIZER), started(false),
-    port(getPortAndAddressFromArgs(argc, argv)),
+    readerMutex(PTHREAD_MUTEX_INITIALIZER),
+    writerMutex(PTHREAD_MUTEX_INITIALIZER),
+    started(false),
+    port(getOptions(argc, argv)),
     socket(address, port)
 {
+    runThread = true;
     // We must add this CRTSController to all filter controller callbacks
     // so that Client::start(c), Client::execute(c) and Client::stop(c) get
     // called, where c is the CRTSControl for each CRTSFilter.
@@ -220,6 +299,11 @@ Client::Client(int argc, const char **argv):
     pthread_t thread;
     ASSERT(pthread_create(&thread, 0,
                 (void *(*) (void *)) receiver,
+                (void *) this) == 0, "pthread_create() failed");
+    ASSERT(pthread_detach(thread) == 0, "pthread_detach() failed");
+
+    ASSERT(pthread_create(&thread, 0,
+                (void *(*) (void *)) parameterSender,
                 (void *) this) == 0, "pthread_create() failed");
     ASSERT(pthread_detach(thread) == 0, "pthread_detach() failed");
 
@@ -444,6 +528,8 @@ void Client::stop(CRTSControl *c)
 
     started = false;
     DSPEW("control %s", c->getName());
+
+    runThread = false;
 }
 
 
@@ -454,7 +540,7 @@ void Client::execute(CRTSControl *c, const void *buffer,
 
     std::list<json_t *> &list = commands[c];
 
-    MUTEX_LOCK(this);
+    MUTEX_LOCK(&this->readerMutex);
 
     while(!list.empty())
     {
@@ -511,14 +597,9 @@ void Client::execute(CRTSControl *c, const void *buffer,
             }
             else if((obj = json_object_get(command, "get"))) // get a parameter
             {
-                // TODO: This is not set up on the server side yet.  So
-                // this code it not tested yet.
-
                 const char *parameterName = json_string_value(obj);
                 if(parameterName)
                 {
-                    // TODO: Write this ....
-                    //
                     long long int id = 0;
 
                     if(replyLen == 0)
@@ -564,7 +645,7 @@ void Client::execute(CRTSControl *c, const void *buffer,
         list.pop_front();
     }
 
-    MUTEX_UNLOCK(this);
+    MUTEX_UNLOCK(&this->readerMutex);
 }
 
 

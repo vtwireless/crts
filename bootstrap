@@ -18,7 +18,7 @@
 # The tag can be "master" or a full git check-in hash in lower case hex
 # like for example:
 #tag=dc184319be9a272ffa4528f5bb5d0902f1edbbbb
-tag=master
+tag=0.1
 url=https://raw.githubusercontent.com/lanceman2/quickbuild/$tag/quickbuild.make
 
 # If we wanted a particular file, so we checks it's sha512 sum.
@@ -29,6 +29,10 @@ url=https://raw.githubusercontent.com/lanceman2/quickbuild/$tag/quickbuild.make
 # to get this long hex number
 
 #sha512sum=8c586f7d3a587e449667d547a4cb2dac6a3ece4e764a2d1494888d12c94a10384520be70ab76b580d966ecd94a20a14690530e33c2db5e0a5252d05ed42581aa
+
+sha512sum=4bb12b01391d1c62cc7cebd0705ba2cd5409c8d4e275f4952a120\
+2e0b1d442c435b2b9403eeffecbcd85e625325f2337ef60ec176840aa7f0c7a\
+e5efc57f1b13
 
 
 function usage()

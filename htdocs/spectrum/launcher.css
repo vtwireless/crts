@@ -1,0 +1,23 @@
+
+div.SPlauncher {
+    background-color: #86BAE4;
+    width: auto;
+    height: auto;
+    border: 2px solid #617B90;
+    display: inline-block;
+}
+select.SPlauncher {
+
+}
+div.selectContainer {
+    display: inline-block;
+    border: 2px solid #2878B8;
+    width: auto;
+    height: auto;
+}
+
+button.SPlauncher {
+}
+div.removeContainer {
+    display: inline-block;
+}

@@ -136,7 +136,7 @@ function require(url, callback = function() {}) {
 
         var timeout = setTimeout(function() {
             require.waiting = false;
-            fail("failed to GET script " + src + " in " +
+            fail("failed to GET script " + src.url + " in " +
                 timeoutSecs + " seconds");
         }, timeoutSecs*1000/* milliseconds  1/1000*/);
 

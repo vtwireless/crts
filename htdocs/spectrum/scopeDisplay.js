@@ -1,99 +1,99 @@
-<!DOCTYPE html>
-<html lang=en>
-<head>
-    <meta charset="utf-8"/>
-    <script src='/load.js'></script>
 
-    <script>
+require('/scope/scope.js');
+require('/scope/scope.css');
 
-// Note: In order to keep webDesktop and scope usable by other software
-// projects we cannot use require() in them so we must put a longer list
-// of dependences in this CRTS specific code.
 
-require('/spectrum/spectrum.js');
 
-onload = function() {
+// This function creates a WDApp that has a 2D scope view of the
+// spectrum data that is passed in its' draw function.
+//
+// Interfaces:
+//
+//    ScopeDisplay() constructor function
+//
+//       and
+//
+//    ScopeDisplay is also a static methods object like Array
+//      (TODO)
+//
+//
+//   static methods:
+//
+//
+//
+//   instance methods:
+//
+//      this->draw(x, y, cFreq, bandwidth, updatePeriod)
+//
+//        called by thing using this object when it has
+//        new data.
+//
+//
+//      this->destroy()
+//
+//        called by thing using this object when it done
+//        with this scope thingy.
+//
+//
 
-    function SpectrumDisplay(desc, onclose_in = null) {
+// This is how to make a function named "2D Scope".
+//
+window['2D Scope'] = function(desc, onclose = null) {
 
-        var ampMax, ampMin;
-        var cFreq = 0, bandwidth = 0, bins = 0;
+    var ampMax, ampMin;
+    var cFreq = 0, bandwidth = 0, bins = 0;
 
-        var onclose = onclose_in;
+    var scope = new Scope;
 
-        var scope = new Scope;
-
-        var app = new WDApp('Spectrum ' + desc,
-                scope.getElement(),
-                function() {
-                    console.log('Removing spectrum scope: ' + desc);
-                    if(onclose) onclose();
-                app = null;
-        });
-
-        this.destroy = function() {
-            if(app) app.close();
+    var app = new WDApp(desc,
+            scope.getElement(),
+            function() {
+                console.log('Removing spectrum scope "' +
+                    desc + '"');
+                if(onclose) onclose();
             app = null;
-        };
-        this.draw = function(x, y, _cFreq, _bandwidth, _updatePeriod) {
+    });
 
-            // We have new spectrum data.
-            let l = x.length;
+    console.log('Made 2D Scope: ' + desc);
 
-            if(cFreq !== _cFreq || bandwidth !== _bandwidth || l !== bins) {
+    this.destroy = function() {
+        if(app) app.close();
+        app = null;
+    };
 
-                // The parameters have changed since the last draw call.
-                cFreq = _cFreq;
-                bandwidth = _bandwidth;
-                bins = l;
+    this.draw = function(x, y, _cFreq, _bandwidth, _updatePeriod) {
 
-                // Delete the old ampM* arrays.
-                ampMax = [];
-                ampMin = [];
+        // We have new spectrum data.
+        let l = x.length;
 
-                for(let i=0; i<l; ++i) {
-                    // Initialize the arrays.
-                    ampMax[i] = Number.MIN_VALUE;
-                    ampMin[i] = Number.MAX_VALUE;
-                }
-            }
+        if(cFreq !== _cFreq || bandwidth !== _bandwidth || l !== bins) {
+
+            // The parameters have changed since the last draw call.
+            cFreq = _cFreq;
+            bandwidth = _bandwidth;
+            bins = l;
+
+            // Delete the old ampM* arrays.
+            ampMax = [];
+            ampMin = [];
 
             for(let i=0; i<l; ++i) {
-                if(y[i] > ampMax[i])
-                    ampMax[i] = y[i];
-                if(y[i] < ampMin[i])
-                    ampMin[i] = y[i];
+                // Initialize the arrays.
+                ampMax[i] = Number.MIN_VALUE;
+                ampMin[i] = Number.MAX_VALUE;
             }
+        }
 
-            scope
+        for(let i=0; i<l; ++i) {
+            if(y[i] > ampMax[i])
+                ampMax[i] = y[i];
+            if(y[i] < ampMin[i])
+                ampMin[i] = y[i];
+        }
 
-            scope.draw(x, y, 0);
-            scope.draw(x, ampMax, 1);
-            scope.draw(x, ampMin, 2);
-            scope.draw();
-        };
-    }
-
-    createSession(function(io) {
-
-        //createSpectrumFeeds(io);
-
-        createSpectrumFeeds(io, SpectrumDisplay);
-    });
+        scope.draw(x, y, 0);
+        scope.draw(x, ampMax, 1);
+        scope.draw(x, ampMin, 2);
+        scope.draw();
+    };
 };
-    </script>
-
-
-    <title>CRTS</title>
-</head>
-<body>
-
-    <h1>Spectrum Feed Test</h1>
-
-    <p>This test launches a spectrum display for each new spectrum
-    feed that it sees from the webSocket connection to the server.</p>
-
-    <p><a href=".">Back to index</a></p>
-
-</body>
-</html>

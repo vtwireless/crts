@@ -65,22 +65,22 @@ class spectrum_sensing_nikita(gr.top_block):
 parser = argparse.ArgumentParser(description='Spectrum feed script.  Replace the CAPITALIZED words with input values')
 parser.add_argument('-f','--freq',\
         help='Center frequency in MHz',\
-        default=915.0)
+        default=914.5)
 parser.add_argument('-b','--bandwidth',\
         help='Bandwidth in MHz',\
         default=0.5)
 parser.add_argument('-n','--bins',\
         help='Number of FFT bins.  More for higher accuracy',\
-        default=800)
-parser.add_argument('-r','--rate',\
-        help='Number of times per second the data is sent',\
-        default=20.0)
+        default=80)
+parser.add_argument('-P','--period',\
+        help='The period of time in seconds between data sends',\
+        default=0.05)
 parser.add_argument('-p','--port',\
         help='Server port',\
         default=9282)
 parser.add_argument('-d','--device',\
         help='UHD USRP device',\
-        default='addr=192.168.10.2')
+        default='addr=192.168.10.3')
 parser.add_argument('-a','--address',\
         help='Server address',\
         default='localhost')
@@ -101,14 +101,13 @@ def Run(tcpClientSock, args):
     bandwidth = float(args['bandwidth'])*1e6
     bins = int(args['bins']);
     cFreq = float(args['freq'])*1e6
-    tb = spectrum_sensing_nikita(cFreq, bins, bandwidth, args['device'])
-    tb.start()
-    period = 1.0/float(args['rate'])
+    period = float(args['period'])
     if period < 1.0/60.0:
         period = 1.0/60.0
-
-    tcpClientSock.sendall('I{"name":"spectrumStart","args":["%s:%s"]}' %\
-            (platform.node(), args['device']))
+    tb = spectrum_sensing_nikita(cFreq, bins, bandwidth, args['device'])
+    tb.start()
+    tcpClientSock.sendall('I{"name":"spectrumStart","args":["%s:%s",%g,%g,%g,%d]}' %\
+            (platform.node(), args['device'], cFreq, bandwidth, period, bins))
 
     tcpClientSock.settimeout(period)
 
@@ -117,16 +116,19 @@ def Run(tcpClientSock, args):
             data = tcpClientSock.recv(10000)
             print data
             if data.startswith('{'):
+                # { bandwidth: bandwidth, bins: bins, cFreq: cFreq,
+                #   updatePeriod: updatePeriod in Hz }
+                print data
                 params = json.loads(data)
-                bandwidth = float(args['bandwidth'])*1e6
-                bins = int(args['bins']);
-                cFreq = float(args['freq'])*1e6
+                bandwidth = float(params['bandwidth'])*1e6
+                bins = int(params['bins']);
+                cFreq = float(params['cFreq'])*1e6
+                period = float(params['updatePeriod'])
+                if period < 1.0/60.0:
+                    period = 1.0/60.0
                 print 'crts_spectrumFeed Got parameters:'
                 print params
                 tb = spectrum_sensing_nikita(cFreq, bins, bandwidth, args['device'])
-                period = 1/float(params['updateRate'])
-                if period < 1.0/60.0:
-                    period = 1.0/60.0
                 tcpClientSock.settimeout(period)
                 tb.start()
                 SendSpectrum(tcpClientSock, tb, cFreq, bandwidth, period)
