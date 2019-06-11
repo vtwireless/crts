@@ -25,7 +25,10 @@ mapTest_SOURCES := mapTest.cpp debug.c makeRingBuffer.cpp
 mapTest_LDFLAGS := -lrt
 
 crts_findUSRPs_SOURCES := crts_findUSRPs.cpp
-UHD_LIBS := $(shell pkg-config uhd --libs)
+# We add a link/load path (rpath) so that the module can load and find
+# libuhd.so, the stupid "pkg-config uhd --libs" did not do this for us.
+UHD_LIBS := $(shell pkg-config uhd --libs)\
+ -Wl,-rpath=$(shell pkg-config uhd --variable=libdir)
 crts_findUSRPs_LDFLAGS := $(UHD_LIBS)
 
 crts_shell_SOURCES := crts_shell.cpp debug.c
