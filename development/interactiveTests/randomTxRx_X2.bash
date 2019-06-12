@@ -15,9 +15,9 @@ source usrp_config
  $crts_radio\
  -f stdin\
  -f liquidFrame\
- -f tx [ --uhd $USRP1 --freq 914.5 --rate 0.2 --gain 15 ]\
+ -f tx [ --uhd $USRP1 --freq 913.5 --rate 1 --gain 1 ]\
  -c\
- -f rx [ --uhd $USRP1 --freq 915.5 --rate 0.2 --gain 0 ]\
+ -f rx [ --uhd $USRP1 --freq 916.5 --rate 1 --gain 1 ]\
  -f liquidSync\
  -f stdout\
  -D |\
@@ -25,13 +25,13 @@ source usrp_config
 
 
 ./termRun "cat /dev/urandom | $crts_radio\
- -f rx [ --uhd $USRP2 --freq 914.5 --rate 0.2 --gain 0 ]\
+ -f rx [ --uhd $USRP2 --freq 913.5 --rate 1 --gain 1 ]\
  -f liquidSync\
  -f stdout\
  -c\
  -f stdin\
  -f liquidFrame\
- -f tx [ --uhd $USRP2 --freq 915.5 --rate 0.2 --gain 15 ]\
+ -f tx [ --uhd $USRP2 --freq 916.5 --rate 1 --gain 1 ]\
  -D |\
  hexdump -v"
 
