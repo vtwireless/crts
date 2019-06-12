@@ -24,7 +24,8 @@ declare -a crts_dep=(
  "libev-dev"
  "libuv1-dev"
  "libmunge-dev"
- "libc-ares-dev")
+ "libc-ares-dev"
+ "xterm")
 
 
 #Dependencies for installing apache thrift
