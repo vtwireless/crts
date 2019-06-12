@@ -21,10 +21,8 @@ CPPFLAGS := -I$(ROOT)/include -I$(ROOT)/lib -I$(ROOT)/liquid-dsp/src/include
 INSTALL_DIR = $(PREFIX)/share/crts/plugins/$(notdir $(CURDIR))
 
 
-RPATH := -Wl,-rpath=\$$ORIGIN/$(ROOT)/lib
 
-LIQUID_LDFLAGS := -L$(ROOT)/lib -lliquid 
-LIBFEC_LDFLAGS := -L$(ROOT)/lib -lfec
+LIQUID_LDFLAGS := -L$(ROOT)/lib -lliquid -Wl,-rpath=\$$ORIGIN/$(ROOT)/lib
 
 # uncomment to build quickscope.so
 #BUILD_QUICKSCOPE := yes
@@ -77,16 +75,9 @@ quickscope.so_CPPFLAGS := $(QS_CPPFLAGS)
 quickscope.so_LDFLAGS := $(QS_LDFLAGS)
 
 
-liquidSync.so_LDFLAGS :=\
- $(LIQUID_LDFLAGS)\
- $(LIBFEC_LDFLAGS)\
- $(RPATH)
+liquidSync.so_LDFLAGS := $(LIQUID_LDFLAGS)
 
-liquidFrame.so_LDFLAGS :=\
- $(LIQUID_LDFLAGS)\
- $(LIBFEC_LDFLAGS)\
- $(RPATH)
-
+liquidFrame.so_LDFLAGS := $(LIQUID_LDFLAGS)
 
 
 

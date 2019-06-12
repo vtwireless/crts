@@ -1,6 +1,6 @@
-diff -ur src/makefile.in src_new/makefile.in
---- src/makefile.in	2017-10-16 20:12:49.000000000 -0400
-+++ src_new/makefile.in	2017-11-03 13:57:15.321418499 -0400
+diff -ur jgaeddert-liquid-dsp-4c9a751/makefile.in src/makefile.in
+--- jgaeddert-liquid-dsp-4c9a751/makefile.in	2019-06-12 14:07:43.603983824 +0000
++++ src/makefile.in	2019-06-12 14:05:34.099771571 +0000
 @@ -65,7 +65,7 @@
  # flags
  INCLUDE_CFLAGS	= $(addprefix -I,$(include_dirs))
@@ -10,3 +10,16 @@ diff -ur src/makefile.in src_new/makefile.in
  CFLAGS		= $(CONFIG_CFLAGS) -Wall -fPIC
  LDFLAGS		= @LDFLAGS@
  LIBS		= @LIBS@
+@@ -1168,7 +1168,9 @@
+ 
+ # linux, et al
+ libliquid.so: libliquid.a
+-	$(CC) $(CFLAGS) $(LDFLAGS) -shared -Xlinker -soname=$@ -o $@ -Wl,-whole-archive $^ -Wl,-no-whole-archive $(LIBS)
++	$(CC) $(CFLAGS) $(LDFLAGS) -shared -Xlinker -soname=$@ -o $@\
++ -Wl,-rpath=\$$ORIGIN\
++ -Wl,-whole-archive $^ -Wl,-no-whole-archive $(LIBS)
+ 
+ all: libliquid.a $(SHARED_LIB)
+ 
+Only in src: .makefile.in.swo
+Only in src: .makefile.in.swp
