@@ -2,9 +2,6 @@
 
 USRP1="addr=192.168.40.210"
 
-#X310="addr=192.168.12.2"
-
 USRP2="addr=192.168.40.110"
 
-# this one has a broken transmitter.
 USRP3="addr=192.168.40.111"
