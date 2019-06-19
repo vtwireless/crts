@@ -1,4 +1,4 @@
-INSTALL_DIR = $(PREFIX)/htdocs/spectrum
+INSTALL_DIR = $(PREFIX)/htdocs/scope
 
 
 

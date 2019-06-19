@@ -14,7 +14,15 @@ cd $(dirname $0)
 
 export CRTS_UPLOAD_DIR=$HOME/CRTS_UPLOAD
 
-exec ../bin/crts_contestWebServer\
+set +e
+
+if which crts_contestWebServer ; then
+    prog=$(which crts_contestWebServer)
+else
+    prog=../bin/crts_contestWebServer
+fi
+
+exec $prog\
  --user=admin --password=adminK2\
  --user=betty --password=bettyK1\
  --user=joe --password=joeK1\
