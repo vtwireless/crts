@@ -2,11 +2,27 @@
 
 set -ex
 
+function createGNUmakefile() {
+
+    cat << EOF > webDesktop/GNUmakefile
+# This is a generated file.
+
+INSTALL_DIR = $(PREFIX)/htdocs/webDesktop
+
+include ../../quickbuild.make
+EOF
+}
+
 
 # if there is a git repo checkout of webDesktop
-# don't do anything.
-[ -d webDesktop/.git ] && exit 0
+# we do less.
+if [ -d webDesktop/.git ] ; then
+    createGNUmakefile
+    exit 0
+fi
 
+
+createGNUmakefile
 rm -rf 
 tar -xvzf webDesktop.tar.gz
 mv vtwireless-webDesktop*/ webDesktop/
