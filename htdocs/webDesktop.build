@@ -7,7 +7,7 @@ function createGNUmakefile() {
     cat << EOF > webDesktop/GNUmakefile
 # This is a generated file.
 
-INSTALL_DIR = $(PREFIX)/htdocs/webDesktop
+INSTALL_DIR = \$(PREFIX)/htdocs/webDesktop
 
 include ../../quickbuild.make
 EOF
