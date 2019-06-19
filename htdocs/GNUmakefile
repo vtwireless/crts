@@ -2,7 +2,7 @@ SUBDIRS := css js admin img tests scope spectrum floatWidget
 
 INSTALL_DIR = $(PREFIX)/htdocs
 
-INSTALLED := doc webDesktop
+INSTALLED := doc webDesktop sessionHeader.htm
 
 
 ifeq (,$(wildcard ./webDesktop/.git))
