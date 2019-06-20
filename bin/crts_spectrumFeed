@@ -24,6 +24,7 @@ import json
 import argparse
 from socket import *
 import platform
+import os
 
 
 class spectrum_sensing_nikita(gr.top_block):
@@ -76,13 +77,13 @@ parser.add_argument('-P','--period',\
         help='The period of time in seconds between data sends',\
         default=0.05)
 parser.add_argument('-p','--port',\
-        help='Server port',\
+        help='Server port.  Env SPECTRUM_PORT will override this value.',\
         default=9282)
 parser.add_argument('-d','--device',\
         help='UHD USRP device',\
         default='addr=192.168.10.3')
 parser.add_argument('-a','--address',\
-        help='Server address',\
+        help='Server address to send spectrum data to.  Env SERVER_ADDRESS will override this value.',\
         default='localhost')
 
 
@@ -147,6 +148,10 @@ def Run(tcpClientSock, args):
 if __name__ == '__main__':
     args = vars(parser.parse_args())
     tcpClient = socket(AF_INET,SOCK_STREAM)
+    if os.environ['SERVER_ADDRESS']
+        args['address'] =  os.environ['SERVER_ADDRESS']
+    if os.environ['SPECTRUM_PORT']
+        args['port'] = os.environ['SPECTRUM_PORT']
     tcpClient.connect((args['address'], int(args['port'])))
     Run(tcpClient, args)
     tcpClient.close()
