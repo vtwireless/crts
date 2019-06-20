@@ -148,10 +148,6 @@ def Run(tcpClientSock, args):
 if __name__ == '__main__':
     args = vars(parser.parse_args())
     tcpClient = socket(AF_INET,SOCK_STREAM)
-    if os.environ.get('SERVER_ADDRESS'):
-        args['address'] =  os.environ['SERVER_ADDRESS']
-    if os.environ.get('SPECTRUM_PORT'):
-        args['port'] = os.environ['SPECTRUM_PORT']
     tcpClient.connect((args['address'], int(args['port'])))
     Run(tcpClient, args)
     tcpClient.close()
