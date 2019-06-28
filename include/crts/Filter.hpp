@@ -532,9 +532,9 @@ class CRTSFilter
          *
          * \param len length in bytes.
          *
-         * \param inputChannelNum is the input channel number.
-         * Set \c inputChannelNum to \c ALL_CHANNELS to apply this to all
-         * channels in the filter.
+         * \param outputChannelNum is the input channel number.
+         * Set \c outputChannelNum to \c ALL_CHANNELS to apply this to all
+         * channels from the filter.
          */
         void output(size_t len, uint32_t outputChannelNum = ALL_CHANNELS);
 
