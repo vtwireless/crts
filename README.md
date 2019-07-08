@@ -21,12 +21,17 @@ See README in dependencies/ subdirectory.  Installing the dependencies is
 more involved than installing CRTS, so we provide a separate dependencies
 directory.
 
+If you are using this source code from a git repository there is a git
+submodule, webtop, https://github.com/vtwireless/webtop.git, that is
+software depends on.  Webtop can be downloaded by running the included
+*bootstrap* script.
+
 
 ## "make download" for code re-usability
 
 Not unique to CRTS, we introduce the idea of downloading all the files
 needed, before starting to build the software, so we have a "download"
-make target as in running ``make download`` as you'll see below.
+make target as in running *make download* as you'll see below.
 
 
 ## Building and Installing CRTS (this package)
@@ -41,7 +46,7 @@ make
 make install
 ```
 
-where you pick a better prefix than /usr/local/my_CRTS.
+where you pick a better prefix than */usr/local/my_CRTS*.
 
 
 ## Up grading Firmware and FPGA Images with Pre-built Images
@@ -92,4 +97,13 @@ $UHD_PREFIX/bin/uhd_image_loader" --args="type=x300,addr=192.168.12.2"
 
 For USB USRP devices
 https://files.ettus.com/manual/page_transport.html#transport_usb_udev
+
+## Development notes
+
+If you are developing using a git repository, run
+
+*git add htdocs/webtop && git commit -m "upgraded version of webtop"*
+
+to upgrade the webtop git submodule to your current checkout of
+crts.
 
