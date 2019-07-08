@@ -1,0 +1,3 @@
+[submodule "htdocs/webtop"]
+	path = htdocs/webtop
+	url = git@github.com:vtwireless/webtop.git
