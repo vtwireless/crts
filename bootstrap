@@ -28,9 +28,8 @@ url=https://raw.githubusercontent.com/lanceman2/quickbuild/$tag/quickbuild.make
 #
 # to get this long hex number
 
-#sha512sum=8c586f7d3a587e449667d547a4cb2dac6a3ece4e764a2d1494888d12c94a10384520be70ab76b580d966ecd94a20a14690530e33c2db5e0a5252d05ed42581aa
 
-sha512sum=4bb12b01391d1c62cc7cebd0705ba2cd5409c8d4e275f4952a120\
+quickbuild_make_sha512sum=4bb12b01391d1c62cc7cebd0705ba2cd5409c8d4e275f4952a120\
 2e0b1d442c435b2b9403eeffecbcd85e625325f2337ef60ec176840aa7f0c7a\
 e5efc57f1b13
 
@@ -93,20 +92,67 @@ EOF
 # get the quickbuild.make file from the web
 wget $url -O quickbuild.make.org 
 
-if [ -n "$sha512sum" ] ; then
+if [ -n "$quickbuild_make_sha512sum" ] ; then
     set +x
     # We wanted a particular file, so we checks it's sha512 sum.
-    echo "$sha512sum  quickbuild.make.org" | sha512sum -c
+    echo "$quickbuild_make_sha512sum  quickbuild.make.org" | sha512sum -c
     set -x
 else
     set +x
-    echo "The sha512sum of the downloaded file, before compressing it:"
+    echo "The sha512sum of the downloaded quickbuild.make file, before compressing it:"
     set -x
     sha512sum quickbuild.make.org
 fi
 
+# strip out comments
 sed quickbuild.make.org -e 's/^\s*\#.*$//g' -e '/^$/d' >> quickbuild.make.tmp
 
 rm quickbuild.make.org
 mv quickbuild.make.tmp quickbuild.make
+
+# We added the git submodule webtop by running:
+#   cd htdocs && git submodule add git@github.com:vtwireless/webtop.git webtop
+# or could have used:
+#   cd htdocs && git submodule add https://github.com/vtwireless/webtop.git webtop
+
+if [ -d .git ] ; then
+    # This is a git repository so:
+    # Download submodule(s) with git
+    git submodule update --init
+
+else
+
+    # This is not a git repository so:
+    # Download submodule(s) without the repository using github's
+    # tarball web API.
+    #
+    source ./GetSrcFromGithub.bash
+    tmpf=$(mktemp)
+    wget -O $tmpf https://github.com/vtwireless/webtop/tarball/master
+    if [ -n "$webtop_sha512sum" ] ; then
+        set +x
+        # We wanted a particular file, so we checks it's sha512 sum.
+        echo "$quickbuild_make_sha512sum  quickbuild.make.org" | sha512sum -c
+        set -x
+    else
+        echo "The sha512sum of the downloaded webtop/tarball file is:"
+        set -x
+        sha512sum $tmpf
+    fi
+    # untar without the top directory
+    mkdir htdocs/webtop
+    tar -xvf $tmpf --strip-components=1 --directory=htdocs/webtop
+    rm $tmpf
+fi
+
+
+# patch htdocs/webtop/ for use by this software project.
+#
+cat << EOF > ./htdocs/webtop/GNUmakefile
+# This is a generated file for the use of the crts software project
+
+INSTALL_DIR = \$(PREFIX)/htdocs/webtop
+
+include ../../quickbuild.make
+EOF
 

@@ -102,13 +102,21 @@ function WDApp(headerText, app, onclose = null, opts = null) {
         var events = [];
 
         this.showCatcher = function(cursor, types, func) {
-            // This ups up a net <div> that fills the whole root window
+            // This sets up a net <div> that fills the whole root window
             // and catches events for the caller of this function.  This "net"
-            // <div> is translucent.
-            eventCatcher.style.display = 'block';
+            // <div> is translucent or completely transparent.
+            //eventCatcher.style.cssText += 'cursor: ' + cursor + ';';
             eventCatcher.style.cursor = cursor;
+            eventCatcher.style.visibility =  'visible';
+            eventCatcher.style.display = 'block';
+            setTimeout(function() {
+                eventCatcher.style.cursor = cursor;
+                console.log('  cursor="' + cursor + '"');
+            }, 4000);
+            eventCatcher.style.cursor = cursor;
+            console.log('cursor="' + cursor + '"');
 
-            // remove and old handlers.
+            // remove the old handlers.
             events.forEach(function(obj) {
                 document.removeEventListener(obj.type, obj.func);
             });
@@ -124,6 +132,8 @@ function WDApp(headerText, app, onclose = null, opts = null) {
                 document.addEventListener(types, func);
                 events.push({type: types, func: func});
             }
+
+            eventCatcher.style.cursor = cursor;
         };
 
         this.hideCatcher = function(cursor=null) {
@@ -133,7 +143,7 @@ function WDApp(headerText, app, onclose = null, opts = null) {
             });
             events = [];
             eventCatcher.style.display = 'none';
-            eventCatcher.style.cursor = cursor?cursor:"default";
+            //eventCatcher.style.cursor = cursor?cursor:"default";
         };
 
 
