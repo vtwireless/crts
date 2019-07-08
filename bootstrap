@@ -1,25 +1,27 @@
 #!/bin/bash
 
-# This file is part of the quickbuild software package.
-# 
-# quickbuild is free software that is distributed under the free software
-# foundation's GNU Affero General Public License (AGPL) version 3.
-#
-# For more information see the quickbuild package homepage at:
-#   https://github.com/lanceman2/quickbuild
-#
-# You can get the latest version of this file from:
+# This script is only intended to be run to create files if this source
+# came from a git repository, be it from a
+# HTTP get request from https://github.com/vtwireless/crts/tarball/master
+# or a "git clone https://github.com/vtwireless/crts.git"
+
+# A proper tarball release of this software will contain additional files,
+# that are not checked into the git repository, which this script
+# generates.
+
+
+# This file was started from:
 # 
 #  https://raw.githubusercontent.com/lanceman2/quickbuild/master/examples/bootstrap_download/bootstrap
-#
-##############################################################################
 
 
-# The tag can be "master" or a full git check-in hash in lower case hex
+
+
+# The qbtag can be "master" or a full git check-in hash in lower case hex
 # like for example:
-#tag=dc184319be9a272ffa4528f5bb5d0902f1edbbbb
-tag=0.1
-url=https://raw.githubusercontent.com/lanceman2/quickbuild/$tag/quickbuild.make
+#qbtag=dc184319be9a272ffa4528f5bb5d0902f1edbbbb
+qbtag=0.1
+qb_url=https://raw.githubusercontent.com/lanceman2/quickbuild/$qbtag/quickbuild.make
 
 # If we wanted a particular file, so we checks it's sha512 sum.
 # Run:
@@ -43,7 +45,7 @@ function usage()
   This bootstrap script downloads and compresses a make file
   from the web via url:
 
-     $url
+     $qb_url
 
   We call it bootstrap because you need this make file before
   you can configure and make this package.
@@ -83,14 +85,14 @@ cat <<EOF > quickbuild.make.tmp
 #  You can get the uncompressed and better commented original version
 #  of this file from:
 #
-#      $url
+#      $qb_url
 #
 
 EOF
 
 
 # get the quickbuild.make file from the web
-wget $url -O quickbuild.make.org 
+wget $qb_url -O quickbuild.make.org 
 
 if [ -n "$quickbuild_make_sha512sum" ] ; then
     set +x
