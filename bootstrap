@@ -142,7 +142,7 @@ else
         sha512sum $tmpf
     fi
     # untar without the top directory
-    mkdir htdocs/webtop
+    mkdir -p htdocs/webtop
     tar -xvf $tmpf --strip-components=1 --directory=htdocs/webtop
     rm $tmpf
 fi
