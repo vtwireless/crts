@@ -59,7 +59,8 @@ declare -a uhd_dep=(
 
 #Dependencies for installing gnuradio from source
 
-declare -a gnuradio_dep=( 
+declare -a gnuradio_dep=(
+ "libzmq3-dev"
  "python-bs4"
  "python-cheetah"
  "python-cycler"
