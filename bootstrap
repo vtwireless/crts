@@ -15,7 +15,7 @@
 #  https://raw.githubusercontent.com/lanceman2/quickbuild/master/examples/bootstrap_download/bootstrap
 
 
-
+############################# CONFIGURATION #################################
 
 # The qbtag can be "master" or a full git check-in hash in lower case hex
 # like for example:
@@ -31,9 +31,20 @@ qb_url=https://raw.githubusercontent.com/lanceman2/quickbuild/$qbtag/quickbuild.
 # to get this long hex number
 
 
-quickbuild_make_sha512sum=4bb12b01391d1c62cc7cebd0705ba2cd5409c8d4e275f4952a120\
-2e0b1d442c435b2b9403eeffecbcd85e625325f2337ef60ec176840aa7f0c7a\
-e5efc57f1b13
+quickbuild_make_sha512sum=\
+4bb12b01391d1c62cc7cebd0705ba2cd5409c8d4e275f4952a120\
+2e0b1d442c435b2b9403eeffecbcd85e625325f2337ef60ec1768\
+40aa7f0c7ae5efc57f1b13
+
+
+# select what version of the webtop to use:
+
+webtop_tag=0.0.0
+webtop_url=https://github.com/vtwireless/webtop/tarball/$webtop_tag
+
+
+###########################################################################
+
 
 
 function usage()
@@ -49,6 +60,10 @@ function usage()
 
   We call it bootstrap because you need this make file before
   you can configure and make this package.
+
+  This bootstrap script also download the webtop package as
+  a git repo or a tarball, depending on whither this source
+  is from a github repo or a tarball release.
 
 EOF
     exit 1
@@ -113,8 +128,6 @@ rm quickbuild.make.org
 mv quickbuild.make.tmp quickbuild.make
 
 # We added the git submodule webtop by running:
-#   cd htdocs && git submodule add git@github.com:vtwireless/webtop.git webtop
-# or could have used:
 #   cd htdocs && git submodule add https://github.com/vtwireless/webtop.git webtop
 
 if [ -d .git ] ; then
@@ -130,11 +143,11 @@ else
     #
     source ./GetSrcFromGithub.bash
     tmpf=$(mktemp)
-    wget -O $tmpf https://github.com/vtwireless/webtop/tarball/master
+    wget -O $tmpf $webtop_url
     if [ -n "$webtop_sha512sum" ] ; then
         set +x
         # We wanted a particular file, so we checks it's sha512 sum.
-        echo "$quickbuild_make_sha512sum  quickbuild.make.org" | sha512sum -c
+        echo "$webtop_sha512sum $tmpf" | sha512sum -c
         set -x
     else
         echo "The sha512sum of the downloaded webtop/tarball file is:"
@@ -143,7 +156,7 @@ else
     fi
     # untar without the top directory
     mkdir -p htdocs/webtop
-    tar -xvf $tmpf --strip-components=1 --directory=htdocs/webtop
+    tar -xvzf $tmpf --strip-components=1 --directory=htdocs/webtop
     rm $tmpf
 fi
 
