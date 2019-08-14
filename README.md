@@ -27,26 +27,26 @@ software depends on.  Webtop can be downloaded by running the included
 *bootstrap* script.
 
 
+## Building and Installing CRTS (this package)
+
+Then run
+```
+  ./bootstrap
+  ./configure --prefix /usr/local/my_CRTS
+  make
+  make install
+```
+
+where you pick a better prefix than */usr/local/my_CRTS*.
+
 ## "make download" for code re-usability
 
 Not unique to CRTS, we introduce the idea of downloading all the files
 needed, before starting to build the software, so we have a "download"
 make target as in running *make download* as you'll see below.
 
-
-## Building and Installing CRTS (this package)
-
-
-Then run
-```
-./bootstrap
-./configure --prefix /usr/local/my_CRTS
-make download
-make
-make install
-```
-
-where you pick a better prefix than */usr/local/my_CRTS*.
+Currently the *bootstrap* script will run *make download* which
+does not require configuration.
 
 
 ## Up grading Firmware and FPGA Images with Pre-built Images
@@ -55,23 +55,23 @@ With a browser go to relative to your UHD installation prefix
 installation directory, UHD_PREFIX
 
 ```
-$UHD_PREFIX/share/doc/uhd/doxygen/html/page_images.html
+  $UHD_PREFIX/share/doc/uhd/doxygen/html/page_images.html
 ```
 
 Download files by running:
 
 ```
-$UHD_PREFIX/bin/uhd_images_downloader
+  $UHD_PREFIX/bin/uhd_images_downloader
 ```
 
 This will download files to:
 ```
-$UHD_PREFIX/share/uhd/images/
+  $UHD_PREFIX/share/uhd/images/
 ```
 
 Read some more on the web pages.  In my case I had a USRP N210 and I ran:
 ```
-uhd_image_loader --args="type=usrp2,addr=192.168.10.2"
+  uhd_image_loader --args="type=usrp2,addr=192.168.10.2"
 ```
 
 In my case the output on the terminal where I ran that was:

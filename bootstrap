@@ -171,3 +171,23 @@ INSTALL_DIR = \$(PREFIX)/htdocs/webtop
 include ../../quickbuild.make
 EOF
 
+# The source to this package requires lots more files in order to build
+# it.  It requires files that are part of other projects, so in order to
+# not replicate data we do not check them into the crts repository.
+#
+# https://stackoverflow.com/questions/34719785/how-to-add-submodule-files-to-a-github-release
+#
+# Hence we can't create a tarball of this package, via the github web API,
+# that includes all needed files to build this package.
+#
+# We have URLs and hashes of the required files in the build scripts in
+# this package.
+
+# Note: 'make download' must not be dependent on running ./configure
+# or this here will fail.
+#
+# download a bunch of files:
+make download
+
+# Now if you delete this file and all the git repository related files you
+# should have a full source release in this top directory.
