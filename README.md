@@ -107,7 +107,7 @@ If you are developing using a git repository, run
 to upgrade the webtop git submodule to your current checkout of
 crts.
 
-### git submodules
+### on git submodules
 How can I specify a branch/tag when adding a Git submodule?
 https://stackoverflow.com/questions/1777854/how-can-i-specify-a-branch-tag-when-adding-a-git-submodule
 
