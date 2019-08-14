@@ -257,7 +257,7 @@ function WDApp(headerText, app, onclose = null, opts = null) {
             let focusEl = findFocusedApp();
             let fullEl = fullscreenElement()
 
-            console.log('focused element=' + focusEl);
+            //console.log('focused element=' + focusEl);
 
             if(fullEl) {
                 if(focusEl !== fullEl) {
@@ -280,13 +280,11 @@ function WDApp(headerText, app, onclose = null, opts = null) {
             // firefox 65.0 does not let this code get key 'F11'
             // it just goes fullscreen with the whole body.
             //
-            console.log("e.key=" + e.key);
-
+            //console.log("e.key=" + e.key);
 
             if(e.key === 'F11' || e.key === '+') {
                 if(!e.repeat)
                     toggleFullScreen();
-
                 e.preventDefault();
             }
         });

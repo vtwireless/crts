@@ -107,3 +107,21 @@ If you are developing using a git repository, run
 to upgrade the webtop git submodule to your current checkout of
 crts.
 
+### git submodules
+How can I specify a branch/tag when adding a Git submodule?
+https://stackoverflow.com/questions/1777854/how-can-i-specify-a-branch-tag-when-adding-a-git-submodule
+
+If you want to move the submodule to a particular tag:
+```
+  cd submodule_directory
+  git checkout v1.0
+  cd ..
+  git add submodule_directory
+  git commit -m "moved submodule to v1.0"
+  git push
+```
+Then, another developer who wants to have submodule_directory changed to that tag, does this
+```
+  git pull
+  git submodule update --init
+```
