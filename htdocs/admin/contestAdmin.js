@@ -1,5 +1,6 @@
-require('/js/showHide.js');
+require('/showHide.js');
 require('/admin/contestAdmin.css');
+
 
 function contestAdminInit(io, parentElement=null) {
 
@@ -560,10 +561,10 @@ function contestAdminInit(io, parentElement=null) {
     h.className = 'contestPanel';
     contestPanel.appendChild(h);
 
-    if(typeof(WDApp) === 'function' && false/* this does not work yet*/) {
+    if(typeof(WTApp) === 'function' && false/* this does not work yet*/) {
 
         // It's just not compatible yet.
-        new WDApp('Control Panel', contestPanel);
+        new WTApp('Control Panel', contestPanel);
 
     } else {
         if(parentElement) parentElement.appendChild(contestPanel);

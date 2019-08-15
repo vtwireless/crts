@@ -1,17 +1,5 @@
-require('/css/main.css');
-require('/js/socketIO.js');
-
-// The big question should session (this javaScript file) depend on
-// desktop?  Well maybe we could just commit to requiring a desktop, and
-// then let the code vary how desktop manifests itself to the user.  Maybe
-// even port it to Android and IPhone with a minimal app-window swapper
-// like the common photo swapper but with photos replaced by "app
-// windows".
-//
-require('/webDesktop/webDesktop.js');
-// webDesktop.js cannot require webDesktop.css because it is not
-// part of the CRTS package we we require webDesktop.css too.
-require('/webDesktop/webDesktop.css');
+require('/main.css');
+require('/socketIO.js');
 
 
 function createSession(connectCallback=null) {
@@ -161,8 +149,8 @@ function createSession(connectCallback=null) {
     /////////////////////////////////////////////////////////////////
 
     // TODO: It would be hard to compile these require() calls out.
-    // Currently the server will not get files from /admin/ for none
-    // admin users.
+    // Currently the server will not get files from /admin/ for
+    // non-admin users.
     //
     require('/admin/contestAdmin.js', function() {
 

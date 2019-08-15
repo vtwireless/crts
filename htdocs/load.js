@@ -1,7 +1,6 @@
 // This file must be served from the web server document root.
 //
 
-
 // javaScript load function
 //
 // Usage:
@@ -107,6 +106,7 @@ function require(url, callback = function() {}) {
 
         let file = src.replace(/\?.*$/, ''); // strip off the query
         if(file.substr(file.length-3) === '.js') return 'js';
+        if(file.substr(file.length-4) === '.mjs') return 'mjs';
         if(file.substr(file.length-4) === '.css') return 'css';
         if(file.substr(file.length-4) === '.htm') return 'htm';
          fail('Unknown file type for src=' + src);
@@ -160,6 +160,13 @@ function require(url, callback = function() {}) {
                 content = document.createElement('script');
                 content.src = src.url;
                 content.onload = onLoad;
+                break;
+            case 'mjs':
+                // loading javaScript type=module
+                content = document.createElement('script');
+                content.src = src.url;
+                content.onload = onLoad;
+                content.type = 'module';
                 break;
             case 'css':
                 // loading CSS (cascading style sheet)
@@ -215,7 +222,10 @@ function require(url, callback = function() {}) {
     // local file system urls like: file:///path/to/file.js
     // otherwise require.rootDir is an empty string.
     //
-    url = require.rootDir + url;
+    if(url.substr(0,1) === '/')
+        url = require.rootDir + url;
+    else
+        url = require.rootDir + '/' + url;
 
     var p = url.replace(/\?.*$/, '');
 
@@ -256,7 +266,6 @@ require.content = {}; // { src: content }
 
 
 (function() {
-
 
     let count = 0;
     let scripts = document.getElementsByTagName('script');

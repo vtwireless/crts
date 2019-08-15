@@ -18,10 +18,11 @@ canvas.clock {
 
 
     </style>
-    <link rel='stylesheet' href='../webDesktop/webDesktop.css'></link>
+    <link rel='stylesheet' href='../webtop/webtop.css'></link>
     <link rel='stylesheet' href='scope.css'></link>
-    <script src='../webDesktop/webDesktop.js'></script>
-    <script src='../webDesktop/clock.js'></script>
+    <script src='/load.js'></script>
+     <script src='../webtop/webtop.js'></script>
+    <script src='../webtop/clock.js'></script>
     <script src=scope.js></script>
     <script>
 
@@ -29,7 +30,7 @@ canvas.clock {
 onload = function() {
 
     var clock = new Clock;
-    new WDApp('Clock', clock.getElement());
+    new WTApp('Clock', clock.getElement());
     clock.run();
 
     const numPoints = 200;
@@ -44,7 +45,7 @@ onload = function() {
     })*/
     ;
 
-    new WDApp('Scope', scope.getElement());
+    new WTApp('Scope', scope.getElement());
 
     var x = [], y = [];
     for(let i=0; i<numPoints; ++i) {

@@ -16,11 +16,7 @@ export CRTS_UPLOAD_DIR=$HOME/CRTS_UPLOAD
 
 set +e
 
-if which crts_contestWebServer ; then
-    prog=$(which crts_contestWebServer)
-else
-    prog=../bin/crts_contestWebServer
-fi
+prog=../bin/crts_contestWebServer
 
 exec $prog\
  --user=admin --password=adminK2\

@@ -1,4 +1,4 @@
-require('/css/showHide.css');
+require('/showHide.css');
 
 // The header must be in the container if it is not a string.  This will
 // slide in a container tag element to hold the show/hide bottom.

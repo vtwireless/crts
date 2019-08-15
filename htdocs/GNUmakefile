@@ -1,4 +1,4 @@
-SUBDIRS := css js admin img tests scope spectrum floatWidget webtop
+SUBDIRS := admin img tests scope spectrum floatWidget webtop
 
 INSTALL_DIR = $(PREFIX)/htdocs
 

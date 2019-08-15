@@ -18,10 +18,10 @@ canvas.clock {
 
 
     </style>
-    <link rel='stylesheet' href='../webDesktop/webDesktop.css'></link>
+    <link rel='stylesheet' href='../webtop/webtop.css'></link>
     <link rel='stylesheet' href='scope.css'></link>
-    <script src='../webDesktop/webDesktop.js'></script>
-    <script src='../webDesktop/clock.js'></script>
+    <script src='../webtop/webtop.js'></script>
+    <script src='../webtop/clock.js'></script>
     <script src=scope.js></script>
     <script>
 
@@ -54,7 +54,7 @@ onload = function() {
 
 
     var clock = new Clock;
-    new WDApp('Clock', clock.getElement());
+    new WTApp('Clock', clock.getElement());
     clock.run();
 
     // wave parameters
@@ -80,7 +80,7 @@ onload = function() {
 
     var scope = new Scope;
 
-    new WDApp('String', scope.getElement());
+    new WTApp('String', scope.getElement());
 
     var x = [], y = [];
     var t = 0.0;

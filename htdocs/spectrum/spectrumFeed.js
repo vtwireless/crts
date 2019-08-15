@@ -4,13 +4,11 @@
 //
 // require() is from /load.js
 
-require('/js/session.js');
+require('/session.js');
 require('/spectrum/launcher.css');
 require('/floatWidget/floatWidget.js');
 require('/floatWidget/floatWidget.css');
-
-// We should have webDesktop already in session
-// require('/webDesktop/webDesktop.js');
+require('/webtop/webtop.js');
 
 
 
@@ -54,7 +52,7 @@ function createSpectrumFeeds(io, opts = {}) {
     ++createSpectrumFeeds.count;
 
 
-    const defaultOpts = { parentNode: 'WDApp' };
+    const defaultOpts = { parentNode: 'WTApp' };
     // Fill in missing options in argument opts with defaults.
     Object.keys(defaultOpts).forEach(function(key) {
         if(opts[key] === undefined)
@@ -86,8 +84,8 @@ function createSpectrumFeeds(io, opts = {}) {
     h2.appendChild(document.createTextNode('Spectrum Displays'));
     div.appendChild(h2);
 
-    if(opts.parentNode === 'WDApp')
-        new WDApp('Spectrum Feeds', div, {
+    if(opts.parentNode === 'WTApp')
+        new WTApp('Spectrum Feeds', div, {
             close: false /*do not let it close*/});
     else if(opts.parentNode)
         opts.parentNode.appendChild(div);
