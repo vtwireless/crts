@@ -37,12 +37,6 @@ quickbuild_make_sha512sum=\
 40aa7f0c7ae5efc57f1b13
 
 
-# select what version of the webtop to use:
-
-webtop_tag=0.0.0
-webtop_url=https://github.com/vtwireless/webtop/tarball/$webtop_tag
-
-
 ###########################################################################
 
 
@@ -61,9 +55,7 @@ function usage()
   We call it bootstrap because you need this make file before
   you can configure and make this package.
 
-  This bootstrap script also download the webtop package as
-  a git repo or a tarball, depending on whither this source
-  is from a github repo or a tarball release.
+  This bootstrap script also downloads lots of other files.
 
 EOF
     exit 1
@@ -127,49 +119,6 @@ sed quickbuild.make.org -e 's/^\s*\#.*$//g' -e '/^$/d' >> quickbuild.make.tmp
 rm quickbuild.make.org
 mv quickbuild.make.tmp quickbuild.make
 
-# We added the git submodule webtop by running:
-#   cd htdocs && git submodule add https://github.com/vtwireless/webtop.git webtop
-
-if [ -d .git ] ; then
-    # This is a git repository so:
-    # Download submodule(s) with git
-    git submodule update --init
-
-else
-
-    # This is not a git repository so:
-    # Download submodule(s) without the repository using github's
-    # tarball web API.
-    #
-    source ./GetSrcFromGithub.bash
-    tmpf=$(mktemp)
-    wget -O $tmpf $webtop_url
-    if [ -n "$webtop_sha512sum" ] ; then
-        set +x
-        # We wanted a particular file, so we checks it's sha512 sum.
-        echo "$webtop_sha512sum $tmpf" | sha512sum -c
-        set -x
-    else
-        echo "The sha512sum of the downloaded webtop/tarball file is:"
-        set -x
-        sha512sum $tmpf
-    fi
-    # untar without the top directory
-    mkdir -p htdocs/webtop
-    tar -xvzf $tmpf --strip-components=1 --directory=htdocs/webtop
-    rm $tmpf
-fi
-
-
-# patch htdocs/webtop/ for use by this software project.
-#
-cat << EOF > ./htdocs/webtop/GNUmakefile
-# This is a generated file for the use of the crts software project
-
-INSTALL_DIR = \$(PREFIX)/htdocs/webtop
-
-include ../../quickbuild.make
-EOF
 
 # The source to this package requires lots more files in order to build
 # it.  It requires files that are part of other projects, so in order to
