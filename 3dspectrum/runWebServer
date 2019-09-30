@@ -1,6 +1,6 @@
 #!/bin/bash
 
-hostname=kermit.vtwireless.vt.edu
+hostname=kermit.wireless.vt.edu
 
 
 set -euxo pipefail
