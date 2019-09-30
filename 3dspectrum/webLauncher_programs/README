@@ -1,0 +1,3 @@
+This directory contains the web launcher programs.
+Running the program ../runWebServer will regenerate the directory
+SpectrumFeed/ and programs in it.

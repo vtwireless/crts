@@ -1,0 +1,58 @@
+#!/bin/bash
+
+hostname=kermit.vtwireless.vt.edu
+
+
+set -euxo pipefail
+
+cd $(dirname ${BASH_SOURCE[0]})
+
+
+
+server=../bin/crts_contestWebServer
+find_devices="../bin/crts_findUSRPs addr"
+
+cat << EOF
+
+Try:
+
+  http://localhost:9091/3dspectrum/?user=admin&password=admin123
+
+OR
+
+  https://$hostname:9090/3dspectrum/?user=admin&password=admin123
+
+EOF
+
+# We'll generate a script for each USRP that we find
+
+# Remove the old scripts
+rm -f webLauncher_programs/SpectrumFeed/*
+
+mkdir -p webLauncher_programs/SpectrumFeed
+
+usrps="$(${find_devices})"
+
+
+for addr in $usrps ; do
+    file=webLauncher_programs/SpectrumFeed/addr_${addr}
+    cat << EOF > $file
+#!/bin/bash
+
+set -ex
+
+cd \$(dirname \${BASH_SOURCE[0]})
+
+exec ../spectrumFeed -d addr=${addr}
+EOF
+    chmod 755 $file
+    done
+
+
+$server\
+ --https_port 9090\
+ --http_port 9091\
+ --user=admin --password=admin123\
+ --launcher_dir webLauncher_programs\
+ --debug
+

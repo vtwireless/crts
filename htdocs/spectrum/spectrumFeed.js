@@ -91,7 +91,7 @@ function createSpectrumFeeds(io, opts = {}) {
         opts.parentNode.appendChild(div);
     else {
         document.body.appendChild(div);
-        require('/js/showHide.js', function() {
+        require('/showHide.js', function() {
             makeShowHide(div, { header: h2 });
         });
     }

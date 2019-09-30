@@ -80,7 +80,7 @@ parser.add_argument('-p','--port',\
         help='Server port.  Env SPECTRUM_PORT will override this value.',\
         default=9282)
 parser.add_argument('-d','--device',\
-        help='UHD USRP device',\
+        help='UHD USRP device.  For example: -d addr=192.168.10.3',\
         default='addr=192.168.10.3')
 parser.add_argument('-a','--address',\
         help='Server address to send spectrum data to.  Env SERVER_ADDRESS will override this value.',\

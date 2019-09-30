@@ -46,3 +46,10 @@ Add files:
   * *git commit -a -m "Adding pages"*
   * *git push origin gh-pages*
 
+
+## Other Web Desktops
+
+ * https://webdesktop.net
+ * https://en.wikipedia.org/wiki/Web_desktop
+
+ 

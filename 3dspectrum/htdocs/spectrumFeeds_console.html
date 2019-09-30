@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang=en>
+<head>
+    <meta charset="utf-8"/>
+    <script src='/load.js'></script>
+
+    <script>
+
+require('/spectrum/feed.js');
+
+onload = function() {
+
+    createSession(function(io) {
+        var spc = spectrumFeeds(io, {
+            // newSpectrum callback
+            newSpectrum: function(id) {  
+                console.log('newSpectrum:' + [...arguments]);
+                console.log("SUBSCRIBING TO: " + id);
+                spc.subscribe(id,  function() {
+                    console.log('spectrumUpdate:' + [...arguments]);
+                });
+            },
+            spectrumEnd: function() {
+                console.log('spectrumEnd:' + [...arguments]);
+            }
+        });
+    }, false/* no admin panel*/);
+};
+    </script>
+
+
+    <title>CRTS</title>
+</head>
+<body>
+
+    <h4><a href=".">Back to index</a></h4>
+
+    <h1>Console Spectrum Feed Test</h1>
+
+    <p>This uses <e>/spectrum/feed.js</e> and writes
+    spectrum events to the console.log().  Open the
+    browser debugger console and see the spew from
+    spectrum events.</p>
+
+    <p>This is not intended to be an end all killer web app
+    page.  It just intended to show how to read spectrum events
+    as we have defined them here in <e>/spectrum/feed.js</e>
+    in the object constructor function <e>spectrumFeeds()</e>.</p>
+
+</body>
+</html>

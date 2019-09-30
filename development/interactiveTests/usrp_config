@@ -1,7 +1,7 @@
 # This is a bash file that is sourced
 
-USRP1="addr=192.168.40.210"
+USRP1="addr=192.168.10.4"
 
-USRP2="addr=192.168.40.110"
+USRP2="addr=192.168.10.3"
 
-USRP3="addr=192.168.40.111"
+USRP3="addr=192.168.10.2"

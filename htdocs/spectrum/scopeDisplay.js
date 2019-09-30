@@ -45,7 +45,7 @@ window['2D Scope'] = function(desc, onclose = null) {
 
     var scope = new Scope;
 
-    var app = new WDApp(desc,
+    var app = new WTApp(desc,
             scope.getElement(),
             function() {
                 console.log('Removing spectrum scope "' +

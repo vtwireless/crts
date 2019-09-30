@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang=en>
+<head>
+    <meta charset="utf-8"/>
+    <script src='/load.js'></script>
+
+    <script>
+
+require('/spectrum/spectrumFeed.js');
+
+onload = function() {
+    createSession(function(io) {
+        createSpectrumFeeds(io, { parentNode: null});
+    }, false/*No admin panel*/);
+};
+    </script>
+
+
+    <title>CRTS</title>
+</head>
+<body>
+
+    <h1>Spectrum Feed Test</h1>
+
+    <p><a href=".">Back</a></p>
+
+</body>
+</html>

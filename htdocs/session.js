@@ -2,7 +2,7 @@ require('/main.css');
 require('/socketIO.js');
 
 
-function createSession(connectCallback=null) {
+function createSession(connectCallback=null, addAdminPanel=true) {
 
     function _showUser(user) {
 
@@ -138,10 +138,12 @@ function createSession(connectCallback=null) {
         _showUser(user);
     });
 
-    if(user.name !== 'admin') {
+    if(user.name !== 'admin' || !addAdminPanel) {
         _client(user, connectCallback);
         return;
     }
+
+
 
     /////////////////////////////////////////////////////////////////
     // At this point we are an "admin" so load contestAdmin.js

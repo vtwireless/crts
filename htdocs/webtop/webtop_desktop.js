@@ -161,7 +161,6 @@ function WTApp(headerText, app, onclose = null, opts = null) {
     }
 
 
-
     // offsetWidth and offsetHeight includes padding, scrollBar and borders.
     win.style.left = (root.win.offsetWidth - win.offsetWidth)/2 + 'px';
     win.style.top = (root.win.offsetHeight - win.offsetHeight)/2 + 'px';
@@ -434,24 +433,38 @@ function WTApp(headerText, app, onclose = null, opts = null) {
     }
 
     addResizeAction();
+
+    var closed = false;
+
+    this.close = function() {
+
+        // We let this happen only once.
+        if(closed) return;
+        closed = true;
+        if(onclose) onclose();
+        popForward();
+        delete root.wtApps[This.appIndex];
+        root.totalApps--;
+        root.win.removeChild(win);
+    };
 }
 
 
 // Make a webtop root window and other things
 // used to manage the WTApp() objects.
 //
-function WTRoot(rootWin = null) {
+function WTRoot(win = null) {
 
-    if(!rootWin) {
-        rootWin = document.body;
-        rootWin.className = 'WTroot';
+    if(!win) {
+        win = document.body;
+        win.className = 'WTroot';
     }
 
     var eventCatcher = document.createElement('div');
     eventCatcher.className = 'WTeventCatcher';
     document.body.appendChild(eventCatcher);
 
-    this.win = rootWin;
+    this.win = win;
     this.eventCatcher = eventCatcher;
 
     if(WTApp.defaultRoot === undefined)
@@ -482,7 +495,7 @@ function WTRoot(rootWin = null) {
         'mozRequestFullScreen',
         'msRequestFullscreen'
     ].forEach(function(rfs) {
-        if(!requestFullscreen && rootWin[rfs])
+        if(!requestFullscreen && win[rfs])
             requestFullscreen = rfs;
     });
 

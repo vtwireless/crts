@@ -13,7 +13,6 @@ div.WTeventCatcher {
 }
 
 div.WTroot, body.WTroot {
-    overflow: hidden;
     position: absolute;
     padding: 0px;
     margin: 0px;

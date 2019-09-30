@@ -15,11 +15,13 @@ int main(int argc, char *argv[])
 {
     uhd::device_addrs_t device_addrs = uhd::device::find(uhd::device_addr_t(""));
 
+    const char *field = 0;
+
     if(argc > 2 || (argc == 2 && argv[1][0] == '-'))
     {
         printf(
 "\n"
-"  Usage: %s [host]\n"
+"  Usage: %s [FIELD]\n"
 "\n"
 "    Find and print UHD USRP devices as JSON.   Prints to stdout\n"
 " a JSON object that has information about the UHD USRP devices\n"
@@ -30,15 +32,17 @@ int main(int argc, char *argv[])
 "    Note: this links with buggy libuhd library that prints to\n"
 "  stderr (not stdout).\n"
 "\n"
-"    If one argument is given it will add that argument as the host\n"
-" in the printed JSON object, otherwise host is an empty string.\n"
+"    If the FIELD argument is given this will just print that one field\n"
+"  in each line.\n"
 "\n"
 "   Example output:\n"
 "\n"
-"  [\n"
-"      {\"type\":\"usrp2\",\"host\":\"\",\"device\":\"192.168.12.2\",\"name\":\"\",\"serial\":\"30EE238\"},\n"
-"      {\"type\":\"usrp2\",\"host\":\"\",\"device\":\"192.168.10.3\",\"name\":\"\",\"serial\":\"E0R14N9UP\"}\n"
-"  ]\n"
+"[\n"
+"  {\"type\":\"x300\",\"addr\":\"192.168.40.101\",\"fpga\":\""
+  "HG\",\"name\":\"\",\"serial\":\"30EE438\",\"product\":\"X310\"},\n"
+"  {\"type\":\"x300\",\"addr\":\"192.168.40.201\",\"fpga\":\""
+  "HG\",\"name\":\"\",\"serial\":\"30F1105\",\"product\":\"X310\"}\n"
+"]\n"
 "\n"
 "\n",
             argv[0]);
@@ -50,6 +54,10 @@ int main(int argc, char *argv[])
     if (device_addrs.size() == 0){
         fprintf(stderr, "No UHD Devices Found\n");
         return EXIT_FAILURE;
+    }
+
+    if(argc == 2) {
+        field = argv[1];
     }
 
     // examples:
@@ -67,7 +75,9 @@ int main(int argc, char *argv[])
 
     std::map<std::string, bool> found_devices;
 
-    printf("[\n");
+
+    if(!field)
+        printf("[\n");
 
     for (size_t i = 0; i < device_addrs.size(); ++i)
     {
@@ -77,6 +87,11 @@ int main(int argc, char *argv[])
             continue;
 
         found_devices[device_addrs[i]["serial"]] = true;
+        
+        if(field) {
+            printf("%s\n", device_addrs[i]["addr"].c_str());
+            continue;
+        }
 
         std::string str = device_addrs[i].to_string();
 
@@ -119,8 +134,10 @@ int main(int argc, char *argv[])
         }
     }
 
-    printf("\n]\n");
+    if(field)
+        return EXIT_SUCCESS;
 
+    printf("\n]\n");
     fprintf(stderr, "%d devices found\n", count);
 
     return EXIT_SUCCESS;
