@@ -31,6 +31,12 @@ aa96cd9dd39c4209e64ea382b85d0960881009269a91c296876be4fc5\
 0be5ee03928e84ee0e96c71eb13c078c63032ea33c7604e3d1bc4e3155\
 08d2b72b7f990040dac09
         ;;
+    "v3.14.1.1")
+	sha512sum=52e6410dae94ae671829c33dca8f909ac8f7f2f42cea\
+805af3f1c9bf69c0025e6694ea717bca46e87e0e02196e6899ce3f9053d\
+45f3191d211c7db78fcf51419
+        ;;
+
 
 esac
 
@@ -43,3 +49,4 @@ source ../../GetSrcFromGithub.bash
 #Usage: GetSrcFromGithub user package tag tarname [sha512sum]
 
 GetSrcFromGithub EttusResearch uhd $UHD_TAG uhd $sha512sum
+

@@ -42,6 +42,7 @@ srcs :=\
  throttle.cpp\
  liquidFrame.cpp\
  liquidSync.cpp\
+ liquidFMDemod.cpp\
  joystick.cpp\
  sink.cpp\
  fileIn.cpp\
@@ -79,6 +80,7 @@ liquidSync.so_LDFLAGS := $(LIQUID_LDFLAGS)
 
 liquidFrame.so_LDFLAGS := $(LIQUID_LDFLAGS)
 
+liquidFMDemod.so_LDFLAGS := $(LIQUID_LDFLAGS)
 
 
 # above we auto generate lines like this:
