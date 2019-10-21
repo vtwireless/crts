@@ -18,11 +18,12 @@ require('/session.js');
  *  methods:
  *
  *    subscribe(id,
- *          spectrumUpdateCallback(id, cFreq, bandwidth,
+ *          function spectrumUpdateCallback(id, cFreq, bandwidth,
  *                  updatePeriod, data))
  *
+ *    unsubscribe(id)
  *
- * 
+ *    setSpectrumParameters(id, cFreq, bandwidth, updatePeriod, bins) 
  */
 function spectrumFeeds(io, opts = {}) {
 
@@ -41,7 +42,8 @@ function spectrumFeeds(io, opts = {}) {
                 bandwidth, updatePeriod, bins) {
 
         spectrums[id] = {
-            subscribers: [] // spectrumUpdate user callbacks.
+            subscribers: [], // spectrumUpdate user callbacks.
+            update: [] // last update
         };
 
         if(typeof(opts.newSpectrum) === 'function')
@@ -68,16 +70,18 @@ function spectrumFeeds(io, opts = {}) {
     io.On("spectrumUpdate", function(id, cFreq, bandwidth,
             updatePeriod, data) {
 
-        if(spectrums[id] !== undefined &&
-                spectrums[id].subscribers.length > 0) {
+        if(spectrums[id] !== undefined) {
             args = [...arguments];
-            spectrums[id].subscribers.forEach(function(subscriber) {
-                // call the users spectrum display callback
-                //console.log("subscriber=" + subscriber);
-                subscriber([...args]);
-            });
+            if(spectrums[id].subscribers.length > 0) {
+                spectrums[id].subscribers.forEach(function(subscriber) {
+                    // call the users spectrum display callback
+                    //console.log("subscriber=" + subscriber);
+                    subscriber([...args]);
+                });
+            }
+            // Save the last update state:
+            spectrums[id].update = args;
         }
-
     });
 
 
@@ -95,7 +99,15 @@ function spectrumFeeds(io, opts = {}) {
             io.Emit('spectrumUnsubscribe', id);
             // Remove all the subscriber callbacks.
             spectrums[id].subscribers = [];
+            spectrums[id].update = null;
         }
+    };
+
+    obj.setSpectrumParameters = function(id, cFreq, bandwidth,
+        updatePeriod, bins) {
+            if(spectrums[id] !== undefined)
+                io.Emit("setSpectrumParameters", id, cFreq,
+                    bandwidth, updatePeriod, bins);
     };
 
 
