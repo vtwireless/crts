@@ -88,6 +88,7 @@ LiquidFMDemod::input(void *buffer, size_t len, uint32_t channelNum)
 {
     DASSERT(buffer, "");
     DASSERT(len, "");
+    printf("%zu\n", len );
     len_out = 0;
     outputBuffer = (unsigned char *) getOutputBuffer(0);
     advanceInput(len-len%sizeof(std::complex<float>));
