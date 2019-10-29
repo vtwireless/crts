@@ -1,6 +1,7 @@
 #!/bin/bash
 
 hostname=kermit.wireless.vt.edu
+https_port=9090
 
 
 set -euxo pipefail
@@ -12,17 +13,23 @@ cd $(dirname ${BASH_SOURCE[0]})
 server=../bin/crts_contestWebServer
 find_devices="../bin/crts_findUSRPs addr"
 
+function PrintURL() {
+
+    # wait a little so this print shows after the server spew
+    # TODO: have this test if the server is up, instead of sleep.
+    sleep 2
 cat << EOF
 
 Try:
 
-  http://localhost:9091/3dspectrum/?user=admin&password=admin123
 
-OR
 
-  https://$hostname:9090/3dspectrum/?user=admin&password=admin123
+  https://${hostname}:${https_port}/3dspectrum/?user=admin&password=admin123
+
+
 
 EOF
+}
 
 # We'll generate a script for each USRP that we find
 
@@ -49,8 +56,10 @@ EOF
     done
 
 
+PrintURL& # this will print URL after some short time
+
 $server\
- --https_port 9090\
+ --https_port $https_port\
  --http_port 9091\
  --user=admin --password=admin123\
  --launcher_dir webLauncher_programs\

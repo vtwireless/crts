@@ -88,10 +88,19 @@ LiquidFMDemod::input(void *buffer, size_t len, uint32_t channelNum)
 {
     DASSERT(buffer, "");
     DASSERT(len, "");
+    printf("%zu\n", len );
     len_out = 0;
     outputBuffer = (unsigned char *) getOutputBuffer(0);
     advanceInput(len-len%sizeof(std::complex<float>));
     freqdem_demodulate(fdem, s, &y);
+    if(len_out == 0) return; // nothing to output.
+
+
+    // TODO: figure out this length.  Not just guessing.
+    //
+    ASSERT(len_out <= outBufferLen, "");
+
+    output(len_out, CRTSFilter::ALL_CHANNELS);
 
 }
 
