@@ -96,7 +96,7 @@ class Logger: public CRTSController
 
         void execute(CRTSControl *c, const void *buffer, size_t len,
                 uint32_t channelNum) { run(c); };
-
+        DSPEW("testing constructor");
     private:
 
         double GetTime(void)
@@ -132,13 +132,14 @@ Logger::Logger(int argc, const char **argv):
     period = opt.get("--period", 0.0);
 
     int nFiles = 0;
+    DSPEW("argc %d", argc);
 
     for(int i=0; i<argc;)
     {
         if(strcmp(argv[i], "--file") == 0)
         {
             ++i;
-
+            DSPEW("argc %d", argc);
             if(((i+2)>=argc) || (strncmp("--", argv[i+1], 2) == 0))
             {
                 ERROR("bad --file option");

@@ -15,11 +15,14 @@ class Monitor: public CRTSController
         ~Monitor(void) {  DSPEW(); };
 
         void execute(CRTSControl *c, void * &buffer, size_t &len, uint32_t channelNum);
-
-        void shutdown(CRTSControl *c)
+        void start(CRTSControl *t, CRTSControl *r, uint32_t numIn, uint32_t numOut)
         {
             DSPEW("last use of CRTS Control named \"%s\"", c->getName());
-        };
+        }
+        void stop(CRTSControl *t, CRTSControl *r)
+        {
+            DSPEW("last use of CRTS Control named \"%s\"", c->getName());
+        }
 
     private:
 
@@ -80,3 +83,4 @@ void Monitor::execute(CRTSControl *c, void * &buffer, size_t &len, uint32_t chan
 
 // Define the module loader stuff to make one of these class objects.
 CRTSCONTROLLER_MAKE_MODULE(Monitor)
+

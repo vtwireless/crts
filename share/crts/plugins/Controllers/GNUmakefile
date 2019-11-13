@@ -15,8 +15,7 @@ INSTALL_DIR = $(PREFIX)/share/crts/plugins/$(notdir $(CURDIR))
 srcs := $(patsubst %.cpp,%,$(wildcard *.cpp))
 
 # For now just this.
-srcs := joystickTx dualTx shell webClient logger
-
+srcs := joystickTx dualTx shell webClient logger controlstdout
 
 define MkSource
   $(1).so_SOURCES := $(1).cpp
