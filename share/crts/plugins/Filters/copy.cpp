@@ -183,24 +183,50 @@ void Copy::input(void *buffer, size_t len, uint32_t inChannelNum)
 
     if(inChannelNum >= startingSinkInputChannel)
     {
-        // Sink this input channel.  We pretend to read it by advancing to
-        // the next chunk of data on this conveyor belt like buffer.
+        // Sink this input channel.  We pretend to read it by
+        // automatically advancing to the next chunk of data on this
+        // conveyor belt like buffer.
         //
         return;
     }
 
-    memcpy(getOutputBuffer(outputChannel[inChannelNum]), buffer, len);
+    // buf is a buffer that we can index a byte at a time.
+    //
+    // g++ will not let me increment buffer, even with casting, so we use
+    // buf as a byte pointer that points to buffer.  I do not understand
+    // why that is we have to declare another variable, when type casing
+    // could do it.
+    uint8_t *buf = (uint8_t *) buffer;
 
-    // Push input to output; in this case without modification, but we
-    // could do something like multiply by a constant.  Then again we did
-    // not type this data, so how could we change it.
-    //
-    // This writes to the output buffer.  It knows that it must copy from
-    // the current input buffer to outputChannel[i], because this is the
-    // source of outputChannel[inChannelNum] via createOutputBuffer() in
-    // start().
-    //
-    output(len, outputChannel[inChannelNum]);
+    while(len) {
+
+        size_t outLen = len;
+        if(outLen > maxBufferLen)
+            outLen = maxBufferLen;
+        
+        // Move as much as we can of the input data to the output buffer.
+        memcpy(getOutputBuffer(outputChannel[inChannelNum]), buf, outLen);
+
+        // Push input to output; in this case without modification, but we
+        // could do something like multiply by a constant.  Then again we did
+        // not type this data, so how could we change it.
+
+        // This writes to the output buffer.  It knows that it must copy from
+        // the current input buffer to outputChannel[i], because this is the
+        // source of outputChannel[inChannelNum] via createOutputBuffer() in
+        // start().
+        //
+        // Call the next filter input:
+        output(outLen, outputChannel[inChannelNum]);
+
+        // keep byte count of the output.
+        len -= outLen;
+
+        // Go to the next chuck of the input buffer.  This is why we
+        // declared buf to walk along buffer.
+        // ((uint8_t *)(buffer)) += outLen;  will not compile.
+        buf += outLen;
+    }
 }
 
 
