@@ -4,7 +4,10 @@ set -ex
 
 cd $(dirname ${BASH_SOURCE[0]})
 
+source usrp_config
+
+
 spectrumFeed="../../bin/crts_spectrumFeed"
 
 
-exec $spectrumFeed $*
+exec $spectrumFeed --device $USRP3 $*
