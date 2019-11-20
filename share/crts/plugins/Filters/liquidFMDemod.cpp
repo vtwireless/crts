@@ -23,6 +23,7 @@ class LiquidFMDemod : public CRTSFilter
     private:
         freqdem fdem;
         float kf;
+        uint32_t num_samples;
         std::complex<float> s;      //input FM signal
         float y;                    //output demodulated bytes
 
@@ -37,7 +38,8 @@ class LiquidFMDemod : public CRTSFilter
 LiquidFMDemod::LiquidFMDemod(int argc, const char **argv):
     fdem(0),
     kf(0.1f),
-    outputBuffer(0), outBufferLen(2*1024), len_out(0)
+    num_samples(1024),
+    outputBuffer(0), outBufferLen(1024), len_out(0)
 {
     fdem = freqdem_create(kf);
     DSPEW();
@@ -87,25 +89,17 @@ LiquidFMDemod::input(void *inBuffer, size_t inLen, uint32_t channelNum)
 {
     DASSERT(inBuffer, "");
     DASSERT(inLen, "");
-    //printf("%zu\n", len );
-    len_out = 0;
-
-    outputBuffer = (std::complex<float> *) getOutputBuffer(0);
-    advanceInput(inLen-inLen%sizeof(std::complex<float>));
-    freqdem_demodulate(fdem, *outputBuffer, &y);
-    /*if(len_out == 0)
-    {
-        INFO("nothing to output");
-        return; // nothing to output.
-    }
-    */
-    // TODO: figure out this length.  Not just guessing.
     
-    INFO("%lf", y);
-    ASSERT(len_out <= outBufferLen, "");
+    len_out = 0;
+    outputBuffer = (std::complex<float> *) getOutputBuffer(0);
+    
+    //advanceInput(inLen-inLen%sizeof(std::complex<float>));
+    
+    freqdem_demodulate(fdem, *outputBuffer, &y); 
+    len_out +=  y; 
+    //INFO("%lf", len_out);
 
-    output(y, CRTSFilter::ALL_CHANNELS);
-
+    output(len_out, CRTSFilter::ALL_CHANNELS);
 }
 
 
