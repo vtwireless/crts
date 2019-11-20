@@ -89,13 +89,14 @@ LiquidFMDemod::input(void *inBuffer, size_t inLen, uint32_t channelNum)
 {
     DASSERT(inBuffer, "");
     DASSERT(inLen, "");
-    
+    INFO("len %d, buffer %p",inLen, inBuffer);
     len_out = 0;
     outputBuffer = (std::complex<float> *) getOutputBuffer(0);
     
-    //advanceInput(inLen-inLen%sizeof(std::complex<float>));
+    advanceInput(inLen-inLen%sizeof(std::complex<float>));
     
-    freqdem_demodulate(fdem, *outputBuffer, &y); 
+    freqdem_demodulate(fdem, (std::complex<float>&) inBuffer, &y);
+    //INFO("%lf",y);
     len_out +=  y; 
     //INFO("%lf", len_out);
 
