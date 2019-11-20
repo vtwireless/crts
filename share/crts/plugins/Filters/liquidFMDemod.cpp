@@ -23,9 +23,9 @@ class LiquidFMDemod : public CRTSFilter
     private:
         freqdem fdem;
         float kf;
-        uint32_t num_samples;
-        std::complex<float> s;      //input FM signal
-        float y;                    //output demodulated bytes
+        uint32_t n;                     //num samples
+        std::complex<float> s;          //input FM signal
+        float y;                      //output demodulated bytes
 
     public:
         std::complex<float> *outputBuffer;
@@ -38,7 +38,7 @@ class LiquidFMDemod : public CRTSFilter
 LiquidFMDemod::LiquidFMDemod(int argc, const char **argv):
     fdem(0),
     kf(0.1f),
-    num_samples(1024),
+    n(1024),
     outputBuffer(0), outBufferLen(1024), len_out(0)
 {
     fdem = freqdem_create(kf);
@@ -89,18 +89,42 @@ LiquidFMDemod::input(void *inBuffer, size_t inLen, uint32_t channelNum)
 {
     DASSERT(inBuffer, "");
     DASSERT(inLen, "");
-    INFO("len %d, buffer %p",inLen, inBuffer);
-    len_out = 0;
-    outputBuffer = (std::complex<float> *) getOutputBuffer(0);
+    //INFO("len %d, buffer %p",inLen, inBuffer);
+    //len_out = 0;
+    //outputBuffer = (std::complex<float> *) getOutputBuffer(0);
     
-    advanceInput(inLen-inLen%sizeof(std::complex<float>));
+    //advanceInput(inLen-inLen%sizeof(std::complex<float>));
     
-    freqdem_demodulate(fdem, (std::complex<float>&) inBuffer, &y);
+    uint8_t *buf = (uint8_t *) inBuffer;
+    while(inLen)
+    {
+        size_t outLen = inLen;
+        if(outLen > 1024)
+        {
+            outLen = 1024;
+        }
+        outputBuffer = (std::complex<float>*) getOutputBuffer(channelNum);
+        freqdem_demodulate_block(fdem, outputBuffer, n, &y);
+        output(outLen, channelNum);
+        inLen -= outLen;
+        buf += outLen;
+    }
+    
+    //freqdem_print(fdem);
+    freqdem_demodulate_block(fdem, (std::complex<float>*) inBuffer, n, &y);
+    
+    
+    
+    /*if(len_out == 0) 
+    {
+        return;
+    }*/
+
     //INFO("%lf",y);
-    len_out +=  y; 
+    //len_out +=  y; 
     //INFO("%lf", len_out);
 
-    output(len_out, CRTSFilter::ALL_CHANNELS);
+    //output(len_out, CRTSFilter::ALL_CHANNELS);
 }
 
 
