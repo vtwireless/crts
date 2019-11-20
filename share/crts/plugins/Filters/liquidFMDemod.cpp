@@ -28,7 +28,7 @@ class LiquidFMDemod : public CRTSFilter
         float y;                    //output demodulated bytes
 
     public:
-        std::complex<float> *outputBuffer;
+        float *outputBuffer;
         const size_t outBufferLen;
         //bytes out at each write()
         size_t len_out;
@@ -89,17 +89,17 @@ LiquidFMDemod::input(void *inBuffer, size_t inLen, uint32_t channelNum)
 {
     DASSERT(inBuffer, "");
     DASSERT(inLen, "");
-    INFO("len %d, buffer %p",inLen, inBuffer);
+    //INFO("len %d, buffer %p",inLen, inBuffer);
     len_out = 0;
-    outputBuffer = (std::complex<float> *) getOutputBuffer(0);
+    outputBuffer = ( float* )getOutputBuffer(0);
     
     advanceInput(inLen-inLen%sizeof(std::complex<float>));
     
     freqdem_demodulate(fdem, (std::complex<float>&) inBuffer, &y);
     //INFO("%lf",y);
-    len_out +=  y; 
+    len_out +=  sizeof(y); 
     //INFO("%lf", len_out);
-
+    
     output(len_out, CRTSFilter::ALL_CHANNELS);
 }
 
