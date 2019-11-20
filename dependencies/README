@@ -1,7 +1,7 @@
 
 This directory provides scripts that install software packages that CRTS
-depends on.  You need to run ../bootstrap before using these scripts.
-It will download a make file that is needed.
+depends on.  You need to run '../bootstrap --justQuickBuild' before using
+these scripts.  It will download a make file that is needed.
 
 Each package is in a different directory.  We made an effort to configure
 all of the packages for use by CRTS.  All of these packages can be built
@@ -87,7 +87,7 @@ Instructions (run) for installing any of those packages:
   use other means.  You may or may not require root (sudo) in the
   following things to run:
 
-  ../bootstrap
+  ../bootstrap --justQuickBuild
   cp default_prefixes prefixes
     > vi prefixes
     > #change 'root' to installation path of your choice, you can stick to the default /usr/local

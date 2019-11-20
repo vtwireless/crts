@@ -39,6 +39,9 @@ Then run
 
 where you pick a better prefix than */usr/local/my_CRTS*.
 
+Running *./configure* will generate the file *config.make*,
+you can edit this file, uncomment some make build options.
+
 ## "make download" for code re-usability
 
 Not unique to CRTS, we introduce the idea of downloading all the files

@@ -4,5 +4,8 @@ SUBDIRS :=\
  uhd\
  gnuradio
 
+../quickbuild.make:
+	../bootstrap --justQuickBuild
+
 
 include ../quickbuild.make

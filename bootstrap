@@ -45,7 +45,10 @@ function usage()
 {
     cat <<EOF
 
-  Usage: $0
+  Usage: $0 [-h|--help]|[--justQuickBuild]
+
+  The script downloads files and adds them to this project source
+  directory.
 
   This bootstrap script downloads and compresses a make file
   from the web via url:
@@ -56,6 +59,14 @@ function usage()
   you can configure and make this package.
 
   This bootstrap script also downloads lots of other files.
+
+
+              OPTIONS
+
+    --help|-h         print this help and exit
+
+    --justQuickBuild  just download the quickbuild makefile.
+
 
 EOF
     exit 1
@@ -70,23 +81,10 @@ set -ex
 # Go to the directory there this script is.
 cd $(dirname ${BASH_SOURCE[0]})
 
-if [ -z "$*" ] && [ -e quickbuild.make ] ; then
-    set +x
-    cat <<EOF
 
-  The file quickbuild.make exists.
-  If you wish to regenerate it remove it first.
-  Or run
-
-      $0 -f
-
-EOF
-    exit 1
-fi
-
-
-set -e
-cat <<EOF > quickbuild.make.tmp
+function generateQuickBuild() {
+    set -e
+    cat <<EOF > quickbuild.make.tmp
 # This is a generated file
 #
 #  You can get the uncompressed and better commented original version
@@ -96,28 +94,42 @@ cat <<EOF > quickbuild.make.tmp
 #
 
 EOF
+    # get the quickbuild.make file from the web
+    wget $qb_url -O quickbuild.make.org 
+
+    if [ -n "$quickbuild_make_sha512sum" ] ; then
+        set +x
+        # We wanted a particular file, so we checks it's sha512 sum.
+        echo "$quickbuild_make_sha512sum  quickbuild.make.org" | sha512sum -c
+        set -x
+    else
+        set +x
+        echo "The sha512sum of the downloaded quickbuild.make file, before compressing it:"
+        set -x
+        sha512sum quickbuild.make.org
+    fi
+
+    # strip out comments
+    sed quickbuild.make.org -e 's/^\s*\#.*$//g' -e '/^$/d' >> quickbuild.make.tmp
+
+    rm quickbuild.make.org
+    mv quickbuild.make.tmp quickbuild.make
+}
 
 
-# get the quickbuild.make file from the web
-wget $qb_url -O quickbuild.make.org 
-
-if [ -n "$quickbuild_make_sha512sum" ] ; then
+if [ -e quickbuild.make ] ; then
     set +x
-    # We wanted a particular file, so we checks it's sha512 sum.
-    echo "$quickbuild_make_sha512sum  quickbuild.make.org" | sha512sum -c
-    set -x
+    cat <<EOF
+
+  The file quickbuild.make exists.
+
+EOF
+elif [ -n "$*" ] ; then
+    generateQuickBuild
+    exit
 else
-    set +x
-    echo "The sha512sum of the downloaded quickbuild.make file, before compressing it:"
-    set -x
-    sha512sum quickbuild.make.org
+    generateQuickBuild
 fi
-
-# strip out comments
-sed quickbuild.make.org -e 's/^\s*\#.*$//g' -e '/^$/d' >> quickbuild.make.tmp
-
-rm quickbuild.make.org
-mv quickbuild.make.tmp quickbuild.make
 
 
 # The source to this package requires lots more files in order to build
@@ -137,6 +149,3 @@ mv quickbuild.make.tmp quickbuild.make
 #
 # download a bunch of files:
 make download
-
-# Now if you delete this file and all the git repository related files you
-# should have a full source release in this top directory.
