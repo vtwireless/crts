@@ -5,7 +5,7 @@ cd $(dirname ${BASH_SOURCE[0]})
 
 source usrp_config
 
-crts_radio="../../bin/crts_radio"
+crts_radio="../bin/crts_radio"
 
 ./termRun
 
@@ -16,8 +16,10 @@ crts_radio="../../bin/crts_radio"
  -f stdin\
  -f liquidFrame\
  -f tx [ --uhd $USRP1 --freq 915.5 --rate 0.4 --gain 15 ]\
+ -C dualTx \
  -D"
 
+# 915.5 MHz receiver
 ./termRun "$crts_radio\
  -f rx [ --uhd $USRP2 --freq 915.5 --rate 0.4 --gain 0 ]\
  -f liquidSync\

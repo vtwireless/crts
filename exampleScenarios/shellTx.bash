@@ -15,11 +15,13 @@ crts_radio="../../bin/crts_radio"
  $crts_radio\
  -f stdin\
  -f liquidFrame\
- -f tx [ --uhd $USRP1 --freq 915.5 --rate 0.4 --gain 15 ]\
+ -f tx [ --control tx --uhd $USRP1 --freq 915.5 --rate 0.2 --gain 15 ]\
+ -C shell\
  -D"
 
+# 915.5 MHz receiver
 ./termRun "$crts_radio\
- -f rx [ --uhd $USRP2 --freq 915.5 --rate 0.4 --gain 0 ]\
+ -f rx [ --uhd $USRP2 --freq 915.5 --rate 0.2 --gain 0 ]\
  -f liquidSync\
  -f stdout\
  -D |\

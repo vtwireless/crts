@@ -23,22 +23,23 @@ class LiquidFMDemod : public CRTSFilter
     private:
         freqdem fdem;
         float kf;
-        std::complex<float> s;      //input FM signal
-        float y;                    //output demodulated bytes
+        uint32_t n;                     //num samples
+        std::complex<float> s;          //input FM signal
+        float y;                      //output demodulated bytes
 
     public:
-        unsigned char *outputBuffer;
+        float *outputBuffer;
         const size_t outBufferLen;
         //bytes out at each write()
         size_t len_out;
 };
 
 
-
 LiquidFMDemod::LiquidFMDemod(int argc, const char **argv):
     fdem(0),
     kf(0.1f),
-    outBufferLen(2*1024), len_out(0)
+    n(1024),
+    outputBuffer(0), outBufferLen(1024), len_out(0)
 {
     fdem = freqdem_create(kf);
     DSPEW();
@@ -84,24 +85,27 @@ bool LiquidFMDemod::stop(uint32_t numInChannels, uint32_t numOutChannels)
 
 
 void
-LiquidFMDemod::input(void *buffer, size_t len, uint32_t channelNum)
+LiquidFMDemod::input(void *inBuffer, size_t inLen, uint32_t channelNum)
 {
-    DASSERT(buffer, "");
-    DASSERT(len, "");
-    printf("%zu\n", len );
+    DASSERT(inBuffer, "");
+    DASSERT(inLen, "");
+    //INFO("len %d, buffer %p",inLen, inBuffer);
     len_out = 0;
-    outputBuffer = (unsigned char *) getOutputBuffer(0);
-    advanceInput(len-len%sizeof(std::complex<float>));
-    freqdem_demodulate(fdem, s, &y);
-    if(len_out == 0) return; // nothing to output.
+    outputBuffer = ( float* )getOutputBuffer(0);
+    
+    advanceInput(inLen-inLen%sizeof(std::complex<float>));
+    
+    freqdem_demodulate(fdem, (std::complex<float>&) inBuffer, &y);
+     
+    /*if(len_out == 0) 
+    {
+        return;
+    }*/
 
-
-    // TODO: figure out this length.  Not just guessing.
-    //
-    ASSERT(len_out <= outBufferLen, "");
-
+    len_out +=  sizeof(y); 
+    //INFO("%lf", len_out);
+    
     output(len_out, CRTSFilter::ALL_CHANNELS);
-
 }
 
 
@@ -113,3 +117,4 @@ LiquidFMDemod::~LiquidFMDemod(void)
 
 // Define the module loader stuff to make one of these class objects.
 CRTSFILTER_MAKE_MODULE(LiquidFMDemod)
+
