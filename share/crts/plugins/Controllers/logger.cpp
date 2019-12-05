@@ -127,7 +127,7 @@ class Logger: public CRTSController
 Logger::Logger(int argc, const char **argv):
     files(0)
 {
-    INFO("logger constructor");
+   //INFO("logger constructor");
     // To parse the --help we call:
     CRTSModuleOptions opt(argc, argv, usage);
 
@@ -225,7 +225,7 @@ void Logger::start(CRTSControl *c,
                 uint32_t numChannelsIn,
                 uint32_t numChannelsOut)
 {
-    INFO("Logger start");
+   // INFO("Logger start");
     if(d_offset == DEFAULT_DOUBLE_OFFSET)
         ASSERT(clock_gettime(CLOCK_TYPE, &offset) == 0, "");
     else
@@ -238,7 +238,7 @@ void Logger::start(CRTSControl *c,
 
 void Logger::run(CRTSControl *c)
 {
-    INFO("logger run");
+   // INFO("logger run");
     //DSPEW("control=\"%s\"", c->getName());
 
     FILE *file = fileMap[c];
