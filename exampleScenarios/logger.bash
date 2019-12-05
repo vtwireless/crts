@@ -16,7 +16,9 @@ crts_radio="../bin/crts_radio"
  -f stdin\
  -f liquidFrame\
  -f tx [ --uhd $USRP1 --freq 915.5 --rate 0.4 --gain 15 ]\
- -C logger [ --file logTx.txt tx freq totalBytesIn ]  \
+ -C logger [ --file lgStdin.txt stdin totalBytesOut \
+ --file lgFrame.txt liquidFrame totalBytesIn totalBytesOut \
+ --file lgTx.txt tx totalBytesIn ]\
  -D"
 
 # 915.5 MHz receiver
