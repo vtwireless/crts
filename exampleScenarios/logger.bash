@@ -26,6 +26,9 @@ crts_radio="../bin/crts_radio"
  -f rx [ --uhd $USRP2 --freq 915.5 --rate 0.4 --gain 0 ]\
  -f liquidSync\
  -f stdout\
+ -C logger [ --file lgRx.txt rx freq totalBytesOut \
+ --file lgSync.txt liquidSync totalBytesIn totalBytesOut \
+ --file lgStdout.txt stdout totalBytesIn ]\
  -D |\
  hexdump -v"
 
