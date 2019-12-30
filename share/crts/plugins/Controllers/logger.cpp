@@ -39,7 +39,7 @@ static void usage(void)
     fprintf(stderr,
 "\n"
 "\n"
-"Usage: %s --file FILE FILTER PARAMETER ... [OPTIONS]\n"
+"Usage: %s -C logger [ --file FILE FILTER PARAMETER ... [ OPTIONS ] ]\n"
 "\n"
 "  Write log files.  TODO: Add a tcp or TLS connection to the web server that\n"
 "  sends this to web clients.  TODO: Easyer may be to publish web viewable plots.\n"
@@ -56,14 +56,16 @@ static void usage(void)
 "  ---------------------------------------------------------------------------\n"
 "\n"
 "\n"
-"   --file FILE FILTER PARAMETER0 [PARAMETER1 ...]\n"
+"   --file FILE FILTER PARAMETER0 [ PARAMETER1 ... ]\n"
 "\n"
 "                         Write FILE with time in seconds since starting or since\n"
 "                         OFFSET_SECONDS, if that option was given, then write the\n"
 "                         value of the listed parameters.  There must be at least\n"
 "                         one --file option, and there may be any number of --file\n"
 "                         options in the command line.\n"
-"\n"
+" parameters may be freq, totalBytesIn, totalBytesOut,\n"
+" numChannelsIn, numChannelsOut, \n"
+"Example : -C logger [ --file test.txt tx freq totalBytesIn]\n"
 "\n"
 "   --help                print this help\n"
 "\n"
@@ -125,6 +127,7 @@ class Logger: public CRTSController
 Logger::Logger(int argc, const char **argv):
     files(0)
 {
+   //INFO("logger constructor");
     // To parse the --help we call:
     CRTSModuleOptions opt(argc, argv, usage);
 
@@ -222,6 +225,7 @@ void Logger::start(CRTSControl *c,
                 uint32_t numChannelsIn,
                 uint32_t numChannelsOut)
 {
+   // INFO("Logger start");
     if(d_offset == DEFAULT_DOUBLE_OFFSET)
         ASSERT(clock_gettime(CLOCK_TYPE, &offset) == 0, "");
     else
@@ -234,6 +238,7 @@ void Logger::start(CRTSControl *c,
 
 void Logger::run(CRTSControl *c)
 {
+   // INFO("logger run");
     //DSPEW("control=\"%s\"", c->getName());
 
     FILE *file = fileMap[c];

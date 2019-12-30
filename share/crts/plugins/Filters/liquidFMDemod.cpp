@@ -95,14 +95,13 @@ LiquidFMDemod::input(void *inBuffer, size_t inLen, uint32_t channelNum)
     
     advanceInput(inLen-inLen%sizeof(std::complex<float>));
     
-    freqdem_demodulate(fdem, (std::complex<float>&) inBuffer, &y);
-     
+    freqdem_demodulate_block(fdem, (std::complex<float>*) inBuffer, n, outputBuffer);
     /*if(len_out == 0) 
     {
         return;
     }*/
 
-    len_out +=  sizeof(y); 
+    len_out +=  sizeof(outputBuffer); 
     //INFO("%lf", len_out);
     
     output(len_out, CRTSFilter::ALL_CHANNELS);
