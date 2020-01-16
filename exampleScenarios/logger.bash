@@ -20,7 +20,7 @@ number=0
 
 fname=$today.txt
 
-while [ -e "$fname" ]; do
+while [ -e "rxLogs/$fname" ]; do
     printf -v fname -- '%s-%02d.txt' "$today" "$(( ++number ))"
 done
 
