@@ -108,6 +108,13 @@ class Logger: public CRTSController
             return (double) t.tv_sec - offset.tv_sec +
                 (t.tv_nsec - offset.tv_nsec)/1.0e9;
         };
+        double GetThreadTime(void)
+        {
+            struct timespec t;
+            ASSERT(clock_gettime(CLOCK_THREAD_CPUTIME_ID, &t) == 0, "");
+            return (double) t.tv_sec - offset.tv_sec +
+                (t.tv_nsec - offset.tv_nsec)/1.0e9;
+        };
 
         void run(CRTSControl *c);
 
@@ -244,6 +251,7 @@ void Logger::run(CRTSControl *c)
     FILE *file = fileMap[c];
 
     fprintf(file, "%.22lg", GetTime()); 
+    fprintf(file, "%.22lg", GetThreadTime());
 
     // C++11
     for(auto parameter: parameterMap[c])
