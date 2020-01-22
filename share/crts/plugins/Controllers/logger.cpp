@@ -235,10 +235,10 @@ void Logger::start(CRTSControl *c,
                 uint32_t numChannelsOut)
 {
    // INFO("Logger start");
-    if(d_offset == DEFAULT_DOUBLE_OFFSET)
+    if(d_offset == DEFAULT_DOUBLE_OFFSET){
         ASSERT(clock_gettime(CLOCK_TYPE, &offset) == 0, "");
         ASSERT(clock_gettime(CLOCK_THREAD_CPUTIME_ID, &offset) == 0, "");
-
+    }
     else
     {
         offset.tv_sec = d_offset;
@@ -265,6 +265,8 @@ void Logger::run(CRTSControl *c)
         fprintf(file, " %.22lg", (double)clock_gettime(CLOCK_TYPE, 0));
     } else if (c == (CRTSControl *)stdout && c->totalBytesIn() == 100000){
         fprintf(file, " %.22lg", (double)clock_gettime(CLOCK_TYPE, 0));
+    }
+    else{
     }
     fprintf(file, "\n");
 
