@@ -261,10 +261,10 @@ void Logger::run(CRTSControl *c)
     for(auto parameter: parameterMap[c])
         fprintf(file, " %.22lg", c->getParameter(parameter));
     
-    if (c == stdin && c->totalBytesOut() == 100000){
-        fprintf(file, " %.22lg", clock_gettime(CLOCK_TYPE, 0));
-    } else if (c == stdout && c->totalBytesIn() == 100000){
-        fprintf(file, " %.22lg", clock_gettime(CLOCK_TYPE, 0));
+    if (c == (CRTSControl *)stdin && c->totalBytesOut() == 100000){
+        fprintf(file, " %.22lg", (double)clock_gettime(CLOCK_TYPE, 0));
+    } else if (c == (CRTSControl *)stdout && c->totalBytesIn() == 100000){
+        fprintf(file, " %.22lg", (double)clock_gettime(CLOCK_TYPE, 0));
     }
     fprintf(file, "\n");
 
