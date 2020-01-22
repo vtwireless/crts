@@ -180,6 +180,7 @@ Logger::Logger(int argc, const char **argv):
             }
             fileMap[c] = file;
             fprintf(file, "time_seconds");
+            fprintf(file, " time_seconds thread");
             std::list<const char *> parameters;
             while(++i<argc && strncmp("--", argv[i], 2) != 0)
             {
@@ -251,7 +252,7 @@ void Logger::run(CRTSControl *c)
     FILE *file = fileMap[c];
 
     fprintf(file, "%.22lg", GetTime()); 
-    fprintf(file, "%.22lg", GetThreadTime());
+    fprintf(file, " %.22lg", GetThreadTime());
 
     // C++11
     for(auto parameter: parameterMap[c])
