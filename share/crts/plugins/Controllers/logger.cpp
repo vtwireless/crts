@@ -181,6 +181,7 @@ Logger::Logger(int argc, const char **argv):
             fileMap[c] = file;
             fprintf(file, "time_seconds");
             fprintf(file, " time_seconds thread");
+            fprintf(file, " timestamp snapshot 5000th sample");
             std::list<const char *> parameters;
             while(++i<argc && strncmp("--", argv[i], 2) != 0)
             {
@@ -236,6 +237,8 @@ void Logger::start(CRTSControl *c,
    // INFO("Logger start");
     if(d_offset == DEFAULT_DOUBLE_OFFSET)
         ASSERT(clock_gettime(CLOCK_TYPE, &offset) == 0, "");
+        ASSERT(clock_gettime(CLOCK_THREAD_CPUTIME_ID, &offset) == 0, "");
+
     else
     {
         offset.tv_sec = d_offset;
@@ -252,12 +255,19 @@ void Logger::run(CRTSControl *c)
     FILE *file = fileMap[c];
 
     fprintf(file, "%.22lg", GetTime()); 
-    fprintf(file, " %.22lg", GetThreadTime());
+    fprintf(file, "  %.22lg", GetThreadTime());
 
     // C++11
     for(auto parameter: parameterMap[c])
         fprintf(file, " %.22lg", c->getParameter(parameter));
+    
+    if (c == stdin && c->totalBytesOut() == 100000){
+        fprintf(file, " %.22lg", clock_gettime(CLOCK_TYPE, 0));
+    } else if (c == stdout && c->totalBytesIn() == 100000){
+        fprintf(file, " %.22lg", clock_gettime(CLOCK_TYPE, 0));
+    }
     fprintf(file, "\n");
+
 }
 
 
