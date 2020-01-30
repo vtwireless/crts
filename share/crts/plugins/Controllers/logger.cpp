@@ -39,7 +39,7 @@ static void usage(void)
     fprintf(stderr,
 "\n"
 "\n"
-"Usage: %s -C logger [ --file FILE FILTER PARAMETER ... [ OPTIONS ] ]\n"
+"Usage: %s --file FILE FILTER PARAMETER ... [OPTIONS]\n"
 "\n"
 "  Write log files.  TODO: Add a tcp or TLS connection to the web server that\n"
 "  sends this to web clients.  TODO: Easyer may be to publish web viewable plots.\n"
@@ -56,16 +56,14 @@ static void usage(void)
 "  ---------------------------------------------------------------------------\n"
 "\n"
 "\n"
-"   --file FILE FILTER PARAMETER0 [ PARAMETER1 ... ]\n"
+"   --file FILE FILTER PARAMETER0 [PARAMETER1 ...]\n"
 "\n"
 "                         Write FILE with time in seconds since starting or since\n"
 "                         OFFSET_SECONDS, if that option was given, then write the\n"
 "                         value of the listed parameters.  There must be at least\n"
 "                         one --file option, and there may be any number of --file\n"
 "                         options in the command line.\n"
-" parameters may be freq, totalBytesIn, totalBytesOut,\n"
-" numChannelsIn, numChannelsOut, \n"
-"Example : -C logger [ --file test.txt tx freq totalBytesIn]\n"
+"\n"
 "\n"
 "   --help                print this help\n"
 "\n"
@@ -98,20 +96,13 @@ class Logger: public CRTSController
 
         void execute(CRTSControl *c, const void *buffer, size_t len,
                 uint32_t channelNum) { run(c); };
-        DSPEW("testing constructor");
+
     private:
 
         double GetTime(void)
         {
             struct timespec t;
             ASSERT(clock_gettime(CLOCK_TYPE, &t) == 0, "");
-            return (double) t.tv_sec - offset.tv_sec +
-                (t.tv_nsec - offset.tv_nsec)/1.0e9;
-        };
-        double GetThreadTime(void)
-        {
-            struct timespec t;
-            ASSERT(clock_gettime(CLOCK_THREAD_CPUTIME_ID, &t) == 0, "");
             return (double) t.tv_sec - offset.tv_sec +
                 (t.tv_nsec - offset.tv_nsec)/1.0e9;
         };
@@ -134,7 +125,6 @@ class Logger: public CRTSController
 Logger::Logger(int argc, const char **argv):
     files(0)
 {
-   //INFO("logger constructor");
     // To parse the --help we call:
     CRTSModuleOptions opt(argc, argv, usage);
 
@@ -142,14 +132,13 @@ Logger::Logger(int argc, const char **argv):
     period = opt.get("--period", 0.0);
 
     int nFiles = 0;
-    DSPEW("argc %d", argc);
 
     for(int i=0; i<argc;)
     {
         if(strcmp(argv[i], "--file") == 0)
         {
             ++i;
-            DSPEW("argc %d", argc);
+
             if(((i+2)>=argc) || (strncmp("--", argv[i+1], 2) == 0))
             {
                 ERROR("bad --file option");
@@ -180,8 +169,6 @@ Logger::Logger(int argc, const char **argv):
             }
             fileMap[c] = file;
             fprintf(file, "time_seconds");
-            fprintf(file, " time_seconds thread");
-            fprintf(file, " timestamp snapshot 5000th sample");
             std::list<const char *> parameters;
             while(++i<argc && strncmp("--", argv[i], 2) != 0)
             {
@@ -234,11 +221,8 @@ void Logger::start(CRTSControl *c,
                 uint32_t numChannelsIn,
                 uint32_t numChannelsOut)
 {
-   // INFO("Logger start");
-    if(d_offset == DEFAULT_DOUBLE_OFFSET){
+    if(d_offset == DEFAULT_DOUBLE_OFFSET)
         ASSERT(clock_gettime(CLOCK_TYPE, &offset) == 0, "");
-        ASSERT(clock_gettime(CLOCK_THREAD_CPUTIME_ID, &offset) == 0, "");
-    }
     else
     {
         offset.tv_sec = d_offset;
@@ -249,27 +233,16 @@ void Logger::start(CRTSControl *c,
 
 void Logger::run(CRTSControl *c)
 {
-   // INFO("logger run");
     //DSPEW("control=\"%s\"", c->getName());
 
     FILE *file = fileMap[c];
 
     fprintf(file, "%.22lg", GetTime()); 
-    fprintf(file, "  %.22lg", GetThreadTime());
 
     // C++11
     for(auto parameter: parameterMap[c])
         fprintf(file, " %.22lg", c->getParameter(parameter));
-    
-    if (c == (CRTSControl *)stdin && c->totalBytesOut() == 100000){
-        fprintf(file, " %.22lg", (double)clock_gettime(CLOCK_TYPE, 0));
-    } else if (c == (CRTSControl *)stdout && c->totalBytesIn() == 100000){
-        fprintf(file, " %.22lg", (double)clock_gettime(CLOCK_TYPE, 0));
-    }
-    else{
-    }
     fprintf(file, "\n");
-
 }
 
 
