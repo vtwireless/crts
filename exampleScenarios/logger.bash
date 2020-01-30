@@ -32,16 +32,18 @@ touch "txLogs/$fname"
 touch "rxLogs/$fname"
 touch "syncLogs/$fname"
 touch "stdoutLogs/$fname"
+#touch "top/$fname"
+#touch "proc/$fname"
 
-./termRun "cat /dev/urandom |\
- $crts_radio\
+exec cat /dev/urandom |\
+ valgrind --tool=memcheck $crts_radio\
  -f stdin\
  -f liquidFrame\
  -f tx [ --uhd $USRP1 --freq 915.5 --rate 0.4 --gain 15 ]\
  -C logger [ --file stdinLogs/$fname stdin totalBytesOut \
  --file frameLogs/$fname liquidFrame totalBytesIn totalBytesOut \
  --file txLogs/$fname tx totalBytesIn ]\
- -D"
+ -D
 
 # 915.5 MHz receiver
 ./termRun "$crts_radio\
