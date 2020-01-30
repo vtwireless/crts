@@ -19,6 +19,7 @@ set +e
 prog=../bin/crts_contestWebServer
 
 exec $prog\
+ --https_port=9090\
  --user=admin --password=adminK2\
  --user=betty --password=bettyK1\
  --user=joe --password=joeK1\
