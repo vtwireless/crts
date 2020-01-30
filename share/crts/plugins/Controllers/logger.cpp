@@ -108,6 +108,13 @@ class Logger: public CRTSController
             return (double) t.tv_sec - offset.tv_sec +
                 (t.tv_nsec - offset.tv_nsec)/1.0e9;
         };
+        double GetThreadTime(void)
+        {
+            struct timespec t;
+            ASSERT(clock_gettime(CLOCK_THREAD_CPUTIME_ID, &t) == 0, "");
+            return (double) t.tv_sec - offset.tv_sec +
+                (t.tv_nsec - offset.tv_nsec)/1.0e9;
+        };
 
         void run(CRTSControl *c);
 
@@ -173,6 +180,8 @@ Logger::Logger(int argc, const char **argv):
             }
             fileMap[c] = file;
             fprintf(file, "time_seconds");
+            fprintf(file, " time_seconds thread");
+            fprintf(file, " timestamp snapshot 5000th sample");
             std::list<const char *> parameters;
             while(++i<argc && strncmp("--", argv[i], 2) != 0)
             {
@@ -226,8 +235,10 @@ void Logger::start(CRTSControl *c,
                 uint32_t numChannelsOut)
 {
    // INFO("Logger start");
-    if(d_offset == DEFAULT_DOUBLE_OFFSET)
+    if(d_offset == DEFAULT_DOUBLE_OFFSET){
         ASSERT(clock_gettime(CLOCK_TYPE, &offset) == 0, "");
+        ASSERT(clock_gettime(CLOCK_THREAD_CPUTIME_ID, &offset) == 0, "");
+    }
     else
     {
         offset.tv_sec = d_offset;
@@ -244,11 +255,21 @@ void Logger::run(CRTSControl *c)
     FILE *file = fileMap[c];
 
     fprintf(file, "%.22lg", GetTime()); 
+    fprintf(file, "  %.22lg", GetThreadTime());
 
     // C++11
     for(auto parameter: parameterMap[c])
         fprintf(file, " %.22lg", c->getParameter(parameter));
+    
+    if (c == (CRTSControl *)stdin && c->totalBytesOut() == 100000){
+        fprintf(file, " %.22lg", (double)clock_gettime(CLOCK_TYPE, 0));
+    } else if (c == (CRTSControl *)stdout && c->totalBytesIn() == 100000){
+        fprintf(file, " %.22lg", (double)clock_gettime(CLOCK_TYPE, 0));
+    }
+    else{
+    }
     fprintf(file, "\n");
+
 }
 
 
