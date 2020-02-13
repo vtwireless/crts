@@ -1,0 +1,121 @@
+#!/usr/bin/env python
+
+#####################################################################
+# to simply test try running:
+#
+#   nc -lp 9282
+#
+# and:
+#
+#   crts_spectrumFeed
+#
+#
+# You should see json spew in the output of nc (netcat). 
+#
+#####################################################################
+
+
+from gnuradio import blocks
+from gnuradio import fft
+from gnuradio import gr
+from gnuradio import uhd
+from gnuradio.fft import window
+import json
+import argparse
+from socket import *
+import platform
+import os
+
+
+class spectrum_sensing_nikita(gr.top_block):
+
+    def __init__(self, center_freq, bins, bandwidth, device_addr):
+        gr.top_block.__init__(self, "Spectrum Sensing Nikita")
+
+        ##################################################
+        # Blocks
+        ##################################################
+        self.uhd_usrp_source_0 = uhd.usrp_source(
+        	device_addr=device_addr,
+        	stream_args=uhd.stream_args(
+        		cpu_format="fc32",
+        		channels=range(1),
+        	),
+        )
+        self.uhd_usrp_source_0.set_samp_rate(bandwidth)
+        self.uhd_usrp_source_0.set_center_freq(center_freq, 0)
+        self.uhd_usrp_source_0.set_gain(0, 0)
+        self.uhd_usrp_source_0.set_bandwidth(bandwidth, 0)
+        self.fft_vxx_0 = fft.fft_vcc(bins, True, (window.blackmanharris(bins)), True, 1)
+        self.blocks_stream_to_vector_0 = blocks.stream_to_vector(\
+                gr.sizeof_gr_complex*1, bins)
+        self.blocks_probe_signal_vx_0 = blocks.probe_signal_vf(bins)
+        self.blocks_complex_to_mag_0 = blocks.complex_to_mag(bins)
+
+        ##################################################
+        # Connections
+        ##################################################
+        self.connect((self.uhd_usrp_source_0, 0), (self.blocks_stream_to_vector_0, 0))
+        self.connect((self.blocks_stream_to_vector_0, 0), (self.fft_vxx_0, 0))
+        self.connect((self.fft_vxx_0, 0), (self.blocks_complex_to_mag_0, 0))
+        self.connect((self.blocks_complex_to_mag_0, 0), (self.blocks_probe_signal_vx_0, 0))
+
+
+
+    
+parser = argparse.ArgumentParser(description='Spectrum feed script.  Replace the CAPITALIZED words with input values')
+parser.add_argument('-f','--freq',\
+        help='Center frequency in MHz',\
+        default=914.5)
+parser.add_argument('-b','--bandwidth',\
+        help='Bandwidth in MHz',\
+        default=0.5)
+parser.add_argument('-n','--bins',\
+        help='Number of FFT bins.  More for higher accuracy',\
+        default=80)
+parser.add_argument('-P','--period',\
+        help='The period of time in seconds between data sends',\
+        default=0.05)
+parser.add_argument('-d','--device',\
+        help='UHD USRP device.  For example: -d addr=192.168.10.3',\
+        default='addr=192.168.10.2')
+parser.add_argument('-a','--address',\
+        help='Server address to send spectrum data to.  Env SERVER_ADDRESS will override this value.',\
+        default='localhost')
+
+
+# The format is 
+
+def SendSpectrum(tb, cFreq, bandwidth, period):
+
+    print('I{"name":"spectrumUpdate","args":[%g,%g,%g,%s]}' %\
+             (cFreq, bandwidth, period, list(tb.blocks_probe_signal_vx_0.level())))
+
+
+# This is bad code.  There's so much wrong with this.
+#
+def Run(args):
+
+    bandwidth = float(args['bandwidth'])*1e6
+    bins = int(args['bins']);
+    cFreq = float(args['freq'])*1e6
+    period = float(args['period'])
+    if period < 1.0/60.0:
+        period = 1.0/60.0
+    tb = spectrum_sensing_nikita(cFreq, bins, bandwidth, args['device'])
+    tb.start()
+
+    while True: 
+        try:
+            SendSpectrum(tb, cFreq, bandwidth, period)
+        except Exception as inst:
+            print inst
+            tb.stop()
+            break
+
+
+if __name__ == '__main__':
+    args = vars(parser.parse_args())
+    Run(args)
+    tcpClient.close()
+    print "crts_spectrumFeed Exiting"
