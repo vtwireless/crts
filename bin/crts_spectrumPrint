@@ -22,9 +22,6 @@ from gnuradio import uhd
 from gnuradio.fft import window
 import json
 import argparse
-from socket import *
-import platform
-import os
 
 
 class spectrum_sensing_nikita(gr.top_block):
@@ -84,16 +81,7 @@ parser.add_argument('-a','--address',\
         default='localhost')
 
 
-# The format is 
 
-def SendSpectrum(tb, cFreq, bandwidth, period):
-
-    print('I{"name":"spectrumUpdate","args":[%g,%g,%g,%s]}' %\
-             (cFreq, bandwidth, period, list(tb.blocks_probe_signal_vx_0.level())))
-
-
-# This is bad code.  There's so much wrong with this.
-#
 def Run(args):
 
     bandwidth = float(args['bandwidth'])*1e6
@@ -107,7 +95,8 @@ def Run(args):
 
     while True: 
         try:
-            SendSpectrum(tb, cFreq, bandwidth, period)
+            print('I{"name":"spectrumUpdate","args":[%g,%g,%g,%s]}' %\
+                (cFreq, bandwidth, period, list(tb.blocks_probe_signal_vx_0.level())))
         except Exception as inst:
             print inst
             tb.stop()
