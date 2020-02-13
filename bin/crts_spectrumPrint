@@ -117,5 +117,4 @@ def Run(args):
 if __name__ == '__main__':
     args = vars(parser.parse_args())
     Run(args)
-    tcpClient.close()
     print "crts_spectrumFeed Exiting"
