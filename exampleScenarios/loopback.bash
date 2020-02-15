@@ -20,18 +20,18 @@ number=0
 
 fname=$today.txt
 
-while [ -e "rxLogs/$fname" ]; do
+while [ -e "rxLogs_l/$fname" ]; do
     printf -v fname -- '%s-%02d.txt' "$today" "$(( ++number ))"
 done
 
 printf 'Will use "%s" as filename\n' "$fname"
 
-touch "stdinLogs/$fname"
-touch "frameLogs/$fname"
-touch "txLogs/$fname"
-touch "rxLogs/$fname"
-touch "syncLogs/$fname"
-touch "stdoutLogs/$fname"
+touch "stdinLogs_l/$fname"
+touch "frameLogs_l/$fname"
+touch "txLogs_l/$fname"
+touch "rxLogs_l/$fname"
+touch "syncLogs_l/$fname"
+touch "stdoutLogs_l/$fname"
 #touch "top/$fname"
 #touch "proc/$fname"
 
@@ -40,19 +40,16 @@ $crts_radio\
  -f stdin\
  -f liquidFrame\
  -f tx [ --uhd $USRP1 --freq 915.5 --rate 0.4 --gain 15 ]\
- -C logger [ --file stdinLogs/$fname stdin totalBytesOut \
- --file frameLogs/$fname liquidFrame totalBytesIn totalBytesOut \
- --file txLogs/$fname tx totalBytesIn ]\
- -D"
-
-# 915.5 MHz receiver
-./termRun "timeout 1000 $crts_radio\
+ -C logger [ --file stdinLogs_l/$fname stdin totalBytesOut \
+ --file frameLogs_l/$fname liquidFrame totalBytesIn totalBytesOut \
+ --file txLogs_l/$fname tx totalBytesIn ]\
+ | $crts_radio\
  -f rx [ --uhd $USRP2 --freq 915.5 --rate 0.4 --gain 15 ]\
  -f liquidSync\
  -f stdout\
- -C logger [ --file rxLogs/$fname rx freq totalBytesOut \
- --file syncLogs/$fname liquidSync totalBytesIn totalBytesOut \
- --file stdoutLogs/$fname stdout totalBytesIn ]\
+ -C logger [ --file rxLogs_l/$fname rx freq totalBytesOut \
+ --file syncLogs_l/$fname liquidSync totalBytesIn totalBytesOut \
+ --file stdoutLogs_l/$fname stdout totalBytesIn ]\
  -D |\
  hexdump -v"
 

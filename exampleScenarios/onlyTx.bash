@@ -9,7 +9,8 @@ crts_radio="../bin/crts_radio"
 
 start=$SECONDS
 
-sudo tcpdump -i eth1 host 192.168.40.203 -nn -B 8192 -XSs 0 -w nw.pcap &
+#sudo tcpdump -i eth1 host 192.168.40.203 -nn -B 8192 -XSs 0 -w nw.pcap &
+
 exec cat /dev/urandom |\
  $crts_radio\
  -f stdin\

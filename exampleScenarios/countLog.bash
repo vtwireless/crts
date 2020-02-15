@@ -20,13 +20,13 @@ number=0
 
 fname=$today.txt
 
-while [ -e "rxLogs/$fname" ]; do
+while [ -e "countLogs/$fname" ]; do
     printf -v fname -- '%s-%02d.txt' "$today" "$(( ++number ))"
 done
 
 printf 'Will use "%s" as filename\n' "$fname"
 
-touch "stdinLogs/$fname"
+touch "countLogs/$fname"
 touch "frameLogs/$fname"
 touch "txLogs/$fname"
 touch "rxLogs/$fname"
@@ -35,25 +35,22 @@ touch "stdoutLogs/$fname"
 #touch "top/$fname"
 #touch "proc/$fname"
 
-./termRun " timeout 1000 cat /dev/urandom |\
-$crts_radio\
- -f stdin\
+./termRun "$crts_radio\
+ -f count\
  -f liquidFrame\
  -f tx [ --uhd $USRP1 --freq 915.5 --rate 0.4 --gain 15 ]\
- -C logger [ --file stdinLogs/$fname stdin totalBytesOut \
+ -C logger [ --file countLogs/$fname count totalBytesOut \
  --file frameLogs/$fname liquidFrame totalBytesIn totalBytesOut \
  --file txLogs/$fname tx totalBytesIn ]\
  -D"
 
 # 915.5 MHz receiver
-./termRun "timeout 1000 $crts_radio\
+./termRun "$crts_radio\
  -f rx [ --uhd $USRP2 --freq 915.5 --rate 0.4 --gain 15 ]\
  -f liquidSync\
  -f stdout\
  -C logger [ --file rxLogs/$fname rx freq totalBytesOut \
  --file syncLogs/$fname liquidSync totalBytesIn totalBytesOut \
  --file stdoutLogs/$fname stdout totalBytesIn ]\
- -D |\
- hexdump -v"
-
+ -D > correctness.txt "
 

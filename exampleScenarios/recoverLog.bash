@@ -32,11 +32,9 @@ touch "txLogs/$fname"
 touch "rxLogs/$fname"
 touch "syncLogs/$fname"
 touch "stdoutLogs/$fname"
-#touch "top/$fname"
-#touch "proc/$fname"
 
-./termRun " timeout 1000 cat /dev/urandom |\
-$crts_radio\
+./termRun "cat /dev/urandom |\
+ $crts_radio\
  -f stdin\
  -f liquidFrame\
  -f tx [ --uhd $USRP1 --freq 915.5 --rate 0.4 --gain 15 ]\
@@ -46,8 +44,8 @@ $crts_radio\
  -D"
 
 # 915.5 MHz receiver
-./termRun "timeout 1000 $crts_radio\
- -f rx [ --uhd $USRP2 --freq 915.5 --rate 0.4 --gain 15 ]\
+./termRun "$crts_radio\
+ -f rx [ --uhd $USRP2 --freq 915.5 --rate 0.4 --gain 0 ]\
  -f liquidSync\
  -f stdout\
  -C logger [ --file rxLogs/$fname rx freq totalBytesOut \
