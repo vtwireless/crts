@@ -29,7 +29,7 @@ touch "rxLogs_t/$fname"
 touch "syncLogs_t/$fname"
 touch "stdoutLogs_t/$fname"
 
-./termRun "timeout 600 cat /dev/urandom |\
+./termRun "cat /dev/urandom |\
 $crts_radio\
  -f stdin\
  -f liquidFrame\
@@ -41,7 +41,7 @@ $crts_radio\
  --file txLogs_t/$fname tx totalBytesIn ]\
   -D"
 
-./termRun "timeout 600 $crts_radio\
+./termRun "$crts_radio\
  -f rx [ --uhd $USRP2 --freq 915.5 --rate 0.4 --gain 0 ]\
  -f liquidSync\
  -f stdout\

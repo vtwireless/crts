@@ -22,6 +22,6 @@ for i in ${arr}
 #        top -p $i -n 2 -b > top-$i.txt
 #        cat /proc/$i/status > proc.txt
         top -p $i -n 200 -b > top/top-$i.txt
-        cat /proc/$i/status >proc/proc-$i.txt
+        cat /proc/$i/status > proc/proc-$i.txt
     done
 
