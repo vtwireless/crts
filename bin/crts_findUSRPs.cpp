@@ -3,17 +3,17 @@
 //     uhd_find_devices
 //
 
-#include <uhd/device.hpp>
 #include <string>
 #include <map>
 #include <string.h>
 #include <stdio.h>
 
+#include <uhd/device.hpp>
 
 
 int main(int argc, char *argv[])
 {
-    uhd::device_addrs_t device_addrs = uhd::device::find(uhd::device_addr_t(""));
+    uhd::device_addrs_t device_addrs = uhd::device::find(uhd::device_addr_t());
 
     const char *field = 0;
 
@@ -43,6 +43,15 @@ int main(int argc, char *argv[])
 "  {\"type\":\"x300\",\"addr\":\"192.168.40.201\",\"fpga\":\""
   "HG\",\"name\":\"\",\"serial\":\"30F1105\",\"product\":\"X310\"}\n"
 "]\n"
+"\n"
+"   This program uses the software package UHD from:\n"
+"   https://github.com/EttusResearch/uhd.git\n"
+"\n"
+"   When this program is linked with uhd version \"UHD 3.14.0.0-0-5dc17032\"\n"
+"   it can be used to find available Ettus Research USRP devices, at least\n"
+"   X310 devices.  If you do not see a device listed in the output of this\n"
+"   program, than that device is in use, and you may consider it unavailable,\n"
+"   until the program using it \"disconnects\" from it.\n"
 "\n"
 "\n",
             argv[0]);
@@ -89,7 +98,7 @@ int main(int argc, char *argv[])
         found_devices[device_addrs[i]["serial"]] = true;
         
         if(field) {
-            printf("%s\n", device_addrs[i]["addr"].c_str());
+            printf("%s\n", device_addrs[i][field].c_str());
             continue;
         }
 
