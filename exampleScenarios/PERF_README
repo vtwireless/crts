@@ -1,0 +1,121 @@
+**********************************************
+HOW TO PROFILE AND MONITOR CRTS AND GNURADIO
+**********************************************
+
+System requirements: 
+Valgrind
+KCachegrind
+lmbench(optional)
+
+*********************
+GATHERING DATA: CRTS
+*********************
+Data is gathered using the following tools:
+1. CRTS in-built logger
+2. sampling proc and top stats
+3. perf flamegraphs for cpu utilization
+4. running each process with valgrind tools (memcheck, massif, helgrind, callgrind, cachegrind)
+
+SETUP LOGGER
+-------------
+
+Every CRTS flowgraph is written in a bash script. crts_radio needs to be given filter options and connection topology as described in the main readme. We add a logger to get timing statistics for each filter which will be used to measure latency. An example is given below. 
+
+``````````````````
+./termRun "$crts_radio\
+ -f count\
+ -f liquidFrame\
+ -f tx [ --uhd $USRP1 --freq 915.5 --rate 0.4 --gain 15 ]\
+ -C logger [ --file countLogs/$fname count totalBytesOut \
+ --file frameLogs/$fname liquidFrame totalBytesIn totalBytesOut \
+ --file txLogs/$fname tx totalBytesIn ]\
+ -D"
+
+```````````````````
+
+In order to organize logs from logger, we make different directories for each filter. Python scripts can be run directly with this structure to get the necessary statistics and graphs. 
+
+`````````
+today="$( date +"%Y%m%d" )"
+number=0
+
+fname=$today.txt
+
+while [ -e "rxLogs/$fname" ]; do
+    printf -v fname -- '%s-%02d.txt' "$today" "$(( ++number ))"
+done
+
+printf 'Will use "%s" as filename\n' "$fname"
+
+touch "stdinLogs/$fname"
+touch "frameLogs/$fname"
+touch "txLogs/$fname"
+touch "rxLogs/$fname"
+touch "syncLogs/$fname"
+touch "stdoutLogs/$fname"
+#touch "top/$fname"
+#touch "proc/$fname"
+````````````````
+
+SETUP TIMEOUT
+---------------
+
+We start with a basic timeout for each process so we can get throughput statistics. 
+
+```````
+./termRun "timeout 500 $crts_radio" #crts will be killed but outer xterm still running
+sleep 510 #let the process rest
+for pid in $(pgrep xterm) ; do kill -9 $pid; done
+``````
+
+PROC AND TOP SAMPLING
+--------------------------
+
+Run exampleScenarios/logger.bash for the single threaded transmitter-receiver scenario and exampleScenarios/threads.bash for thread-per-filter. Once xterms pop up, run exampleScenarios/sysMonitor.sh.
+
+sysMonitor.sh will search for the processes labelled crts and monitor the proc and top values which will be stored in proc/ and top/ folders for further processing.
+
+PERF FLAMEGRAPHS
+------------------
+Please check kernel permissions before running these scripts. sudo access is required to collect system-wide stats. You might want to tweak /proc/sys/kernel/perf_event_paranoid to allow performance events to be recorded by unprivileged users. Set the value to -1 for explicit system call information in flamegraph.
+
+Once an instance of logger/threads is running, run getflame.sh to obtain flamegraphs to see stack usage. 
+
+VALGRIND TOOLS
+---------------
+
+`time valgrind --leak-check=full --show-leak-kinds=all --xtree-leak=yes python txrx.py`
+
+
+
+
+**************************
+GATHERING DATA: GNU RADIO
+**************************
+
+PERF FLAMEGRAPHS
+-----------------
+Arrange GNU Radio blocks in desired fashion using the GUI. If you are more comfortable writing custom scripts in Python, even better. Generate Python script from the GUI and run the `getflameforGR.sh` script in a different terminal to record perf data and generate flamegraph.
+
+PROC AND TOP STATS
+-------------------
+Run grSysMonitor.sh in a different terminal window. 
+
+VALGRIND TOOLS
+----------------
+Run valgrindGR.sh and when promoted provide the name of the GR python file (provide relative path if necessary).
+
+
+***************
+ANALYZING DATA
+***************
+--python scripts with dependencies--
+
+
+Notes:
+1. Set system buffers so that we do not unnecessarily throttle USRP input/output. Heed the system warning!
+
+sudo sysctl -w net.core.rmem_max=24862979
+sudo sysctl -w net.core.wmem_max=24862979
+
+2. In order to understand latency numbers, you can run lmbench trials on the machine you are using. This will give you the latencies incurred by context switches which can put the numbers you receive from proc into perspective.
