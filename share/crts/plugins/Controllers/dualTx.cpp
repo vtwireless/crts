@@ -62,7 +62,7 @@ static void usage(void)
 }
 
 
-#define BYTES_PER_CHANGE (5000000)
+#define BYTES_PER_CHANGE (50000000)
 
 
 DualTx::DualTx(int argc, const char **argv): nextBytesIn(BYTES_PER_CHANGE)

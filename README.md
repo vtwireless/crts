@@ -51,6 +51,22 @@ make target as in running *make download* as you'll see below.
 Currently the *bootstrap* script will run *make download* which
 does not require configuration.
 
+## TODO
+
+- Add --add_directory as option to bin/crts_contestWebServer to add
+  a static files to the we server.  It would make it so that there is
+  effectively a symlink to a directory from the htdocs/ servers static
+  root directory; so  for example:
+  ```
+    crts_contestWebServer --add_directory my_demo
+  ```
+  would add the directory my_demo to URLs like
+  *https://servername.com/my_demo/*
+  to the server that it runs.  The files in my_demo/ can then
+  access all the files in the document root with a relative path
+  in URLs in the files in my_demo/.  Currently we are using symlinks
+  in htdocs/ to do this.
+
 
 ## Up grading Firmware and FPGA Images with Pre-built Images
 

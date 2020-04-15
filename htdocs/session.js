@@ -1,8 +1,41 @@
-require('/main.css');
 require('/socketIO.js');
 
 
-function createSession(connectCallback=null, addAdminPanel=true) {
+
+// opts.addAdminPanel
+//      true to add admin panel
+//      false to not add admin pannel
+//
+// opts.showHeader
+//      true to add HTML page body top header and CSS
+//      false to not add HTML page body top header and CSS
+//
+// opts.loadCRTScss
+//      true to add main.css to the page
+//      false to not add main.css to the page
+//
+function createSession(connectCallback=null, opts = {}) {
+
+    // We changed this interface, it used to be:
+    // createSession(connectCallback=null, addAdminPanel=true) {}
+    // This if(){} will make it compatible with the old interface.
+    if(typeof opts === 'boolean') {
+        let addAdminPanel = opts;
+        opts = {};
+        opts.addAdminPanel = addAdminPanel;
+    } else {
+        if(opts.addAdminPanel === undefined)
+            // This is the default; bad as it was and is.
+            opts.addAdminPanel = true;
+    }
+
+    // Set opts defaults if they have not be overridden yet.
+    //
+    if(opts.showHeader === undefined)
+        opts.showHeader = true; // true is the old default.
+    if(opts.loadCRTScss === undefined)
+        opts.loadCRTScss = true; // true is the old default.
+
 
     function _showUser(user) {
 
@@ -128,17 +161,23 @@ function createSession(connectCallback=null, addAdminPanel=true) {
 
     console.log("We are authenticated as user: " + user.name);
 
-    // Now that we know who the user is we can setup the session header
-    require('/sessionHeader.css');
-    require('/sessionHeader.htm', function(htm) {
-        // We pull this html at the top of the body:
-        var header = document.createElement('div');
-        header.innerHTML = htm;
-        document.body.insertBefore(header, document.body.firstChild);
-        _showUser(user);
-    });
+    if(opts.loadCRTScss)
+        require('/main.css');
 
-    if(user.name !== 'admin' || !addAdminPanel) {
+    if(opts.showHeader) {
+        // Now that we know who the user is we can setup the session header
+        require('/sessionHeader.css');
+        require('/sessionHeader.htm', function(htm) {
+            // We pull this html at the top of the body:
+            var header = document.createElement('div');
+            header.innerHTML = htm;
+            document.body.insertBefore(header, document.body.firstChild);
+            _showUser(user);
+        });
+    }
+
+
+    if(user.name !== 'admin' || !opts.addAdminPanel) {
         _client(user, connectCallback);
         return;
     }
