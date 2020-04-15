@@ -27,7 +27,7 @@ function PrintURL() {
 
     # We want to print after the server startup spew, so
     # how do you tell when the server is started up.
-    # Answer use wget.
+    # Answer: use wget.
 
     local_url="http://localhost:${http_port}${PATH}"
     try=0
