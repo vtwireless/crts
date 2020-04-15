@@ -1,0 +1,9 @@
+#!/bin/bash
+
+
+source ./GetGitHubHLSIFile.bash
+
+# Usage: DownloadFile FILENAME TAG [SHA512SUM]
+
+DownloadFile support.js 7f3afc8\
+
