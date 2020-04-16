@@ -12,7 +12,7 @@ cd $(dirname ${BASH_SOURCE[0]})
 server=../bin/crts_contestWebServer
 
 # This is just one of what will be many pages:
-path=/HLSI/exercise_frequency_r.html
+path=/HLSI/index.html
 
 URL="https://${hostname}:${https_port}${path}?user=${user}&password=$password"
 

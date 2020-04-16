@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="en-US">
+<head>
+  <title> Gain (Real)</title>
+  <meta charset="UTF-8"/>
+  <script src='/load.js'></script>
+  <script>
+    require("/HLSI/exercise_common.js");
+  </script>
+</head>
+
+<body>
+
+  <h2>Exercise - Gain (Real)</h2>
+  <p><a href="index.html">[exercises]</a></p>
+  <p>
+    <label for="gain">Gain (dB)</label>
+    <input type="range" class="width-4" min="0" max="31.5" value="31.5" id="gain" step="0.1"
+        oninput="sliderGainCB(parseFloat(value))">
+    <output for="gain" id="gn"></output>
+  </p>
+
+</body>
