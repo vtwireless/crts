@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en-US">
 <head>
-  <title>Frequency; Real</title>
+  <title>Bandwidth; Real</title>
   <meta charset="UTF-8"/>
   <script src='/load.js'></script>
   <link rel="stylesheet" type="text/css" media="all" href="base.css">
@@ -9,13 +9,13 @@
 
 <body>
 
-  <h2>Exercise - Frequency; Real Signal</h2>
+  <h2>Exercise - Bandwidth; Real Signal</h2>
   <p><a href="index.html">[exercises]</a></p>
   <p>
-    <label for="frequency">Frequency</label>
-    <input class="width-4" type="range" min="-0.35" max="0.35" value="0.0" id="frequency" step="0.001"
-        oninput="update_freq(parseFloat(value), true, true)">
-    <output for="frequency" id="fc"></output>
+    <label for="bandwidth">Bandwidth</label>
+    <input class="width-4" type="range" min="0.1" max="0.9" value="0.2" id="bandwidth" step="0.001"
+        oninput="update_bw(parseFloat(value))">
+    <output for="bandwidth" id="bw"></output>
   </p>
 </body>
 
@@ -32,6 +32,7 @@ var margin = {top: 50, right: 50, bottom: 50, left: 50}
 // The number of datapoints
 var fs = 4e6, f0 = 915.5e6;     // sample rate, center frequency
 var fc = 0;
+var bw = 0.25; // filter bandwidth
 var bins = 200;
 
 // determine time and frequency scale/units
@@ -72,38 +73,39 @@ var pathf = svgf.append("path")
     .attr("d", linef);
 
 
-var setFreqCB = false;
-
-update_freq();
+var setBandwidthCB = false;
 
 
-// example freq = 914.16   for 914.16 MHz
+// example bw = 914.16  for 914.16 MHz
 //
-function update_slider(freq) {
+function update_slider(bandwidth) {
 
     // This should update the slider frequency from the web.
     //
-    fc = freq/(fs*scale_freq) - f0/fs;
+    bw = bandwidth/(fs*scale_freq);
     //
-    document.querySelector('#fc').value = d3.format(".2f")((f0+fc*fs)*scale_freq) + " " + units_freq + "Hz";
-    document.querySelector('#frequency').value = fc;
-    console.log("fc=" + fc);
+    document.querySelector('#bw').value = d3.format(".2f")(bw*fs*scale_freq) + " " + units_freq + "Hz";
+    document.querySelector('#bandwidth').value = bw;
+
+    console.log("bw=" + bw);
 }
 
 
+update_bw();
 
-function update_freq(fc_in) {
+function update_bw(band) {
+    if (band!=null) { bw = band; }
 
-    if (fc_in!=null) { fc = fc_in; }
+    document.querySelector('#bw').value = d3.format(".2f")(bw*fs*scale_freq) + " " + units_freq + "Hz";
+    //document.querySelector('#bandwidth').value = bw;
 
-    document.querySelector('#fc').value = d3.format(".2f")((f0+fc*fs)*scale_freq) + " " + units_freq + "Hz";
-
-    if(setFreqCB) 
+    if(setBandwidthCB) 
         // Send freq to the web server.
-        setFreqCB((f0+fc*fs)*scale_freq);
+        setBandwidthCB(bw*fs*scale_freq);
 
-    console.log("fc=" + fc);
+    console.log("bw=" + bw);
 }
+
 
 
 function update_plot(y) {
@@ -151,12 +153,11 @@ onload = function() {
             io.Emit('launch', '/tx', '', { runOne: true });
         });
 
-
         io.On('getParameter', function(programName,
             controlName, parameter, value) {
-            if(controlName === 'tx' && parameter === 'freq') {
-                console.log("got freq=" + value/1.0e6);
-                update_slider(value/1.0e6);
+            if(controlName === 'tx' && parameter === 'rate') {
+                console.log("got rate=" + value * 1.0e-6);
+                update_slider(value * 1.0e-6);
             }
         });
 
@@ -170,13 +171,14 @@ onload = function() {
                 '\n  image=' + image);
 
             if(set['tx'] !== undefined &&
-                    set['tx']['freq'] !== undefined) {
-                setFreqCB = function(freq) {
-                    console.log("Setting freq=" + freq);
-                    io.Emit('setParameter', programName, 'tx', 'freq', 1.0e6 * freq);
+                    set['tx']['rate'] !== undefined) {
+
+                setBandwidthCB = function(bw) {
+                    let rate = 1.0e6 * bw;
+                    console.log("Setting bw=" + bw + " => rate=" + rate);
+                    io.Emit('setParameter', programName,'tx','rate',rate);
                 }
             }
-
         });
 
 
