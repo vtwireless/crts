@@ -1,0 +1,8 @@
+#!/bin/bash
+
+
+source ./GetGitHubHLSIFile.bash
+
+# Usage: DownloadFile FILENAME TAG [SHA512SUM]
+
+DownloadFile exercise_interference.html master
