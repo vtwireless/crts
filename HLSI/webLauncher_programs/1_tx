@@ -3,14 +3,14 @@
 set -e
 cd $(dirname ${BASH_SOURCE[0]})
 
-USRP1="addr=192.168.40.107"
+USRP="addr=192.168.40.107"
 
 crts_radio="$HOME/git/crts/bin/crts_radio"
 
  $crts_radio\
  -f stdin\
  -f liquidFrame\
- -f tx [ --uhd $USRP1 --freq 915.5 --rate 1 --gain 31.5 ]\
+ -f tx [ --uhd $USRP --freq 915.5 --rate 1 --gain 31.5 ]\
  -C webClient < /dev/urandom
 
 

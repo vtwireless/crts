@@ -1,4 +1,7 @@
 
+onload = function() {
+
+
 // 2. Use the margin convention practice
 var margin = {top: 50, right: 50, bottom: 50, left: 50}
   , width  = 920 - margin.left - margin.right  // Use the window's width
@@ -51,27 +54,26 @@ var pathf = svgf.append("path")
 
 
 
-var sendBandwidthCB = false;
-var sendFreqCB = false;
-var sendGainCB = false;
 
 /////////////////////////// BANDWIDTH ////////////////////////////////////
 
-if(document.querySelector('#bw')) {
+var serverBandwidthToSliderCB = {};
+var sendBandwidthCB = {};
 
-    function serverBandwidthToSliderCB(bandwidth) {
+function addBandwidth(sliderId, outputId, name) {
+
+    serverBandwidthToSliderCB[name] = function(bandwidth) {
 
         // This should update the bandwidth slider from the web.
 
         // bw is a slider relative scale of bandwidth
         bw = bandwidth/(fs*scale_freq);
 
-        document.querySelector('#bw').value = d3.format(".2f")(bw*fs*scale_freq) + " " + units_freq + "Hz";
-        document.querySelector('#bandwidth').value = bw;
+        document.querySelector('#'+outputId).value = d3.format(".2f")(bw*fs*scale_freq) + " " + units_freq + "Hz";
+        document.querySelector('#'+sliderId).value = bw;
 
         console.log("bw=" + bw);
     }
-
 
     sliderBandwidthCB();
 
@@ -80,34 +82,50 @@ if(document.querySelector('#bw')) {
         // bw is a slider relative scale of bandwidth
         if (band!=null) { bw = band; }
 
-        document.querySelector('#bw').value = d3.format(".2f")(bw*fs*scale_freq) + " " + units_freq + "Hz";
+        document.querySelector('#'+outputId).value = d3.format(".2f")(bw*fs*scale_freq) + " " + units_freq + "Hz";
 
-        if(sendBandwidthCB) 
+        if(sendBandwidthCB[name] !== undefined)
             // Send to the web server.
-            sendBandwidthCB(bw*fs*scale_freq);
+            sendBandwidthCB[name](bw*fs*scale_freq);
 
         console.log("--- bw=" + bw);
     }
+
+    document.querySelector('#'+sliderId).oninput = function() {
+        sliderBandwidthCB(parseFloat(document.querySelector('#'+sliderId).value));
+    };
 }
+
+if(document.querySelector('#bw') && document.querySelector('#bandwidth'))
+    addBandwidth('bandwidth', 'bw', 'tx');
+
+// Interferer bandwidth
+if(document.querySelector('#ibw') && document.querySelector('#ibandwidth'))
+    addBandwidth('ibandwidth', 'ibw', 'itx');
+
+
+
 ///////////////////////////////////////////////////////////////////////////
 
 
 //////////////////////////// FREQUENCY ////////////////////////////////////
 
-if(document.querySelector('#fc')) {
+var serverFreqToSliderCB = {};
+var sendFreqCB = {};
+
+function addFreq(sliderId, outputId, name) {
     
-    function serverFreqToSliderCB(freq) {
+    serverFreqToSliderCB[name]= function(freq) {
 
         // This should update the frequency slider from the web.
         //
         // fc is a slider relative scale of frequency
         fc = freq/(fs*scale_freq) - f0/fs;
         //
-        document.querySelector('#fc').value = d3.format(".2f")((f0+fc*fs)*scale_freq) + " " + units_freq + "Hz";
-        document.querySelector('#frequency').value = fc;
+        document.querySelector('#'+outputId).value = d3.format(".2f")((f0+fc*fs)*scale_freq) + " " + units_freq + "Hz";
+        document.querySelector('#'+sliderId).value = fc;
         console.log("fc=" + fc);
     }
-
 
     sliderFreqCB();
 
@@ -116,23 +134,39 @@ if(document.querySelector('#fc')) {
         // fc is a slider relative scale of frequency
         if(fc_in!=null) { fc = fc_in; }
 
-        document.querySelector('#fc').value = d3.format(".2f")((f0+fc*fs)*scale_freq) + " " + units_freq + "Hz";
+        document.querySelector('#'+outputId).value = d3.format(".2f")((f0+fc*fs)*scale_freq) + " " + units_freq + "Hz";
 
-        if(sendFreqCB) 
+        if(sendFreqCB[name] !== undefined) 
             // Send freq to the web server.
-            sendFreqCB((f0+fc*fs)*scale_freq);
+            sendFreqCB[name]((f0+fc*fs)*scale_freq);
 
         console.log("--- fc=" + fc);
     }
+
+    document.querySelector('#'+sliderId).oninput = function() {
+        sliderFreqCB(parseFloat(document.querySelector('#'+sliderId).value));
+    };
+
 }
+
+if(document.querySelector('#fc') && document.querySelector('#frequency'))
+    addFreq('frequency', 'fc', 'tx');
+
+if(document.querySelector('#ifc') && document.querySelector('#ifrequency'))
+    addFreq('ifrequency', 'ifc', 'itx');
+
+
 ///////////////////////////////////////////////////////////////////////////
 
 
 /////////////////////////////// GAIN //////////////////////////////////////
 
-if(document.querySelector('#gn')) {
+var serverGainToSliderCB = {};
+var sendGainCB = {};
 
-    function serverGainToSliderCB(gain) {
+function addGain(sliderId, outputId, name) {
+
+    serverGainToSliderCB[name] = function(gain) {
 
         // This should update the gain slider from the web.
         //
@@ -141,8 +175,8 @@ if(document.querySelector('#gn')) {
         //
         gn = gain;
         //
-        document.querySelector('#gn').value = d3.format(".1f")(gn) + " dB";
-        document.querySelector('#gain').value = gn;
+        document.querySelector('#'+outputId).value = d3.format(".1f")(gn) + " dB";
+        document.querySelector('#'+sliderId).value = gn;
         console.log("gn=" + gn);
     }
 
@@ -156,48 +190,69 @@ if(document.querySelector('#gn')) {
         //
         if(gn_in!=null) { gn = gn_in; }
 
-        document.querySelector('#gn').value = d3.format(".1f")(gn) + " dB";
+        document.querySelector('#'+outputId).value = d3.format(".1f")(gn) + " dB";
 
-        if(sendGainCB) 
+        if(sendGainCB[name] !== undefined) 
             // Send gain to the web server.
-            sendGainCB(gn);
+            sendGainCB[name](gn);
 
         console.log("--- gn=" + gn);
     }
+
+    document.querySelector('#'+sliderId).oninput = function() {
+        sliderGainCB(parseFloat(document.querySelector('#'+sliderId).value));
+    };
 }
+
+if(document.querySelector('#gn') && document.querySelector('#gain'))
+    addGain('gain', 'gn', 'tx');
+
+if(document.querySelector('#ign') && document.querySelector('#igain'))
+    addGain('igain', 'ign', 'itx');
+
+
 ///////////////////////////////////////////////////////////////////////////
 
 
-
-onload = function() {
+    var scenario = (document.querySelector('#ign'))?1:2;
 
     createSession(function(io) {
 
         io.Emit('getLauncherPrograms');
         io.On('receiveLauncherPrograms', function(programs) {
-            // We know what the programs are so here we go:
-            io.Emit('launch', '/spectrumFeed',
-                '--bins ' + bins +
-                ' --freq ' + f0/1.0e6, { runOne: true });
-            io.Emit('launch', '/tx', '', { runOne: true });
+
+            // We know what the programs are so here we go
+            if(scenario == 1) {
+                // This is for the case when there is no interferer.
+                io.Emit('launch', '/1_spectrumFeed',
+                    '--bins ' + bins +
+                    ' --freq ' + f0/1.0e6, { runOne: true });
+                io.Emit('launch', '/1_tx', '', { runOne: true });
+            } else if(scenario == 2) {
+                // This is for the case when there is an interferer.
+                io.Emit('launch', '/2_spectrumFeed',
+                    '--bins ' + bins +
+                    ' --freq ' + f0/1.0e6, { runOne: true });
+                io.Emit('launch', '/2_tx', '', { runOne: true });
+                io.Emit('launch', '/2_rx', '', { runOne: true });
+                io.Emit('launch', '/2_tx_interfer', '', { runOne: true });
+            }
         });
 
         io.On('getParameter', function(programName,
             controlName, parameter, value) {
             if(controlName === 'tx' && parameter === 'rate') {
                 console.log("got rate=" + value * 1.0e-6);
-                if(serverBandwidthToSliderCB)
-                    serverBandwidthToSliderCB(value * 1.0e-6);
-            }
-            if(controlName === 'tx' && parameter === 'freq') {
+                if(serverBandwidthToSliderCB['tx'] !== undefined)
+                    serverBandwidthToSliderCB['tx'](value * 1.0e-6);
+            } else if(controlName === 'tx' && parameter === 'freq') {
                 console.log("got freq=" + value/1.0e6);
-                if(serverFreqToSliderCB)
-                    serverFreqToSliderCB(value/1.0e6);
-            }
-            if(controlName === 'tx' && parameter === 'gain') {
+                if(serverFreqToSliderCB['tx'] !== undefined)
+                    serverFreqToSliderCB['tx'](value/1.0e6);
+            } else if(controlName === 'tx' && parameter === 'gain') {
                 console.log("got gain=" + value);
-                if(serverGainToSliderCB)
-                    serverGainToSliderCB(value);
+                if(serverGainToSliderCB['tx'] !== undefined)
+                    serverGainToSliderCB['tx'](value);
             }
         });
 
@@ -210,9 +265,10 @@ onload = function() {
                 '\n    get=' + JSON.stringify(get) +
                 '\n  image=' + image);
 
+
             if(set['tx'] !== undefined &&
                     set['tx']['rate'] !== undefined) {
-                sendBandwidthCB = function(bw) {
+                sendBandwidthCB['tx'] = function(bw) {
                     let rate = 1.0e6 * bw;
                     console.log("Setting bw=" + bw + " => rate=" + rate);
                     io.Emit('setParameter', programName,'tx','rate',rate);
@@ -220,14 +276,14 @@ onload = function() {
             }
             if(set['tx'] !== undefined &&
                     set['tx']['freq'] !== undefined) {
-                sendFreqCB = function(freq) {
+                sendFreqCB['tx'] = function(freq) {
                     console.log("Setting freq=" + freq);
                     io.Emit('setParameter', programName, 'tx', 'freq', 1.0e6 * freq);
                 }
             }
             if(set['tx'] !== undefined &&
                     set['tx']['gain'] !== undefined) {
-                sendGainCB = function(gain) {
+                sendGainCB['tx'] = function(gain) {
                     console.log("Setting gain=" + gain);
                     io.Emit('setParameter', programName, 'tx', 'gain', gain);
                 }
@@ -258,10 +314,15 @@ onload = function() {
 
         var spc = spectrumFeeds(io, {
             // newSpectrum callback
-            newSpectrum: function(id) {  
+            newSpectrum: function(id, address) {  
                 console.log('newSpectrum:' + [...arguments]);
+                console.log('ADDRESS=' + address);
                 console.log("SUBSCRIBING TO: " + id);
-                spc.subscribe(id, spec_updateCB);
+
+                if(scenario == 1 && address === "peach:addr=192.168.40.108")
+                    spc.subscribe(id, spec_updateCB);
+                else if(scenario == 2 && address === "peach:addr=192.168.40.111")
+                    spc.subscribe(id, spec_updateCB);
             },
 
             spectrumEnd: function() {
