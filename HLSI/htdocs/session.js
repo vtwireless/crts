@@ -13,11 +13,29 @@ function session(scenario, controlNames, f0) {
 
     // TODO: add support for more than one controlName.
 
-    if(Array.isArray(controlNames)) {
-        var controlName = controlNames[0];
-    } else {
-        var controlName = controlNames;
+    if(!Array.isArray(controlNames)) {
+        let controlName = controlNames;
+        controlNames = [];
+        controlNames[0] = controlName;
     }
+
+    var gets = { };
+
+    controlNames.forEach(function(controlName) {
+
+        gets[controlName] = {
+
+            "rate": function(value) {
+                serverBandwidthToSliderCB[controlName](value * 1.0e-6);
+            },
+            "freq": function(value) {
+                serverFreqToSliderCB[controlName](value/1.0e6);
+            },
+            "gain": function(value) {
+                serverGainToSliderCB[controlName](value);
+            }
+        };
+    });
 
 
     createSession(function(io) {
@@ -45,20 +63,13 @@ function session(scenario, controlNames, f0) {
         });
 
         io.On('getParameter', function(programName,
-            _controlName, parameter, value) {
-            if(_controlName === controlName && parameter === 'rate') {
-                console.log("got rate=" + value * 1.0e-6);
-                if(serverBandwidthToSliderCB[controlName] !== undefined)
-                    serverBandwidthToSliderCB[controlName](value * 1.0e-6);
-            } else if(_controlName === controlName && parameter === 'freq') {
-                console.log("got freq=" + value/1.0e6);
-                if(serverFreqToSliderCB[controlName] !== undefined)
-                    serverFreqToSliderCB[controlName](value/1.0e6);
-            } else if(_controlName === controlName && parameter === 'gain') {
-                console.log("got gain=" + value);
-                if(serverGainToSliderCB[controlName] !== undefined)
-                    serverGainToSliderCB[controlName](value);
-            }
+            controlName, parameter, value) {
+
+            if(parameter !== 'rate' && parameter !== 'freq' && parameter !== 'gain')
+                return;
+
+            if(gets[controlName] !== undefined)
+                gets[controlName][parameter](value);
         });
 
 
@@ -70,29 +81,31 @@ function session(scenario, controlNames, f0) {
                 '\n    get=' + JSON.stringify(get) +
                 '\n  image=' + image);
 
+            controlNames.forEach(function(controlName) {
 
-            if(set[controlName] !== undefined &&
-                    set[controlName]['rate'] !== undefined) {
-                sendBandwidthCB[controlName] = function(bw) {
-                    let rate = 1.0e6 * bw;
-                    console.log("Setting bw=" + bw + " => rate=" + rate);
-                    io.Emit('setParameter', programName, controlName, 'rate',rate);
+                if(set[controlName] !== undefined &&
+                        set[controlName]['rate'] !== undefined) {
+                    sendBandwidthCB[controlName] = function(bw) {
+                        let rate = 1.0e6 * bw;
+                        console.log("Setting bw=" + bw + " => rate=" + rate);
+                        io.Emit('setParameter', programName, controlName, 'rate',rate);
+                    }
                 }
-            }
-            if(set[controlName] !== undefined &&
-                    set[controlName]['freq'] !== undefined) {
-                sendFreqCB[controlName] = function(freq) {
-                    console.log("Setting freq=" + freq);
-                    io.Emit('setParameter', programName, controlName, 'freq', 1.0e6 * freq);
+                if(set[controlName] !== undefined &&
+                        set[controlName]['freq'] !== undefined) {
+                    sendFreqCB[controlName] = function(freq) {
+                        console.log("Setting freq=" + freq);
+                        io.Emit('setParameter', programName, controlName, 'freq', 1.0e6 * freq);
+                    }
                 }
-            }
-            if(set[controlName] !== undefined &&
-                    set[controlName]['gain'] !== undefined) {
-                sendGainCB[controlName] = function(gain) {
-                    console.log("Setting gain=" + gain);
-                    io.Emit('setParameter', programName, controlName, 'gain', gain);
+                if(set[controlName] !== undefined &&
+                        set[controlName]['gain'] !== undefined) {
+                    sendGainCB[controlName] = function(gain) {
+                        console.log("Setting gain=" + gain);
+                        io.Emit('setParameter', programName, controlName, 'gain', gain);
+                    }
                 }
-            }
+            });
         });
 
 
