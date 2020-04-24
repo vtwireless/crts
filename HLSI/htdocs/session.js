@@ -86,26 +86,26 @@ function session(scenario, controlNames, f0) {
 
             controlNames.forEach(function(controlName) {
 
-                if(set[controlName] !== undefined &&
-                        set[controlName]['rate'] !== undefined) {
-                    sendBandwidthCB[controlName] = function(bw) {
-                        let rate = 1.0e6 * bw;
-                        //console.log("Setting bw=" + bw + " => rate=" + rate);
-                        io.Emit('setParameter', programName, controlName, 'rate',rate);
+
+                if(set[controlName] !== undefined) {
+                    if(set[controlName]['rate'] !== undefined) {
+                        sendBandwidthCB[controlName] = function(bw) {
+                            let rate = 1.0e6 * bw;
+                            console.log("Setting bw=" + bw + " => rate=" + rate);
+                            io.Emit('setParameter', programName, controlName, 'rate',rate);
+                        }
                     }
-                }
-                if(set[controlName] !== undefined &&
-                        set[controlName]['freq'] !== undefined) {
-                    sendFreqCB[controlName] = function(freq) {
-                        //console.log("Setting freq=" + freq);
-                        io.Emit('setParameter', programName, controlName, 'freq', 1.0e6 * freq);
+                    if(set[controlName]['freq'] !== undefined) {
+                        sendFreqCB[controlName] = function(freq) {
+                            console.log("Setting freq=" + freq);
+                            io.Emit('setParameter', programName, controlName, 'freq', 1.0e6 * freq);
+                        }
                     }
-                }
-                if(set[controlName] !== undefined &&
-                        set[controlName]['gain'] !== undefined) {
-                    sendGainCB[controlName] = function(gain) {
-                        //console.log("Setting gain=" + gain);
-                        io.Emit('setParameter', programName, controlName, 'gain', gain);
+                    if(set[controlName]['gain'] !== undefined) {
+                        sendGainCB[controlName] = function(gain) {
+                            console.log("Setting gain=" + gain);
+                            io.Emit('setParameter', programName, controlName, 'gain', gain);
+                        }
                     }
                 }
             });

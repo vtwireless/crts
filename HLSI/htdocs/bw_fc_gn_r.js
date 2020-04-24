@@ -45,13 +45,14 @@ onload = function() {
         case 1:
 
             session(scenario, 'tx1', f0);
-            makeDisplay('tx1'/*controlName*/);
+            makeDisplay('tx1'/*controlName*/, 'bandwidth', 'bw', 'frequency', 'fc', 'gain', 'gn');
             break;
 
         case 2:
 
-            session(scenario, 'tx2', f0);
-            makeDisplay('tx2'/*controlName*/);
+            session(scenario, ['tx2', 'tx2_interferer'], f0);
+            makeDisplay('tx2'/*controlName*/, 'bandwidth', 'bw', 'frequency', 'fc', 'gain', 'gn');
+            makeDisplay('tx2_interferer'/*controlName*/, 'ibandwidth', 'ibw', 'ifrequency', 'ifc', 'igain', 'ign');
             break;
     }
 };
@@ -111,8 +112,7 @@ var pathf = svgf.append("path")
 
 
 
-
-function makeDisplay(controlName) {
+function makeDisplay(controlName, bandwidthId, bwId, frequencyId, fcId, gainId, gnId) {
 
 
 var fc = 0;    // some kind of slider relative frequency
@@ -159,8 +159,8 @@ function addBandwidth(sliderId, outputId, name) {
     };
 }
 
-if(document.querySelector('#bw') && document.querySelector('#bandwidth'))
-    addBandwidth('bandwidth', 'bw', controlName);
+if(document.querySelector('#'+bwId) && document.querySelector('#'+bandwidthId))
+    addBandwidth(bandwidthId, bwId, controlName);
 
 
 ///////////////////////////////////////////////////////////////////////////
@@ -196,7 +196,7 @@ function addFreq(sliderId, outputId, name) {
             // Send freq to the web server.
             sendFreqCB[name]((f0+fc*fs)*scale_freq);
 
-        console.log("--- fc=" + fc);
+        console.log("--- name=" + name + " fc=" + fc + " sendFreqCB[name]=" + sendFreqCB[name]);
     }
 
     document.querySelector('#'+sliderId).oninput = function() {
@@ -205,8 +205,8 @@ function addFreq(sliderId, outputId, name) {
 
 }
 
-if(document.querySelector('#fc') && document.querySelector('#frequency'))
-    addFreq('frequency', 'fc', controlName);
+if(document.querySelector('#'+fcId) && document.querySelector('#'+frequencyId))
+    addFreq(frequencyId, fcId, controlName);
 
 
 ///////////////////////////////////////////////////////////////////////////
@@ -255,8 +255,8 @@ function addGain(sliderId, outputId, name) {
     };
 }
 
-if(document.querySelector('#gn') && document.querySelector('#gain'))
-    addGain('gain', 'gn', controlName);
+if(document.querySelector('#'+gnId) && document.querySelector('#'+gainId))
+    addGain(gainId, gnId, controlName);
 
 
 ///////////////////////////////////////////////////////////////////////////
