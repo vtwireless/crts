@@ -3,17 +3,14 @@
 set -e
 cd $(dirname ${BASH_SOURCE[0]})
 
-#spectrum    192.168.40.111
-#tx          192.168.40.112
-#rx          192.168.40.211
-#inferterer  192.168.40.212
+source ./2_config
 
-USRP="addr=192.168.40.112"
+USRP="$tx_usrp"
 
 crts_radio="$HOME/git/crts/bin/crts_radio"
 
  $crts_radio\
  -f stdin\
  -f liquidFrame\
- -f tx [ --uhd $USRP --freq 915.5 --rate 1 --gain 31.5 ]\
+ -f tx [ --name tx2 --uhd $USRP --freq $freq --rate 1 --gain 31.5 ]\
  -C webClient < /dev/urandom

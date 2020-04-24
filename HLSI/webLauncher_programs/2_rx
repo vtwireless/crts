@@ -3,12 +3,14 @@
 set -e
 cd $(dirname ${BASH_SOURCE[0]})
 
-USRP="addr=192.168.40.211"
+source ./2_config
+
+USRP="$rx_usrp"
 
 crts_radio="$HOME/git/crts/bin/crts_radio"
 
  $crts_radio\
- -f rx [ --uhd $USRP --freq 915.5 --rate 1 --gain 31.5 ]\
+ -f rx [ --uhd $USRP --freq $freq --rate 1 --gain 31.5 ]\
  -f liquidSync\
  -f stdout\
  -C webClient > /dev/null

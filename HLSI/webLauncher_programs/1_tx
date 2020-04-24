@@ -10,7 +10,7 @@ crts_radio="$HOME/git/crts/bin/crts_radio"
  $crts_radio\
  -f stdin\
  -f liquidFrame\
- -f tx [ --uhd $USRP --freq 915.5 --rate 1 --gain 31.5 ]\
+ -f tx [ --name tx1 --uhd $USRP --freq 915.5 --rate 1 --gain 31.5 ]\
  -C webClient < /dev/urandom
 
 

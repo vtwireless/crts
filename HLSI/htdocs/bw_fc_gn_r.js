@@ -1,6 +1,43 @@
 
 onload = function() {
 
+    makeStuff();
+};
+
+
+function makeStuff() {
+
+
+    //////////////////////////////////////////////////////////////////////////////    
+    // Pick a scenario: 1 or 2
+    var scenario = (document.querySelector('#ign'))?2:1;
+
+    // Pick the name of the filter that is the libUHD transmitter (tx):
+    // tx is the controlName we will be getting and setting.
+    switch(scenario) {
+
+        case 1:
+
+            var controlName = "tx1";
+            // Center frequency
+            var f0 = 915.5e6;
+
+            break;
+
+        case 2:
+
+            var controlName = "tx2";
+            // Center frequency
+            var f0 = 919.5e6;
+
+            break;
+
+        default:
+            // This should not happen.
+    }
+            
+    console.log(" ++++++++++++++++++ running scenario = " + scenario);
+
 
 // 2. Use the margin convention practice
 var margin = {top: 50, right: 50, bottom: 50, left: 50}
@@ -8,7 +45,7 @@ var margin = {top: 50, right: 50, bottom: 50, left: 50}
   , height = 320 - margin.top - margin.bottom; // Use the window's height
 
 
-var fs = 4e6, f0 = 915.5e6; // sample rate, center frequency
+var fs = 4e6;  // sample rate scale
 var fc = 0;    // some kind of relative frequency
 var bw = 0.25; // relative to plot width filter bandwidth
 var bins = 200; // number of fft points per plot or number of datapoints
@@ -97,12 +134,7 @@ function addBandwidth(sliderId, outputId, name) {
 }
 
 if(document.querySelector('#bw') && document.querySelector('#bandwidth'))
-    addBandwidth('bandwidth', 'bw', 'tx');
-
-// Interferer bandwidth
-if(document.querySelector('#ibw') && document.querySelector('#ibandwidth'))
-    addBandwidth('ibandwidth', 'ibw', 'itx');
-
+    addBandwidth('bandwidth', 'bw', controlName);
 
 
 ///////////////////////////////////////////////////////////////////////////
@@ -150,10 +182,7 @@ function addFreq(sliderId, outputId, name) {
 }
 
 if(document.querySelector('#fc') && document.querySelector('#frequency'))
-    addFreq('frequency', 'fc', 'tx');
-
-if(document.querySelector('#ifc') && document.querySelector('#ifrequency'))
-    addFreq('ifrequency', 'ifc', 'itx');
+    addFreq('frequency', 'fc', controlName);
 
 
 ///////////////////////////////////////////////////////////////////////////
@@ -205,21 +234,17 @@ function addGain(sliderId, outputId, name) {
 }
 
 if(document.querySelector('#gn') && document.querySelector('#gain'))
-    addGain('gain', 'gn', 'tx');
-
-if(document.querySelector('#ign') && document.querySelector('#igain'))
-    addGain('igain', 'ign', 'itx');
+    addGain('gain', 'gn', controlName);
 
 
 ///////////////////////////////////////////////////////////////////////////
 
 
-    var scenario = (document.querySelector('#ign'))?1:2;
-
     createSession(function(io) {
 
         io.Emit('getLauncherPrograms');
         io.On('receiveLauncherPrograms', function(programs) {
+
 
             // We know what the programs are so here we go
             if(scenario == 1) {
@@ -235,24 +260,24 @@ if(document.querySelector('#ign') && document.querySelector('#igain'))
                     ' --freq ' + f0/1.0e6, { runOne: true });
                 io.Emit('launch', '/2_tx', '', { runOne: true });
                 io.Emit('launch', '/2_rx', '', { runOne: true });
-                io.Emit('launch', '/2_tx_interfer', '', { runOne: true });
+                io.Emit('launch', '/2_tx_interferer', '', { runOne: true });
             }
         });
 
         io.On('getParameter', function(programName,
-            controlName, parameter, value) {
-            if(controlName === 'tx' && parameter === 'rate') {
+            _controlName, parameter, value) {
+            if(_controlName === controlName && parameter === 'rate') {
                 console.log("got rate=" + value * 1.0e-6);
-                if(serverBandwidthToSliderCB['tx'] !== undefined)
-                    serverBandwidthToSliderCB['tx'](value * 1.0e-6);
-            } else if(controlName === 'tx' && parameter === 'freq') {
+                if(serverBandwidthToSliderCB[controlName] !== undefined)
+                    serverBandwidthToSliderCB[controlName](value * 1.0e-6);
+            } else if(_controlName === controlName && parameter === 'freq') {
                 console.log("got freq=" + value/1.0e6);
-                if(serverFreqToSliderCB['tx'] !== undefined)
-                    serverFreqToSliderCB['tx'](value/1.0e6);
-            } else if(controlName === 'tx' && parameter === 'gain') {
+                if(serverFreqToSliderCB[controlName] !== undefined)
+                    serverFreqToSliderCB[controlName](value/1.0e6);
+            } else if(_controlName === controlName && parameter === 'gain') {
                 console.log("got gain=" + value);
-                if(serverGainToSliderCB['tx'] !== undefined)
-                    serverGainToSliderCB['tx'](value);
+                if(serverGainToSliderCB[controlName] !== undefined)
+                    serverGainToSliderCB[controlName](value);
             }
         });
 
@@ -266,26 +291,26 @@ if(document.querySelector('#ign') && document.querySelector('#igain'))
                 '\n  image=' + image);
 
 
-            if(set['tx'] !== undefined &&
-                    set['tx']['rate'] !== undefined) {
-                sendBandwidthCB['tx'] = function(bw) {
+            if(set[controlName] !== undefined &&
+                    set[controlName]['rate'] !== undefined) {
+                sendBandwidthCB[controlName] = function(bw) {
                     let rate = 1.0e6 * bw;
                     console.log("Setting bw=" + bw + " => rate=" + rate);
-                    io.Emit('setParameter', programName,'tx','rate',rate);
+                    io.Emit('setParameter', programName, controlName, 'rate',rate);
                 }
             }
-            if(set['tx'] !== undefined &&
-                    set['tx']['freq'] !== undefined) {
-                sendFreqCB['tx'] = function(freq) {
+            if(set[controlName] !== undefined &&
+                    set[controlName]['freq'] !== undefined) {
+                sendFreqCB[controlName] = function(freq) {
                     console.log("Setting freq=" + freq);
-                    io.Emit('setParameter', programName, 'tx', 'freq', 1.0e6 * freq);
+                    io.Emit('setParameter', programName, controlName, 'freq', 1.0e6 * freq);
                 }
             }
-            if(set['tx'] !== undefined &&
-                    set['tx']['gain'] !== undefined) {
-                sendGainCB['tx'] = function(gain) {
+            if(set[controlName] !== undefined &&
+                    set[controlName]['gain'] !== undefined) {
+                sendGainCB[controlName] = function(gain) {
                     console.log("Setting gain=" + gain);
-                    io.Emit('setParameter', programName, 'tx', 'gain', gain);
+                    io.Emit('setParameter', programName, controlName, 'gain', gain);
                 }
             }
         });

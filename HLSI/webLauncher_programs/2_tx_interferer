@@ -1,15 +1,15 @@
 #!/bin/bash
-
 set -e
 cd $(dirname ${BASH_SOURCE[0]})
 
+source ./2_config
 
-USRP="addr=192.168.40.212"
+USRP="$tx_interferer_usrp"
 
 crts_radio="$HOME/git/crts/bin/crts_radio"
 
  $crts_radio\
  -f stdin\
  -f liquidFrame\
- -f tx [ --name tx_interferer --uhd $USRP --freq 914.2 --rate 1 --gain 31.5 ]\
+ -f tx [ --name tx_interferer --uhd $USRP --freq $ifreq --rate 0.602410 --gain 31.5 ]\
  -C webClient < /dev/urandom
