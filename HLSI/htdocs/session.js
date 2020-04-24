@@ -26,13 +26,16 @@ function session(scenario, controlNames, f0) {
         gets[controlName] = {
 
             "rate": function(value) {
-                serverBandwidthToSliderCB[controlName](value * 1.0e-6);
+                if(serverBandwidthToSliderCB[controlName] !== undefined)
+                    serverBandwidthToSliderCB[controlName](value * 1.0e-6);
             },
             "freq": function(value) {
-                serverFreqToSliderCB[controlName](value/1.0e6);
+                if(serverFreqToSliderCB[controlName] !== undefined)
+                    serverFreqToSliderCB[controlName](value/1.0e6);
             },
             "gain": function(value) {
-                serverGainToSliderCB[controlName](value);
+                if(serverGainToSliderCB[controlName] !== undefined)
+                    serverGainToSliderCB[controlName](value);
             }
         };
     });
@@ -87,21 +90,21 @@ function session(scenario, controlNames, f0) {
                         set[controlName]['rate'] !== undefined) {
                     sendBandwidthCB[controlName] = function(bw) {
                         let rate = 1.0e6 * bw;
-                        console.log("Setting bw=" + bw + " => rate=" + rate);
+                        //console.log("Setting bw=" + bw + " => rate=" + rate);
                         io.Emit('setParameter', programName, controlName, 'rate',rate);
                     }
                 }
                 if(set[controlName] !== undefined &&
                         set[controlName]['freq'] !== undefined) {
                     sendFreqCB[controlName] = function(freq) {
-                        console.log("Setting freq=" + freq);
+                        //console.log("Setting freq=" + freq);
                         io.Emit('setParameter', programName, controlName, 'freq', 1.0e6 * freq);
                     }
                 }
                 if(set[controlName] !== undefined &&
                         set[controlName]['gain'] !== undefined) {
                     sendGainCB[controlName] = function(gain) {
-                        console.log("Setting gain=" + gain);
+                        //console.log("Setting gain=" + gain);
                         io.Emit('setParameter', programName, controlName, 'gain', gain);
                     }
                 }
