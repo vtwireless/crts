@@ -6,6 +6,7 @@ require("/HLSI/session.js");
 var scenario = (document.querySelector('#ign'))?2:1;
 
 console.log(" ++++++++++++++++++ running scenario = " + scenario);
+
 switch(scenario) {
     case 1:
         f0 = 915.5e6;
@@ -45,17 +46,72 @@ onload = function() {
         case 1:
 
             session(scenario, 'tx1', f0);
-            makeSlidersDisplay('tx1'/*controlName*/, 'bandwidth', 'bw', 'frequency', 'fc', 'gain', 'gn');
+            makeSlidersDisplay('tx1'/*controlName*/, 
+                /*input/output element IDs: */
+                'bandwidth', 'bw', 'frequency', 'fc', 'gain', 'gn');
             break;
 
         case 2:
 
             session(scenario, ['tx2', 'tx2_interferer'], f0);
-            makeSlidersDisplay('tx2'/*controlName*/, 'bandwidth', 'bw', 'frequency', 'fc', 'gain', 'gn');
-            makeSlidersDisplay('tx2_interferer'/*controlName*/, 'ibandwidth', 'ibw', 'ifrequency', 'ifc', 'igain', 'ign');
+            makeSlidersDisplay('tx2'/*controlName*/,
+                /*input/output element IDs: */
+                'bandwidth', 'bw', 'frequency', 'fc', 'gain', 'gn');
+            makeSlidersDisplay('tx2_interferer'/*controlName*/,
+                /*input/output element IDs: */
+                'ibandwidth', 'ibw', 'ifrequency', 'ifc', 'igain', 'ign');
+            makeThroughputPlotter();
             break;
     }
 };
+
+
+
+function makeThroughputPlotter() {
+
+    var nPoints = 100;
+    var y = [];
+
+    var xScale = d3.scaleLinear().domain([0, 1]).range([0, width]);
+
+    var yScale = d3.scaleLinear().domain([0, 1]).range([height, 0]);
+
+    var linef = d3.line()
+        .x(function(d, i) { return xScale(i); })
+        .y(function(d)    { return yScale(d.y); });
+
+
+    var dataf = d3.range(0,bins-1).map(function(f) { return {"y": 0 } })
+
+    var svgf = svg_create(margin, width, height, xScale, yScale);
+
+    svg_add_labels(svgf, margin, width, height, "X LABEL", "Y LABEL");
+
+    svgf.append("clipPath").attr("id","clipf").append("rect").attr("width",width).attr("height",height);
+
+    var pathf = svgf.append("path")
+        .attr("clip-path","url(#clipf)")
+        .datum(dataf)
+        .attr("class", "stroke-med no-fill stroke-red")
+        .attr("d", linef);
+
+
+    function plot() {
+
+        var i;
+        for(i=0;i<nPoints;++i)
+            y[i] = i;
+
+        dataf = d3.range(0,nPoints-1).map(function(i) {
+            console.log(y[i]);
+            return {"y": y[i] }
+        });
+
+        pathf.datum(dataf).attr("d", linef);
+    }
+
+    plot();
+}
 
 
 
@@ -76,19 +132,15 @@ var [scale_freq,units_freq] = scale_units(f0+fs/2,0.1); // freq scale
 // 5. X scale will use the index of our data
 var fScale = d3.scaleLinear().domain([(f0-0.5*fs)*scale_freq, (f0+0.5*fs)*scale_freq]).range([0, width]);
 
-// 6. Y scale will use the randomly generate number
-var vScale = d3.scaleLinear().domain([ -1.1,  1.1]).range([height, 0]);
 var pScale = d3.scaleLinear().domain([-90, -20]).range([height, 0]);
 
 // 7. d3's line generator
-    //.curve(d3.curveMonotoneX) // apply smoothing to the line (comment out to remove smoothing)
 var linef = d3.line()
     .x(function(d, i) { return fScale((f0+(i/bins-0.5)*fs)*scale_freq); })  // map frequency
     .y(function(d)    { return pScale(d.y);        }); // map PSD
 
+
 // 8. An array of objects of length N. Each object has key -> value pair, the key being "y" and the value is a random number
-var datai = {};
-var dataq = {};
 var dataf = d3.range(0,bins-1).map(function(f) { return {"y": 0 } })
 
 // create SVG objects
