@@ -45,14 +45,14 @@ onload = function() {
         case 1:
 
             session(scenario, 'tx1', f0);
-            makeDisplay('tx1'/*controlName*/, 'bandwidth', 'bw', 'frequency', 'fc', 'gain', 'gn');
+            makeSlidersDisplay('tx1'/*controlName*/, 'bandwidth', 'bw', 'frequency', 'fc', 'gain', 'gn');
             break;
 
         case 2:
 
             session(scenario, ['tx2', 'tx2_interferer'], f0);
-            makeDisplay('tx2'/*controlName*/, 'bandwidth', 'bw', 'frequency', 'fc', 'gain', 'gn');
-            makeDisplay('tx2_interferer'/*controlName*/, 'ibandwidth', 'ibw', 'ifrequency', 'ifc', 'igain', 'ign');
+            makeSlidersDisplay('tx2'/*controlName*/, 'bandwidth', 'bw', 'frequency', 'fc', 'gain', 'gn');
+            makeSlidersDisplay('tx2_interferer'/*controlName*/, 'ibandwidth', 'ibw', 'ifrequency', 'ifc', 'igain', 'ign');
             break;
     }
 };
@@ -112,7 +112,7 @@ var pathf = svgf.append("path")
 
 
 
-function makeDisplay(controlName, bandwidthId, bwId, frequencyId, fcId, gainId, gnId) {
+function makeSlidersDisplay(controlName, bandwidthId, bwId, frequencyId, fcId, gainId, gnId) {
 
 
 var fc = 0;    // some kind of slider relative frequency
