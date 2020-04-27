@@ -24,8 +24,8 @@ uhd_fft -f 915.0e6 -s 10.5e6 --args $USRP3 &
  -f rx [ --uhd $USRP1 --freq 916.5 --rate 1 --gain 15 ]\
  -f liquidSync\
  -f stdout\
- -D |\
- hexdump -v < /dev/urandom &
+ -D > /dev/null < /dev/urandom &
+# hexdump -v < /dev/urandom &
 
 
 $crts_radio\
