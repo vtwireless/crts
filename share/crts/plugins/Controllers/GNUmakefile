@@ -15,7 +15,7 @@ INSTALL_DIR = $(PREFIX)/share/crts/plugins/$(notdir $(CURDIR))
 srcs := $(patsubst %.cpp,%,$(wildcard *.cpp))
 
 # For now just this.
-srcs := joystickTx dualTx shell webClient logger
+srcs := joystickTx dualTx shell webClient logger webClient_rate
 
 
 define MkSource
@@ -48,6 +48,12 @@ joystickTx.so_LDFLAGS := $(UHD_LIBS)
 # eating the single $, and \$ keeps bash from eating the $.
 #
 webClient.so_LDFLAGS := -ljansson -lcrts -L$(ROOT)/lib -Wl,-rpath=\$$ORIGIN/$(ROOT)/lib
+
+
+# webClient_rate is like webClient_rate with a throughput rate thingy
+# added.
+webClient_rate.so_LDFLAGS := -ljansson -lcrts -L$(ROOT)/lib -Wl,-rpath=\$$ORIGIN/$(ROOT)/lib
+
 
 
 include $(ROOT)/quickbuild.make

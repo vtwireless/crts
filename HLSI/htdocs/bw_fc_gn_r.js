@@ -25,7 +25,7 @@ var serverFreqToSliderCB = {};
 var sendFreqCB = {};
 var serverGainToSliderCB = {};
 var sendGainCB = {};
-var bins = 200; // number of fft points per plot or number of datapoints
+const bins = 200; // number of fft points per plot or number of datapoints
 var f0;/*center Frequency of spectrum plot*/
 
 function plotSpectrum(y) {
@@ -53,31 +53,33 @@ onload = function() {
 
         case 2:
 
-            session(scenario, ['tx2', 'tx2_interferer'], f0);
-            makeSlidersDisplay('tx2'/*controlName*/,
+            makeThroughputPlot();
+            session(scenario, ['tx2', 'tx2_interferer', 'rx2'], f0);
+            makeSlidersDisplay(['tx2', 'rx2']/*controlNames*/,
                 /*input/output element IDs: */
                 'bandwidth', 'bw', 'frequency', 'fc', 'gain', 'gn');
             makeSlidersDisplay('tx2_interferer'/*controlName*/,
                 /*input/output element IDs: */
                 'ibandwidth', 'ibw', 'ifrequency', 'ifc', 'igain', 'ign');
-            makeThroughputPlotter();
             break;
     }
 };
 
 
+var plotThroughputPlot;
+var nPoints = 240; // samples kept
+var dt = 0.5; // period between samples
 
-function makeThroughputPlotter() {
+function makeThroughputPlot() {
 
-    var nPoints = 100;
     var y = [];
 
-    var xScale = d3.scaleLinear().domain([0, 1]).range([0, width]);
+    var xScale = d3.scaleLinear().domain([nPoints*dt, 0]).range([0, width]);
 
-    var yScale = d3.scaleLinear().domain([0, 1]).range([height, 0]);
+    var yScale = d3.scaleLinear().domain([0, 100]).range([height, 0]);
 
     var linef = d3.line()
-        .x(function(d, i) { return xScale(i); })
+        .x(function(d, i) { return xScale(i*dt); })
         .y(function(d)    { return yScale(d.y); });
 
 
@@ -85,7 +87,7 @@ function makeThroughputPlotter() {
 
     var svgf = svg_create(margin, width, height, xScale, yScale);
 
-    svg_add_labels(svgf, margin, width, height, "X LABEL", "Y LABEL");
+    svg_add_labels(svgf, margin, width, height, "Past Time (s)", "Throughput (Kbit / s)");
 
     svgf.append("clipPath").attr("id","clipf").append("rect").attr("width",width).attr("height",height);
 
@@ -95,22 +97,24 @@ function makeThroughputPlotter() {
         .attr("class", "stroke-med no-fill stroke-red")
         .attr("d", linef);
 
+    var i;
+    for(i=0;i<nPoints;++i) {
+        y[i] = 0;
+    }
 
-    function plot() {
+    function plot(y) {
 
-        var i;
-        for(i=0;i<nPoints;++i)
-            y[i] = i;
-
-        dataf = d3.range(0,nPoints-1).map(function(i) {
-            console.log(y[i]);
+        dataf = d3.range(0,nPoints).map(function(i) {
+            //console.log(y[i]);
             return {"y": y[i] }
         });
 
         pathf.datum(dataf).attr("d", linef);
     }
 
-    plot();
+    plot(y);
+
+    plotThroughputPlot = plot
 }
 
 
@@ -163,21 +167,28 @@ var pathf = svgf.append("path")
 
 
 
-
 function makeSlidersDisplay(controlName, bandwidthId, bwId, frequencyId, fcId, gainId, gnId) {
 
 
-var fc = 0;    // some kind of slider relative frequency
-var bw = 0.25; // relative to plot width filter bandwidth
-var gn = 31.5; // gain in db
+    if(!Array.isArray(controlName))
+        var controlNames = [controlName];
+    else
+        var controlNames = controlName;
+
+
+    var fc = 0;    // some kind of slider relative frequency
+    var bw = 0.25; // relative to plot width filter bandwidth
+    var gn = 31.5; // gain in db
 
 
 /////////////////////////// BANDWIDTH ////////////////////////////////////
 
 
-function addBandwidth(sliderId, outputId, name) {
+function addBandwidth(sliderId, outputId, controlNames) {
 
-    serverBandwidthToSliderCB[name] = function(bandwidth) {
+    
+    
+    serverBandwidthToSliderCB[controlNames[0]] = function(bandwidth) {
 
         // This should update the bandwidth slider from the web.
 
@@ -199,9 +210,11 @@ function addBandwidth(sliderId, outputId, name) {
 
         document.querySelector('#'+outputId).value = d3.format(".2f")(bw*fs*scale_freq) + " " + units_freq + "Hz";
 
-        if(sendBandwidthCB[name] !== undefined)
-            // Send to the web server.
-            sendBandwidthCB[name](bw*fs*scale_freq);
+        controlNames.forEach(function(name) {
+            if(sendBandwidthCB[name] !== undefined)
+                // Send to the web server.
+                sendBandwidthCB[name](bw*fs*scale_freq);
+        });
 
         console.log("--- bw=" + bw);
     }
@@ -212,7 +225,7 @@ function addBandwidth(sliderId, outputId, name) {
 }
 
 if(document.querySelector('#'+bwId) && document.querySelector('#'+bandwidthId))
-    addBandwidth(bandwidthId, bwId, controlName);
+    addBandwidth(bandwidthId, bwId, controlNames);
 
 
 ///////////////////////////////////////////////////////////////////////////
@@ -221,9 +234,9 @@ if(document.querySelector('#'+bwId) && document.querySelector('#'+bandwidthId))
 //////////////////////////// FREQUENCY ////////////////////////////////////
 
 
-function addFreq(sliderId, outputId, name) {
+function addFreq(sliderId, outputId, controlNames) {
     
-    serverFreqToSliderCB[name]= function(freq) {
+    serverFreqToSliderCB[controlNames[0]]= function(freq) {
 
         // This should update the frequency slider from the web.
         //
@@ -244,11 +257,13 @@ function addFreq(sliderId, outputId, name) {
 
         document.querySelector('#'+outputId).value = d3.format(".2f")((f0+fc*fs)*scale_freq) + " " + units_freq + "Hz";
 
-        if(sendFreqCB[name] !== undefined) 
-            // Send freq to the web server.
-            sendFreqCB[name]((f0+fc*fs)*scale_freq);
+        controlNames.forEach(function(name) {
+            if(sendFreqCB[name] !== undefined) 
+                // Send freq to the web server.
+                sendFreqCB[name]((f0+fc*fs)*scale_freq);
+        });
 
-        console.log("--- name=" + name + " fc=" + fc + " sendFreqCB[name]=" + sendFreqCB[name]);
+        console.log("--- fc=" + fc);
     }
 
     document.querySelector('#'+sliderId).oninput = function() {
@@ -258,7 +273,7 @@ function addFreq(sliderId, outputId, name) {
 }
 
 if(document.querySelector('#'+fcId) && document.querySelector('#'+frequencyId))
-    addFreq(frequencyId, fcId, controlName);
+    addFreq(frequencyId, fcId, controlNames);
 
 
 ///////////////////////////////////////////////////////////////////////////
@@ -267,9 +282,10 @@ if(document.querySelector('#'+fcId) && document.querySelector('#'+frequencyId))
 /////////////////////////////// GAIN //////////////////////////////////////
 
 
-function addGain(sliderId, outputId, name) {
+function addGain(sliderId, outputId, controlNames) {
 
-    serverGainToSliderCB[name] = function(gain) {
+
+    serverGainToSliderCB[controlNames[0]] = function(gain) {
 
         // This should update the gain slider from the web.
         //
@@ -295,9 +311,11 @@ function addGain(sliderId, outputId, name) {
 
         document.querySelector('#'+outputId).value = d3.format(".1f")(gn) + " dB";
 
-        if(sendGainCB[name] !== undefined) 
-            // Send gain to the web server.
-            sendGainCB[name](gn);
+        controlNames.forEach(function(name) {
+            if(sendGainCB[name] !== undefined) 
+                // Send gain to the web server.
+                sendGainCB[name](gn);
+        });
 
         console.log("--- gn=" + gn);
     }
@@ -308,7 +326,7 @@ function addGain(sliderId, outputId, name) {
 }
 
 if(document.querySelector('#'+gnId) && document.querySelector('#'+gainId))
-    addGain(gainId, gnId, controlName);
+    addGain(gainId, gnId, controlNames);
 
 
 ///////////////////////////////////////////////////////////////////////////

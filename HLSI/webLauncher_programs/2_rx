@@ -10,7 +10,7 @@ USRP="$rx_usrp"
 crts_radio="$HOME/git/crts/bin/crts_radio"
 
  $crts_radio\
- -f rx [ --uhd $USRP --freq $freq --rate 1 --gain 31.5 ]\
+ -f rx [ --name rx2 --uhd $USRP --freq $freq --rate 1 --gain 31.5 ]\
  -f liquidSync\
  -f stdout\
- -C webClient > /dev/null
+ -C webClient_rate > /dev/null

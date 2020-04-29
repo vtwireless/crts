@@ -25,7 +25,7 @@ import argparse
 from socket import *
 import platform
 import os
-
+import time
 
 class spectrum_sensing_nikita(gr.top_block):
 
@@ -109,7 +109,9 @@ def Run(tcpClientSock, args):
     tb.start()
     tcpClientSock.sendall('I{"name":"spectrumStart","args":["%s:%s",%g,%g,%g,%d]}' %\
             (platform.node(), args['device'], cFreq, bandwidth, period, bins))
-
+    # This may keep the above TCP send from getting merged with the next
+    # TCP send.
+    time.sleep(0.3)
     tcpClientSock.settimeout(period)
 
     while True: 

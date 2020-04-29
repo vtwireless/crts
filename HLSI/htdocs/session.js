@@ -65,8 +65,60 @@ function session(scenario, controlNames, f0) {
             }
         });
 
+
+        if(scenario === 2) {
+            /////////////////////////////////
+            // This is for the ThroughputPlot
+            var t0 = 0;
+            var totalBytesOut0 = 0;
+            var y = [];
+            for(let i=0; i<nPoints; ++i)
+                y[i] = 0;
+
+            function checkThroughput(value) {
+
+                // this code will not get executed unless this value for
+                // 'liquidSync' "totalBytesOut" was sent.
+
+                let t1 = Date.now();
+                let dt = t1 - t0;
+
+                if(dt < 0.7e+3 && dt > 0.3e+3 && value && totalBytesOut0) {
+
+                    let bytesPerSecond = (value - totalBytesOut0)/dt;
+                    // This is about the same, because the rate of numbers
+                    // coming in is once every 1/2 second.
+                    //bytesPerSecond = (value - totalBytesOut0)/0.5;
+
+                    //console.log(" ------------ rate=" + bytesPerSecond);
+
+                    let y0 = [ bytesPerSecond ];
+                    y = y0.concat(y);
+                    y.pop();
+
+                } else {
+                    // We need to reset because we did not get good data.
+                    // Not knowing we set the current bytesPerSecond to 0.
+                    let y0 = [ 0 ];
+                    y = y0.concat(y);
+                    y.pop();
+                }
+
+                plotThroughputPlot(y);
+                t0 = t1;
+                totalBytesOut0 = value;
+            }
+        /////////////////////////////////
+        }
+
+
         io.On('getParameter', function(programName,
             controlName, parameter, value) {
+
+            //console.log('getParameter Args=' + [].slice.call(arguments));
+
+            if(scenario === 2 && controlName === 'liquidSync' && parameter === "totalBytesOut")
+                checkThroughput(value);
 
             if(parameter !== 'rate' && parameter !== 'freq' && parameter !== 'gain')
                 return;
@@ -86,24 +138,24 @@ function session(scenario, controlNames, f0) {
 
             controlNames.forEach(function(controlName) {
 
-
                 if(set[controlName] !== undefined) {
+
                     if(set[controlName]['rate'] !== undefined) {
                         sendBandwidthCB[controlName] = function(bw) {
                             let rate = 1.0e6 * bw;
-                            console.log("Setting bw=" + bw + " => rate=" + rate);
+                            console.log("Setting  " + controlName + " bw=" + bw + " => rate=" + rate);
                             io.Emit('setParameter', programName, controlName, 'rate',rate);
                         }
                     }
                     if(set[controlName]['freq'] !== undefined) {
                         sendFreqCB[controlName] = function(freq) {
-                            console.log("Setting freq=" + freq);
+                            console.log("Setting " + controlName + " freq=" + freq);
                             io.Emit('setParameter', programName, controlName, 'freq', 1.0e6 * freq);
                         }
                     }
                     if(set[controlName]['gain'] !== undefined) {
                         sendGainCB[controlName] = function(gain) {
-                            console.log("Setting gain=" + gain);
+                            console.log("Setting " + controlName + " gain=" + gain);
                             io.Emit('setParameter', programName, controlName, 'gain', gain);
                         }
                     }
