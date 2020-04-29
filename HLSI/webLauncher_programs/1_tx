@@ -5,7 +5,7 @@ cd $(dirname ${BASH_SOURCE[0]})
 
 USRP="addr=192.168.40.107"
 
-crts_radio="$HOME/git/crts/bin/crts_radio"
+crts_radio="../../bin/crts_radio"
 
  $crts_radio\
  -f stdin\

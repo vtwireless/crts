@@ -7,7 +7,7 @@ source ./2_config
 
 USRP="$tx_usrp"
 
-crts_radio="$HOME/git/crts/bin/crts_radio"
+crts_radio="../../bin/crts_radio"
 
  $crts_radio\
  -f stdin\

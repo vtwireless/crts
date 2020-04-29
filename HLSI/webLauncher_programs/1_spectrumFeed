@@ -11,7 +11,7 @@ set -ex
 # change working directory to this directory.
 cd $(dirname ${BASH_SOURCE[0]})
 
-spectrumFeed="$HOME/git/crts/bin/crts_spectrumFeed"
+spectrumFeed="../../bin/crts_spectrumFeed"
 
 exec $spectrumFeed\
  --device addr=192.168.40.108\

@@ -16,7 +16,7 @@ source ./2_config
 USRP="$spectrumFeed_usrp"
 
 
-spectrumFeed="$HOME/git/crts/bin/crts_spectrumFeed"
+spectrumFeed="../../bin/crts_spectrumFeed"
 
 exec $spectrumFeed\
  --device $USRP\
