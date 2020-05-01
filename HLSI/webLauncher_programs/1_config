@@ -2,4 +2,4 @@
 
 spectrum_usrp="addr=192.168.40.108"
 
-tx_usrp="addr="addr=192.168.40.107"
+tx_usrp="addr=192.168.40.107"
