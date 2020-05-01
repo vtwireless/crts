@@ -3,7 +3,9 @@
 set -e
 cd $(dirname ${BASH_SOURCE[0]})
 
-USRP="addr=192.168.40.107"
+source ./1_config
+
+USRP="$tx_usrp"
 
 crts_radio="../../bin/crts_radio"
 

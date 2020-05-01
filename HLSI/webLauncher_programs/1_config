@@ -1,0 +1,5 @@
+# This file is sourced by the 1_* programs
+
+spectrum_usrp="addr=192.168.40.108"
+
+tx_usrp="addr="addr=192.168.40.107"

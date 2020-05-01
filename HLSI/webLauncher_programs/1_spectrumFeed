@@ -8,13 +8,16 @@
 
 set -ex
 
+
 # change working directory to this directory.
 cd $(dirname ${BASH_SOURCE[0]})
+
+source ./1_config
 
 spectrumFeed="../../bin/crts_spectrumFeed"
 
 exec $spectrumFeed\
- --device addr=192.168.40.108\
+ --device $spectrum_usrp\
  --period 0.1\
  --freq 914.5\
  --bandwidth 4.0\
