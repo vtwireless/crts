@@ -85,7 +85,13 @@ function session(scenario, controlNames, f0) {
 
                 if(dt < 0.7e+3 && dt > 0.3e+3 && value && totalBytesOut0) {
 
-                    let bytesPerSecond = (value - totalBytesOut0)/dt;
+                    // value is in Bytes.  dt is in milliseconds.
+                    // therefore value/dt is in K Bytes / second.
+                    // 8*value/dt is in K Bit / second.
+                    // and so:
+                    // 8*(value - totalBytesOut0)/dt is in KBit/s
+                    //
+                    let bytesPerSecond = 8*(value - totalBytesOut0)/dt;
                     // This is about the same, because the rate of numbers
                     // coming in is once every 1/2 second.
                     //bytesPerSecond = (value - totalBytesOut0)/0.5;
