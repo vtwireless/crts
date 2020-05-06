@@ -3,6 +3,7 @@
 #include <errno.h>
 #include <string>
 #include <uhd/usrp/multi_usrp.hpp>
+#include <liquid/liquid.h>
 
 #include "crts/debug.h"
 #include "crts/Filter.hpp"
@@ -48,6 +49,9 @@ class Tx : public CRTSFilter
         // above.
         size_t numTxChannels;
 
+        // Arbitrary rate resampler to allow dynamic bandwidth adjustment
+        resamp_crcf resamp;
+        std::complex<float> * buffer_resamp; // TODO: use std lib container instead?
 
         ////////////////////////////////////////////////////////////////
         // Inline helper/wrapper utilities to set and get parameters
@@ -74,6 +78,16 @@ class Tx : public CRTSFilter
             // TODO: check return?
             //
             usrp->set_tx_rate(r, chan);
+            return true;
+        };
+
+        bool setRateResamp(const double &r, size_t chan=0)
+        {
+            if (r < 0.01 || r > 1.0) {
+                WARN("software resampling rate must be in [0.01, 1]");
+                return false;
+            }
+            resamp_crcf_set_rate(resamp, (float)r);
             return true;
         };
 
@@ -299,6 +313,10 @@ Tx::Tx(int argc, const char **argv):
         }
     }
 
+    // instantiate arbitrary rate resampler and appropriate output buffer
+    resamp = resamp_crcf_create(1.0f, 12, 0.495f, 60.0f, 64);
+    buffer_resamp = new std::complex<float>[2048];
+
     DSPEW();
 }
 
@@ -310,6 +328,10 @@ Tx::~Tx(void)
     // or the libuhd examples.
     // Or should stop() be the place to cleanup most of the
     // libuhd stuff.
+
+    // destroy arbitrary rate resampler and free output buffer
+    resamp_crcf_destroy(resamp);
+    delete [] buffer_resamp;
 
     DSPEW();
 }
@@ -398,10 +420,16 @@ void Tx::input(void *buffer, size_t len, uint32_t channelNum)
 
     size_t numFrames = len/(numTxChannels*sizeof(std::complex<float>));
 
-    // TODO: check for error here, and retry?
-    size_t ret = tx_stream->send(buffer, numFrames, metadata);
+    // resample result; note, because the resampler is restricted to always decimate,
+    // the size of the output buffer only needs to be at least the same size as the input
+    // TODO: increase output buffer size appropriately
+    unsigned int numFramesResamp;
+    resamp_crcf_execute(resamp, buffer, numFrames, buffer_resamp, &numFramesResamp);
 
-    if(ret != numFrames)
+    // TODO: check for error here, and retry?
+    size_t ret = tx_stream->send(buffer_resamp, numFramesResamp, metadata);
+
+    if(ret != numFramesResamp)
         WARN("wrote only %zu frames not %zu", ret, numFrames);
 
     // Mark the number of bytes to advance the input buffer which is not
