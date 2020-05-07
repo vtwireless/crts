@@ -97,7 +97,7 @@ function session(scenario, controlNames, f0) {
             var totalBytesOut0 = 0;
             var y = [];
             for(let i=0; i<nPoints; ++i)
-                y[i] = 0;
+                y[i] = -1000.0;
 
             function checkThroughput(value) {
 
