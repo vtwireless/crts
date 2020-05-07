@@ -67,8 +67,8 @@ UHD_PREFIX = $(shell pkg-config uhd --variable=prefix)
 rx.so_CPPFLAGS := $(UHD_CFLAGS)
 tx.so_CPPFLAGS := $(UHD_CFLAGS)
 
-rx.so_LDFLAGS := $(UHD_LIBS)
-tx.so_LDFLAGS := $(UHD_LIBS)
+rx.so_LDFLAGS := $(UHD_LIBS) $(LIQUID_LDFLAGS)
+tx.so_LDFLAGS := $(UHD_LIBS) $(LIQUID_LDFLAGS)
 
 
 

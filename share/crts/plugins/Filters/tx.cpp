@@ -4,6 +4,8 @@
 #include <string>
 #include <uhd/usrp/multi_usrp.hpp>
 
+#include "liquid.h"
+
 #include "crts/debug.h"
 #include "crts/Filter.hpp"
 #include "crts/crts.hpp"
@@ -33,6 +35,12 @@ class Tx : public CRTSFilter
         // may be gotten from the command line.
         std::vector<double> freq, rate, gain;
 
+        double resampFactor;
+
+        // Arbitrary rate resampler to allow dynamic bandwidth adjustment
+        resamp_crcf resamp;
+        std::complex<float> * buffer_resamp;
+        size_t buffer_resamp_len;
 
         std::string uhd_args, subdev;
         std::vector<size_t> channels; // USRP channels
@@ -77,6 +85,19 @@ class Tx : public CRTSFilter
             return true;
         };
 
+        bool setResampFactor(const double &r, size_t chan=0)
+        {
+            if (r < 1.0 || r > 10.0) {
+                WARN("software re-sampling factor must be in [1.0, 10.0]");
+                return false;
+            }
+
+            resampFactor = r;
+            resamp_crcf_set_rate(resamp, (float)resampFactor );
+
+            return true;
+        };
+
         bool setGain(const double &g, size_t chan=0)
         {
             // TODO: check return?
@@ -97,6 +118,13 @@ class Tx : public CRTSFilter
             // TODO: error check??
             //
             return usrp->get_tx_rate(chan);
+        };
+
+        double getResampFactor(size_t chan=0)
+        {
+            // TODO: error check??
+            //
+            return resampFactor;
         };
 
         double getGain(size_t chan=0)
@@ -152,11 +180,16 @@ static void usage(void)
 "                   receiver gain is %g.\n"
 "\n"
 "\n"
-"   --rate RATE     set the initial receiver sample rate to RATE million samples\n"
-"                   per second.  The default initial receiver rate is %g million\n"
+"   --rate RATE     set the initial transmitter sample rate to RATE million samples\n"
+"                   per second.  The default initial transmitter rate is %g million\n"
 "                   samples per second.\n"
 "\n"
 "\n"
+"   --resampFactor FACTOR  set the initial receiver re-sample factor.\n"
+"                   The default initial receiver re-sample factor is %g.\n"
+"\n"
+"\n"
+
 "   --subdev DEV    UHD subdev spec.\n"
 "\n"
 "                           Example: %s [ --subdev \"0:A 0:B\" ]\n"
@@ -173,7 +206,7 @@ static void usage(void)
 "\n"
 "\n",
         name,
-        TX_FREQ, TX_GAIN, TX_RATE, name, name);
+        TX_FREQ, TX_GAIN, TX_RATE, TX_RESAMPFACTOR, name, name);
 
     errno = 0;
     throw "usage help";
@@ -193,6 +226,7 @@ Tx::Tx(int argc, const char **argv):
     freq = opt.getV<double>("--freq", TX_FREQ);
     rate = opt.getV<double>("--rate", TX_RATE);
     gain = opt.getV<double>("--gain", TX_GAIN);
+    resampFactor = opt.get("--resampFactor", RX_RESAMPFACTOR);
 
     channels = opt.getV<size_t>("--channels", 0);
     subdev = opt.get("--subdev", "");
@@ -263,6 +297,10 @@ Tx::Tx(int argc, const char **argv):
                 [&]() { return getRate(); },
                 [&](double x) { return setRate(x); }
         );
+        addParameter("resampFactor",
+                [&]() { return getResampFactor(); },
+                [&](double x) { return setResampFactor(x); }
+        );
         addParameter("gain",
                 [&]() { return getGain(); },
                 [&](double x) { return setGain(x); }
@@ -299,6 +337,13 @@ Tx::Tx(int argc, const char **argv):
         }
     }
 
+    // instantiate arbitrary rate resampler and appropriate output buffer
+    resamp = resamp_crcf_create((float) resampFactor, 12, 0.495f, 60.0f, 64);
+    buffer_resamp_len = 2048;
+    buffer_resamp = (std::complex<float> *)malloc(sizeof(std::complex<float>)*buffer_resamp_len);
+    ASSERT(buffer_resamp,"malloc(%zu) failed",
+            sizeof(std::complex<float>)*buffer_resamp_len);
+
     DSPEW();
 }
 
@@ -310,6 +355,15 @@ Tx::~Tx(void)
     // or the libuhd examples.
     // Or should stop() be the place to cleanup most of the
     // libuhd stuff.
+
+    // destroy arbitrary rate resampler and free output buffer
+    resamp_crcf_destroy(resamp);
+    //
+    if(buffer_resamp) {
+        free(buffer_resamp);
+        buffer_resamp = 0;
+        buffer_resamp_len = 0;
+    }
 
     DSPEW();
 }
@@ -348,6 +402,12 @@ bool Tx::start(uint32_t numInChannels, uint32_t numOutChannels)
 
         stream_args.channels = channels;
         numTxChannels = channels.size();
+
+        // TODO: Ya, big todo here:
+        ASSERT(numTxChannels == 1, "Rewrite this code to "
+                "work with numTxChannels=%zu",
+                numTxChannels);
+
 
         tx_stream = usrp->get_tx_stream(stream_args);
 
@@ -398,11 +458,40 @@ void Tx::input(void *buffer, size_t len, uint32_t channelNum)
 
     size_t numFrames = len/(numTxChannels*sizeof(std::complex<float>));
 
-    // TODO: check for error here, and retry?
-    size_t ret = tx_stream->send(buffer, numFrames, metadata);
 
-    if(ret != numFrames)
-        WARN("wrote only %zu frames not %zu", ret, numFrames);
+    if((numFrames * resampFactor) *1.001 + 10 > buffer_resamp_len) {
+        buffer_resamp_len = (numFrames * resampFactor) *1.001 + 11;
+        buffer_resamp = (std::complex<float> *) realloc(buffer_resamp,
+                buffer_resamp_len*sizeof(std::complex<float>));
+        ASSERT(buffer_resamp, "realloc(%p, %zu) failed", buffer_resamp,
+                buffer_resamp_len*sizeof(std::complex<float>));
+    }
+
+    std::complex<float> *rebuf = buffer_resamp;
+
+    size_t totalFramesOut = 0;
+
+
+    for(size_t i=0; i<numFrames; ++i) {
+
+        unsigned int numFramesResamp;
+        resamp_crcf_execute(resamp, ((std::complex<float>*)buffer)[i],
+                rebuf, &numFramesResamp);
+        rebuf += numFramesResamp;
+        totalFramesOut += numFramesResamp;
+    }
+
+    // It should be the case that totalFramesOut = resampFactor * numFrames.
+    //
+    //DSPEW("++++++++++++++++++++++++++++ numFrames In=%zu  totalFramesOut=%zu",
+    //        numFrames, totalFramesOut);
+
+
+    // TODO: check for error here, and retry?
+    size_t ret = tx_stream->send(buffer_resamp, totalFramesOut, metadata);
+
+    if(ret != totalFramesOut)
+        WARN("wrote only %zu frames not %zu", ret, totalFramesOut);
 
     // Mark the number of bytes to advance the input buffer which is not
     // necessarily the same as "len" that was inputted.

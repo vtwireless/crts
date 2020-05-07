@@ -4,6 +4,8 @@
 #include <string>
 #include <uhd/usrp/multi_usrp.hpp>
 
+#include "liquid.h"
+
 #include "crts/debug.h"
 #include "crts/Filter.hpp"
 #include "crts/crts.hpp"
@@ -29,6 +31,13 @@ class Rx : public CRTSFilter
         std::string uhd_args, subdev;
         std::vector<size_t> channels;
         std::vector<double> freq, rate, gain;
+
+        double resampFactor;
+
+        std::complex<float> *recvBuffer;
+
+        // Arbitrary rate resampler to allow dynamic bandwidth adjustment
+        resamp_crcf resamp;
 
         uhd::usrp::multi_usrp::sptr usrp;
         uhd::rx_streamer::sptr rx_stream;
@@ -64,6 +73,20 @@ class Rx : public CRTSFilter
             usrp->set_rx_rate(r, chan);
             return true;
         };
+        
+        bool setResampFactor(const double &r, size_t chan=0)
+        {
+            if (r < 0.1 || r > 1.0) {
+                WARN("software re-sampling factor must be in [0.1, 1.0]");
+                return false;
+            }
+
+            resampFactor = r;
+            resamp_crcf_set_rate(resamp, (float)resampFactor );
+
+            return true;
+        };
+
 
         bool setGain(const double &g, size_t chan=0)
         {
@@ -87,13 +110,19 @@ class Rx : public CRTSFilter
             return usrp->get_rx_rate(chan);
         };
 
+        double getResampFactor(size_t chan=0)
+        {
+            // TODO: error check??
+            //
+            return resampFactor;
+        };
+
         double getGain(size_t chan=0)
         {
             // TODO: error check??
             //
             return usrp->get_rx_gain(chan);
         };
-
 };
 
 
@@ -147,6 +176,10 @@ static void usage(void)
 "                   samples per second.\n"
 "\n"
 "\n"
+"   --resampFactor FACTOR  set the initial receiver re-sample factor.\n"
+"                   The default initial receiver re-sample factor is %g.\n"
+"\n"
+"\n"
 "   --subdev DEV    UHD subdev spec.\n"
 "\n"
 "                           Example: %s [ --subdev \"0:A 0:B\" ]\n"
@@ -163,7 +196,7 @@ static void usage(void)
 "\n"
 "\n",
         name,
-        RX_FREQ, RX_GAIN, RX_RATE, name, name);
+        RX_FREQ, RX_GAIN, RX_RATE, RX_RESAMPFACTOR, name, name);
 
     errno = 0;
     throw "usage help"; // This is how return an error from a C++ constructor
@@ -184,6 +217,8 @@ Rx::Rx(int argc, const char **argv):
     freq = opt.getV<double>("--freq", TX_FREQ);
     rate = opt.getV<double>("--rate", TX_RATE);
     gain = opt.getV<double>("--gain", TX_GAIN);
+    resampFactor = opt.get("--resampFactor", RX_RESAMPFACTOR);
+
     channels = opt.getV<size_t>("--channels", 0);
     subdev = opt.get("--subdev", "");
 
@@ -253,6 +288,10 @@ Rx::Rx(int argc, const char **argv):
                 [&]() { return getRate(); },
                 [&](double x) { return setRate(x); }
         );
+        addParameter("resampFactor",
+                [&]() { return getResampFactor(); },
+                [&](double x) { return setResampFactor(x); }
+        );
         addParameter("gain",
                 [&]() { return getGain(); },
                 [&](double x) { return setGain(x); }
@@ -289,12 +328,18 @@ Rx::Rx(int argc, const char **argv):
         }
     }
 
+    // instantiate arbitrary rate resampler
+    resamp = resamp_crcf_create((float) resampFactor, 12, 0.495f, 60.0f, 64);
+
     DSPEW();
 }
 
 
 Rx::~Rx(void)
 {
+    // destroy arbitrary rate resampler
+    resamp_crcf_destroy(resamp);
+
     DSPEW();
 }
 
@@ -330,7 +375,9 @@ bool Rx::start(uint32_t numInChannels, uint32_t numOutChannels)
 
         //usrp->set_time_now(uhd::time_spec_t(0.0), 0);
 
-
+        ASSERT(channels.size() == 1, "Rewrite this (resamp part) code to "
+                "work with numTxChannels=%zu",
+                channels.size());
 
         uhd::stream_args_t stream_args("fc32"); //complex floats
 
@@ -355,6 +402,8 @@ bool Rx::start(uint32_t numInChannels, uint32_t numOutChannels)
     rx_stream->issue_stream_cmd(stream_cmd);
 
     max_num_samps = rx_stream->get_max_num_samps();
+
+    recvBuffer = new std::complex<float>[max_num_samps];
 
     // We use the same ring buffer for all output channels
     //
@@ -394,6 +443,8 @@ bool Rx::stop(uint32_t numInChannels, uint32_t numOutChannels)
         //
         //usrp = 0;
         //rx_stream = 0;
+        
+        delete recvBuffer;
     }
 
     return false; // success
@@ -412,12 +463,23 @@ void Rx::input(void *buffer, size_t len, uint32_t channelNum)
     DASSERT(len == 0,
             "This is just a source filter len=%zu", len);
 
-    buffer = getOutputBuffer(0);
-
     uhd::rx_metadata_t metadata; // set by recv();
 
-    size_t numSamples = rx_stream->recv(
-            buffer, max_num_samps, metadata, 2.0);
+    size_t numSamples = rx_stream->recv(recvBuffer, max_num_samps, metadata, 2.0);
+
+    std::complex<float> *outBuf =  (std::complex<float> *)getOutputBuffer(0);
+    size_t totalFramesOut = 0;
+
+    for(size_t i=0; i<numSamples; ++i) {
+        // resample result; note, because the resampler is restricted to
+        // always decimate, the size of the output buffer only needs to be
+        // at least the same size as the input.
+        //
+        unsigned int numFramesResamp;
+        resamp_crcf_execute(resamp, recvBuffer[i], outBuf, &numFramesResamp);
+        outBuf += numFramesResamp;
+        totalFramesOut += numFramesResamp;
+    }
 
 
     if(numSamples != max_num_samps)
@@ -430,8 +492,8 @@ void Rx::input(void *buffer, size_t len, uint32_t channelNum)
                 metadata.error_code, numSamples);
     }
 
-    if(numSamples)
-        output(numSamples*numRxChannels*
+    if(totalFramesOut)
+        output(totalFramesOut*numRxChannels*
                 sizeof(std::complex<float>),
                 CRTSFilter::ALL_CHANNELS);
 }

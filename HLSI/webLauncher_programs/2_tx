@@ -12,5 +12,5 @@ crts_radio="../../bin/crts_radio"
  $crts_radio\
  -f stdin\
  -f liquidFrame\
- -f tx [ --name tx2 --uhd $USRP --freq $freq --rate 1 --gain 31.5 ]\
+ -f tx [ --name tx2 --uhd $USRP --freq $freq --rate $rate --resampFactor $tx_rateResamp --gain 31.5 ]\
  -C webClient < /dev/urandom

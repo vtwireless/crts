@@ -12,7 +12,7 @@
 #define CHECK_COMPARE(r, x, y, ret, chan)                               \
     do {                                                                \
         DSPEW(r " %zu " #x ": %g", chan, y);                            \
-        if(x > y * 1.001 || x < y * 0.999)                              \
+        if(x > y * 1.01 || x < y * 0.99)                                \
         {                                                               \
             WARN(r " " #x " setting %g != got %g", x, y);               \
             ret = true;                                                 \

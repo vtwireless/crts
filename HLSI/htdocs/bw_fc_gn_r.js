@@ -76,7 +76,7 @@ function makeThroughputPlot() {
 
     var xScale = d3.scaleLinear().domain([nPoints*dt, 0]).range([0, width]);
 
-    var yScale = d3.scaleLinear().domain([0, 700]).range([height, 0]);
+    var yScale = d3.scaleLinear().domain([0, 1700]).range([height, 0]);
 
     var linef = d3.line()
         .x(function(d, i) { return xScale(i*dt); })
@@ -181,25 +181,27 @@ function makeSlidersDisplay(controlName, bandwidthId, bwId, frequencyId, fcId, g
     var gn = 31.5; // gain in db
 
 
+
 /////////////////////////// BANDWIDTH ////////////////////////////////////
 
 
 function addBandwidth(sliderId, outputId, controlNames) {
 
-    
-    
-    serverBandwidthToSliderCB[controlNames[0]] = function(bandwidth) {
 
-        // This should update the bandwidth slider from the web.
+    controlNames.forEach(function(controlName) {
+        serverBandwidthToSliderCB[controlName] = function(bandwidth) {
 
-        // bw is a slider relative scale of bandwidth
-        bw = bandwidth/(fs*scale_freq);
+            // This should update the bandwidth slider from the web.
 
-        document.querySelector('#'+outputId).value = d3.format(".2f")(bw*fs*scale_freq) + " " + units_freq + "Hz";
-        document.querySelector('#'+sliderId).value = bw;
+            // bw is a slider relative scale of bandwidth
+            bw = bandwidth/(fs*scale_freq);
 
-        console.log("bw=" + bw);
-    }
+            document.querySelector('#'+outputId).value = d3.format(".2f")(bw*fs*scale_freq) + " " + units_freq + "Hz";
+            document.querySelector('#'+sliderId).value = bw;
+
+            console.log("bw=" + bw);
+        }
+    });
 
     sliderBandwidthCB();
 
@@ -235,18 +237,21 @@ if(document.querySelector('#'+bwId) && document.querySelector('#'+bandwidthId))
 
 
 function addFreq(sliderId, outputId, controlNames) {
-    
-    serverFreqToSliderCB[controlNames[0]]= function(freq) {
+   
 
-        // This should update the frequency slider from the web.
-        //
-        // fc is a slider relative scale of frequency
-        fc = freq/(fs*scale_freq) - f0/fs;
-        //
-        document.querySelector('#'+outputId).value = d3.format(".2f")((f0+fc*fs)*scale_freq) + " " + units_freq + "Hz";
-        document.querySelector('#'+sliderId).value = fc;
-        console.log("fc=" + fc);
-    }
+    controlNames.forEach(function(controlName) {
+        serverFreqToSliderCB[controlName]= function(freq) {
+
+            // This should update the frequency slider from the web.
+            //
+            // fc is a slider relative scale of frequency
+            fc = freq/(fs*scale_freq) - f0/fs;
+            //
+            document.querySelector('#'+outputId).value = d3.format(".2f")((f0+fc*fs)*scale_freq) + " " + units_freq + "Hz";
+            document.querySelector('#'+sliderId).value = fc;
+            console.log("fc=" + fc);
+        }
+    });
 
     sliderFreqCB();
 
@@ -285,19 +290,21 @@ if(document.querySelector('#'+fcId) && document.querySelector('#'+frequencyId))
 function addGain(sliderId, outputId, controlNames) {
 
 
-    serverGainToSliderCB[controlNames[0]] = function(gain) {
+    controlNames.forEach(function(controlName) {
+        serverGainToSliderCB[controlName] = function(gain) {
 
-        // This should update the gain slider from the web.
-        //
-        // gn is a slider relative scale of gain.  Looks like it's also gain
-        // in db.
-        //
-        gn = gain;
-        //
-        document.querySelector('#'+outputId).value = d3.format(".1f")(gn) + " dB";
-        document.querySelector('#'+sliderId).value = gn;
-        console.log("gn=" + gn);
-    }
+            // This should update the gain slider from the web.
+            //
+            // gn is a slider relative scale of gain.  Looks like it's also gain
+            // in db.
+            //
+            gn = gain;
+            //
+            document.querySelector('#'+outputId).value = d3.format(".1f")(gn) + " dB";
+            document.querySelector('#'+sliderId).value = gn;
+            console.log("gn=" + gn);
+        }
+    });
 
 
     sliderGainCB();

@@ -21,14 +21,38 @@ function session(scenario, controlNames, f0) {
 
     var gets = { };
 
+    // The rx2 resampFactor is the reciprocal of this.
+    //
+    var resampFactor = 3.0; // transmitter resample rate factor.
+    // This is the numberOfSamples into TX filter to the number of samples
+    // feed to transmit.  Also a like thing for the receiver.
+
+    var rate = 3.57; // This must match the values in ../webLauncher_programs/?_config
+
     controlNames.forEach(function(controlName) {
 
         gets[controlName] = {
 
-            "rate": function(value) {
+            "resampFactor": function(value) {
+                if(controlName !== 'rx2')
+                    resampFactor = value;
+                else
+                    resampFactor = 1.0/value;
+
+                console.log("Got: " + controlName + ':' + "resampFactor=" + resampFactor);
+
                 if(serverBandwidthToSliderCB[controlName] !== undefined)
-                    serverBandwidthToSliderCB[controlName](value * 1.0e-6);
+                    serverBandwidthToSliderCB[controlName](
+                        rate/resampFactor);
             },
+            /*
+            "rate": function(value) {
+                rate = value/1.0e6;
+                console.log("------------------------got rate=" + rate);
+                if(serverBandwidthToSliderCB[controlName] !== undefined)
+                    serverBandwidthToSliderCB[controlName](rate/resampFactor);
+            },
+            */
             "freq": function(value) {
                 if(serverFreqToSliderCB[controlName] !== undefined)
                     serverFreqToSliderCB[controlName](value/1.0e6);
@@ -68,7 +92,7 @@ function session(scenario, controlNames, f0) {
 
         if(scenario === 2) {
             /////////////////////////////////
-            // This is for the ThroughputPlot
+            // This is for the Throughput Plot
             var t0 = 0;
             var totalBytesOut0 = 0;
             var y = [];
@@ -114,7 +138,7 @@ function session(scenario, controlNames, f0) {
                 t0 = t1;
                 totalBytesOut0 = value;
             }
-        /////////////////////////////////
+            /////////////////////////////////
         }
 
 
@@ -126,7 +150,8 @@ function session(scenario, controlNames, f0) {
             if(scenario === 2 && controlName === 'liquidSync' && parameter === "totalBytesOut")
                 checkThroughput(value);
 
-            if(parameter !== 'rate' && parameter !== 'freq' && parameter !== 'gain')
+            if(parameter !== 'freq' &&
+                parameter !== 'gain' && parameter !== 'resampFactor')
                 return;
 
             if(gets[controlName] !== undefined)
@@ -146,13 +171,21 @@ function session(scenario, controlNames, f0) {
 
                 if(set[controlName] !== undefined) {
 
-                    if(set[controlName]['rate'] !== undefined) {
+                    if(set[controlName]['resampFactor'] !== undefined) {
                         sendBandwidthCB[controlName] = function(bw) {
-                            let rate = 1.0e6 * bw;
-                            console.log("Setting  " + controlName + " bw=" + bw + " => rate=" + rate);
-                            io.Emit('setParameter', programName, controlName, 'rate',rate);
+
+                            resampFactor = rate/bw;
+                            console.log("bw=" + bw +  " rate=" + rate + "  Setting  " + controlName +
+                                    ":resampFactor=" + resampFactor);
+
+                            if(controlName !== 'rx2')
+                                io.Emit('setParameter', programName, controlName, 'resampFactor', resampFactor);
+                            else
+                                // For rx2 we invert the resampFactor
+                                io.Emit('setParameter', programName, controlName, 'resampFactor', 1.0/resampFactor);
                         }
                     }
+
                     if(set[controlName]['freq'] !== undefined) {
                         sendFreqCB[controlName] = function(freq) {
                             console.log("Setting " + controlName + " freq=" + freq);
