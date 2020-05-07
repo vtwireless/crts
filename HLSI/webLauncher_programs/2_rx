@@ -10,7 +10,12 @@ USRP="$rx_usrp"
 crts_radio="../../bin/crts_radio"
 
  $crts_radio\
- -f rx [ --name rx2 --uhd $USRP --freq $freq --rate $rate --resampFactor $rx_rateResamp --gain 31.5 ]\
+ -f rx [ --name rx2\
+ --uhd $USRP\
+ --freq $freq\
+ --rate $rate\
+ --resampFactor $rx_resampFactor\
+ --gain 31.5 ]\
  -f liquidSync\
  -f stdout\
  -C webClient_rate > /dev/null

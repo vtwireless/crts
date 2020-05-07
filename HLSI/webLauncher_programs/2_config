@@ -25,8 +25,8 @@ freq=919.5
 rate=3.57  # in MHz must match the value in ../htdocs/session.js
 
 # These next 2 must be reciprocals of each other:
-tx_rateResamp=2.5
-rx_rateResamp=0.4
+tx_resampFactor=2.5
+rx_resampFactor=0.4
 
 
 # Starting center frequency of interferer
