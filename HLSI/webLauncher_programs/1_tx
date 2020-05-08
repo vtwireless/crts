@@ -3,6 +3,7 @@
 set -e
 cd $(dirname ${BASH_SOURCE[0]})
 
+source ./config
 source ./1_config
 
 USRP="$tx_usrp"
@@ -12,7 +13,7 @@ crts_radio="../../bin/crts_radio"
  $crts_radio\
  -f stdin\
  -f liquidFrame\
- -f tx [ --name tx1 --uhd $USRP --freq 915.5 --rate $rate --resampFactor 3 --gain 31.5 ]\
+ -f tx [ --name tx1 --uhd "$USRP $UHD_ARGS" --freq 915.5 --rate $rate --resampFactor 3 --gain 31.5 ]\
  -C webClient < /dev/urandom
 
 

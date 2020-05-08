@@ -3,6 +3,7 @@
 set -e
 cd $(dirname ${BASH_SOURCE[0]})
 
+source ./config
 source ./2_config
 
 USRP="$rx_usrp"
@@ -11,7 +12,7 @@ crts_radio="../../bin/crts_radio"
 
  $crts_radio\
  -f rx [ --name rx2\
- --uhd $USRP\
+ --uhd "$USRP $UHD_ARGS"\
  --freq $freq\
  --rate $rate\
  --resampFactor $rx_resampFactor\

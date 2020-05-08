@@ -2,6 +2,7 @@
 set -e
 cd $(dirname ${BASH_SOURCE[0]})
 
+source ./config
 source ./2_config
 
 USRP="$tx_interferer_usrp"
@@ -12,7 +13,7 @@ $crts_radio\
  -f stdin\
  -f liquidFrame\
  -f tx [ --name tx2_interferer\
- --uhd $USRP\
+ --uhd "$USRP $UHD_ARGS"\
  --freq $ifreq\
  --rate $rate\
  --resampFactor $tx_resampFactor\

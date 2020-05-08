@@ -386,8 +386,7 @@ bool Tx::start(uint32_t numInChannels, uint32_t numOutChannels)
         // exceptions, but will not know what to do but fail which I
         // guess is fine.
         //
-        usrp = uhd::usrp::multi_usrp::make(uhd_args);
-
+        usrp = uhd::usrp::multi_usrp::make(uhd_args + "");
         if(subdev.length())
         {
             DSPEW("setting subdev=\"%s\"", subdev.c_str());
