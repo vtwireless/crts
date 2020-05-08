@@ -110,6 +110,11 @@ bool LiquidFrame::start(uint32_t numInChannels, uint32_t numOutChannels)
     // TODO: check for error here:
     ofdmframe_init_default_sctype(numSubcarriers, subcarrierAlloc);
 
+    // notch 12.5% of subcarriers offset from center of band
+    unsigned int num_notch = numSubcarriers / 8;
+    for (unsigned int i=0; i<num_notch; i++)
+        subcarrierAlloc[i] = OFDMFRAME_SCTYPE_NULL;
+
     // We wish to take an encode all the data that we receive in a given
     // input call, but we can't know ahead of time how large the output
     // will be, even when we know how large the input is.

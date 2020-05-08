@@ -126,6 +126,11 @@ LiquidSync::LiquidSync(int argc, const char **argv):
     if(!subcarrierAlloc) throw "malloc() failed";
     ofdmframe_init_default_sctype(numSubcarriers, subcarrierAlloc);
 
+    // notch 12.5% of subcarriers offset from center of band
+    unsigned int num_notch = numSubcarriers / 8;
+    for (unsigned int i=0; i<num_notch; i++)
+        subcarrierAlloc[i] = OFDMFRAME_SCTYPE_NULL;
+
     fs = ofdmflexframesync_create(numSubcarriers, cp_len,
                 taper_len, subcarrierAlloc,
                 (framesync_callback) frameSyncCallback,
