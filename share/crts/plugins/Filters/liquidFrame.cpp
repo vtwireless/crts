@@ -72,7 +72,7 @@ class LiquidFrame : public CRTSFilter
 
 LiquidFrame::LiquidFrame(int argc, const char **argv):
     fg(0),
-    numSubcarriers(32), cp_len(16), taper_len(4), subcarrierAlloc(0),
+    numSubcarriers(200), cp_len(16), taper_len(4), subcarrierAlloc(0),
     numPadComplexFloat(0), payloadLength(1024),
     frameCount(0), softGain(SOFT_GAIN_FACTOR),
     outChunk(512)

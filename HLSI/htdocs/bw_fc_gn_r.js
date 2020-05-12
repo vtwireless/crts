@@ -76,7 +76,7 @@ function makeThroughputPlot() {
 
     var xScale = d3.scaleLinear().domain([nPoints*dt, 0]).range([0, width]);
 
-    var yScale = d3.scaleLinear().domain([0, 1700]).range([height, 0]);
+    var yScale = d3.scaleLinear().domain([0, 3000]).range([height, 0]);
 
     var linef = d3.line()
         .x(function(d, i) { return xScale(i*dt); })
