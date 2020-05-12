@@ -111,7 +111,7 @@ def Run(tcpClientSock, args):
             (platform.node(), args['device'], cFreq, bandwidth, period, bins))
     # This may keep the above TCP send from getting merged with the next
     # TCP send.
-    time.sleep(0.3)
+    time.sleep(1.0)
     tcpClientSock.settimeout(period)
 
     while True: 
