@@ -228,9 +228,11 @@ function session(scenario, controlNames, f0) {
                 console.log('ADDRESS=' + address);
                 console.log("SUBSCRIBING TO: " + id);
 
-                if(scenario == 1 && address === "peach:addr=192.168.40.108")
+                let addr = address.split(":")[1];
+
+                if(scenario == 1 && addr === "addr=192.168.40.108")
                     spc.subscribe(id, spec_updateCB);
-                else if(scenario == 2 && address === "peach:addr=192.168.40.111")
+                else if(scenario == 2 && addr === "addr=192.168.40.111")
                     spc.subscribe(id, spec_updateCB);
             },
 
