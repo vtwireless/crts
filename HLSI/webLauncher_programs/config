@@ -1,17 +1,1 @@
-# This is sourced by most of the programs in this directory
-
-# this is the extra Low Latency arguments that are passed to
-# the TX and RX modules that link with libUHD
-
-# Skip it for now. Changing these parameter from the defaults, which are
-# much larger, does not seem to decrease latency.
-return
-
-
-UHD_ARGS=",\
-recv_frame_size=1024,\
- num_recv_frames=8,\
- recv_buff_size=37200,\
- send_frame_size=1024,\
- num_send_frames=8,\
- send_buff_size=37200"
+# All the configuration has moved to ../htdocs/bw_fc_gn_r.js

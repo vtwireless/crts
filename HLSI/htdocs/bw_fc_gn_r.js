@@ -1,20 +1,63 @@
 
 require("/HLSI/session.js");
 
+//////////////////////////////////////////////////////////////////
+//
+//                       CONFIGURATION
+//
+//  We made it so that these numbers are only set in this one
+//  file.   They are passed as arguments to the launcher via
+//  webSockets.
+//
+//  Changing these numbers in more than one file was causing us
+//  pain.
+//
+//////////////////////////////////////////////////////////////////
+
+///// Both scenarios /////
+//
+var rate = 3.57; // MHz
+var gain = 31.5; // relative dB
+
+// These next 2 must be reciprocals of each other:
+var tx_resampFactor = 2.5;
+var rx_resampFactor = 1.0/tx_resampFactor;
+
+
+/////// Scenario 1 ///////
+
+// starting center frequency
+var cfreq1 = 915.5; // MHz
+
+var tx1_usrp = "addr=192.168.40.107";
+
+var spectrum1_usrp = "addr=192.168.40.108";
+
+
+/////// Scenario 2 ///////
+
+var cfreq2 = 919.5; // MHz
+
+var tx2_usrp = "addr=192.168.40.212";
+
+var rx2_usrp = "addr=192.168.40.211";
+
+var spectrum2_usrp = "addr=192.168.40.111";
+
+var tx2_interferer_usrp = "addr=192.168.40.112";
+
+var ifreq2 = 918; // MHz
+
+
+//////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////
+
+
 //////////////////////////////////////////////////////////////////////////////    
 // Pick a scenario: 1 or 2
 var scenario = (document.querySelector('#ign'))?2:1;
 
 console.log(" ++++++++++++++++++ running scenario = " + scenario);
-
-switch(scenario) {
-    case 1:
-        f0 = 915.5e6;
-        break;
-    case 2:
-        f0 = 919.5e6;
-        break;
-}
 
 
 // Globals that are used in session.js and this file.
@@ -25,8 +68,8 @@ var serverFreqToSliderCB = {};
 var sendFreqCB = {};
 var serverGainToSliderCB = {};
 var sendGainCB = {};
-const bins = 200; // number of fft points per plot or number of datapoints
-var f0;/*center Frequency of spectrum plot*/
+var bins = 200; // number of fft points per plot or number of datapoints
+
 
 function plotSpectrum(y) {
 
@@ -36,7 +79,17 @@ function plotSpectrum(y) {
     pathf.datum(dataf).attr("d", linef);
 }
 
+var f0;
 
+switch(scenario) {
+
+    case 1:
+        f0 = cfreq1 * 1.0e6; /*center Frequency of spectrum plot in Hz*/
+        break;
+    case 2:
+        f0 = cfreq2 * 1.0e6; /*center Frequency of spectrum plot in Hz*/
+        break;
+}
 
 
 onload = function() {
@@ -63,6 +116,7 @@ onload = function() {
                 'ibandwidth', 'ibw', 'ifrequency', 'ifc', 'igain', 'ign');
             break;
     }
+
 };
 
 
@@ -118,7 +172,6 @@ function makeThroughputPlot() {
 }
 
 
-
 // Other Globals that I have not figured out yet:
 //
 // 2. Use the margin convention practice
@@ -162,7 +215,6 @@ var pathf = svgf.append("path")
     .datum(dataf)
     .attr("class", "stroke-med no-fill stroke-red")
     .attr("d", linef);
-
 
 
 

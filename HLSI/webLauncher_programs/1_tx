@@ -3,22 +3,43 @@
 set -e
 cd $(dirname ${BASH_SOURCE[0]})
 
-source ./config
-source ./1_config
 
-USRP="$tx_usrp"
+if [ -z "$5" ] ; then
+    cat << EOF
+  Usage: $0 USRP RATE FREQ RESAMP_FACTOR GAIN
+
+  We had to add a commandline argument so that both the javaScript and
+  this script used the same USPR device, sample rate in MHz, center
+  frequency in MHz, resample factor as a number, and gain in dB.
+
+  Example, try running this:
+
+       $0 addr=192.168.40.107 3.57 915.5 2.5 31.5
+
+EOF
+    exit 1
+fi
+
+
+
+USRP="$1"
+rate="$2"
+freq="$3"
+resampFactor="$4"
+gain="$5"
+
 
 crts_radio="../../bin/crts_radio"
 
  $crts_radio\
  -f stdin\
  -f liquidFrame\
- -f tx [ --name tx1 --uhd "$USRP $UHD_ARGS" --freq 915.5 --rate $rate --resampFactor 3 --gain 31.5 ]\
+ -f tx [\
+ --name tx1\
+ --uhd "$USRP"\
+ --freq $freq\
+ --rate $rate\
+ --resampFactor $resampFactor\
+ --gain $gain ]\
  -C webClient < /dev/urandom
 
-
- #-C dualTx\
-
- # See it with:
- #
- #  uhd_fft --samp-rate 3000000 -f 915500000 -a addr=192.168.40.108

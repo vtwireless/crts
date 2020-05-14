@@ -1,0 +1,21 @@
+#!/bin/bash
+
+#
+# To see possible options args run:
+#  ../../bin/crts_spectrumFeed --help
+#
+
+
+set -ex
+
+
+# change working directory to this directory.
+cd $(dirname ${BASH_SOURCE[0]})
+
+
+spectrumFeed="../../bin/crts_spectrumFeed"
+
+exec $spectrumFeed\
+ --period 0.1\
+ --bandwidth 4.0\
+ $*

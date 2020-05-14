@@ -33,7 +33,7 @@ function PrintURL() {
     local_url="http://localhost:${http_port}${PATH}"
     try=0
 
-    while ! wget "$local_url" -O /dev/null --timeout=4 --quiet
+    while ! wget "$local_url" -O /dev/null -o /dev/null --timeout=4 --quiet
     do
         let try=${try}+1
         if [ $try = 3 ] ; then
