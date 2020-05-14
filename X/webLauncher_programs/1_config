@@ -1,0 +1,7 @@
+# This file is sourced by the 1_* programs
+
+spectrum_usrp="addr=192.168.40.108"
+
+tx_usrp="addr=192.168.40.107"
+
+rate=3.57  # in MHz must match the value in ../htdocs/session.js

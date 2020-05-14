@@ -1,0 +1,8 @@
+#!/bin/bash
+
+
+source ./GetGitHubHLSIFile.bash
+
+# Usage: DownloadFile FILENAME TAG [SHA512SUM]
+
+DownloadFile exercise_frequency.html 2b5d0611a472e9908381afd46e845b049467f14a

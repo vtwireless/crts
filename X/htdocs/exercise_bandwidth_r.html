@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html lang="en-US">
+<head>
+  <title> Bandwidth (Real)</title>
+  <meta charset="UTF-8"/>
+  <script src='/load.js'></script>
+  <script>
+    require("/X/exercise_common.js");
+  </script>
+</head>
+
+<body>
+  <h2>Exercise - Bandwidth (Real)</h2>
+  <p><a href="index.html">[exercises]</a></p>
+  <p>
+    <label for="bandwidth">Bandwidth</label>
+    <input class="width-4" type="range" min="0.1" max="0.9" value="0.2" id="bandwidth" step="0.001"
+        oninput="sliderBandwidthCB(parseFloat(value))">
+    <output for="bandwidth" id="bw"></output>
+  </p>
+</body>

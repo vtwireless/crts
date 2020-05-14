@@ -1,0 +1,8 @@
+#!/bin/bash
+
+
+source ./GetGitHubHLSIFile.bash
+
+# Usage: DownloadFile FILENAME TAG [SHA512SUM]
+
+DownloadFile exercise_gain.html 0bcb96000ead7d013a6f5c6ba5040643512d3e59

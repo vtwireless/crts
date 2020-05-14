@@ -1,0 +1,8 @@
+#!/bin/bash
+
+
+source ./GetGitHubHLSIFile.bash
+
+# Usage: DownloadFile FILENAME TAG [SHA512SUM]
+
+DownloadFile exercise_bandwidth.html 173b508bd44e82b3303f30364109eb2cfca94163

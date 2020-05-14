@@ -1,0 +1,69 @@
+#!/bin/bash
+
+
+hostname=kermit.wireless.vt.edu
+https_port=9092
+http_port=9091
+user=admin
+password=admin123
+
+cd $(dirname ${BASH_SOURCE[0]})
+
+server=../bin/crts_contestWebServer
+
+# This is just one of what will be many pages:
+path=/X/index.html
+
+URL="https://${hostname}:${https_port}${path}?user=${user}&password=$password"
+
+set -eo pipefail
+
+# turn on job control
+set -m
+
+cd $(dirname ${BASH_SOURCE[0]})
+
+
+function PrintURL() {
+
+    # We want to print after the server startup spew, so
+    # how do you tell when the server is started up.
+    # Answer: use wget.
+
+    local_url="http://localhost:${http_port}${PATH}"
+    try=0
+
+    while ! wget "$local_url" -O /dev/null --timeout=4 --quiet
+    do
+        let try=${try}+1
+        if [ $try = 3 ] ; then
+            break
+        fi
+        sleep 1
+        echo "wget failed"
+    done
+
+cat << EOF
+
+Try:
+
+
+  $URL
+
+
+EOF
+}
+
+
+$server\
+ --https_port $https_port\
+ --http_port $http_port\
+ --user=$user\
+ --password=$password\
+ --launcher_dir webLauncher_programs\
+ --debug &
+
+
+PrintURL
+
+fg > /dev/null

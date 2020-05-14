@@ -1,0 +1,35 @@
+# This file is sourced by the 2_* programs
+
+
+#                    Configuration
+##########################################################
+
+# USRPs: one for each on the programs in the scenario 
+
+spectrumFeed_usrp="addr=192.168.40.111"
+
+tx_usrp="addr=192.168.40.212"
+
+rx_usrp="addr=192.168.40.211"
+
+tx_interferer_usrp="addr=192.168.40.112"
+
+
+
+# Starting center frequency of transmitter and receiver which will change.
+# Also the same as the center frequency of the spectrum feed
+# In MHz (mega hertz).
+
+freq=919.5
+
+rate=3.57  # in MHz must match the value in ../htdocs/session.js
+
+# These next 2 must be reciprocals of each other:
+tx_resampFactor=2.5
+rx_resampFactor=0.4
+
+
+# Starting center frequency of interferer
+
+ifreq=918
+

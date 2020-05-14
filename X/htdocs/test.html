@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="en-US">
+<head>
+  <title>Test</title>
+  <meta charset="UTF-8"/>
+  <script src='/load.js'></script>
+  <script>
+
+require('/spectrum/feed.js');
+
+onload = function() {
+
+    createSession(function(io) {
+
+        console.log("Got CRTS session");
+
+    }, { addAdminPanel: false, showHeader: false });
+};
+
+</script>
+  <link rel="stylesheet" type="text/css" media="all" href="base.css">
+</head>
+
+<body>
+  <h2>Exercise - Frequency; Test</h2>
+</body>
+
+
