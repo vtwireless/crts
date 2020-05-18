@@ -65,9 +65,11 @@ console.log(" ++++++++++++++++++ running scenario = " + scenario);
 var serverBandwidthToSliderCB = {};
 var sendBandwidthCB = {};
 var serverFreqToSliderCB = {};
+var serverModeToSliderCB = false;
 var sendFreqCB = {};
 var serverGainToSliderCB = {};
 var sendGainCB = {};
+var sendModeCB = false;
 var bins = 200; // number of fft points per plot or number of datapoints
 
 
@@ -106,14 +108,22 @@ onload = function() {
 
         case 2:
 
-            makeThroughputPlot();
-            session(scenario, ['tx2', 'tx2_interferer', 'rx2'], f0);
+            let throughPutMax = 3000;
+
+            if(document.querySelector('#mode'))
+                throughPutMax = 7000;
+
+            makeThroughputPlot(throughPutMax);
+            session(scenario, ['tx2', 'tx2_interferer', 'rx2', 'liquidFrame2'], f0);
             makeSlidersDisplay(['tx2', 'rx2']/*controlNames*/,
                 /*input/output element IDs: */
                 'bandwidth', 'bw', 'frequency', 'fc', 'gain', 'gn');
             makeSlidersDisplay('tx2_interferer'/*controlName*/,
                 /*input/output element IDs: */
                 'ibandwidth', 'ibw', 'ifrequency', 'ifc', 'igain', 'ign');
+            if(document.querySelector('#mode'))
+                // modulation/error-correction scheme slider
+                addModSlider();
             break;
     }
 
@@ -124,13 +134,13 @@ var plotThroughputPlot;
 var nPoints = 240; // samples kept
 var dt = 0.5; // period between samples
 
-function makeThroughputPlot() {
+function makeThroughputPlot(max=3000) {
 
     var y = [];
 
     var xScale = d3.scaleLinear().domain([nPoints*dt, 0]).range([0, width]);
 
-    var yScale = d3.scaleLinear().domain([0, 3000]).range([height, 0]);
+    var yScale = d3.scaleLinear().domain([0, max]).range([height, 0]);
 
     var linef = d3.line()
         .x(function(d, i) { return xScale(i*dt); })
@@ -231,8 +241,6 @@ function makeSlidersDisplay(controlName, bandwidthId, bwId, frequencyId, fcId, g
     var fc = 0;    // some kind of slider relative frequency
     var bw = 0.25; // relative to plot width filter bandwidth
     var gn = 31.5; // gain in db
-
-
 
 /////////////////////////// BANDWIDTH ////////////////////////////////////
 
@@ -387,8 +395,67 @@ function addGain(sliderId, outputId, controlNames) {
 if(document.querySelector('#'+gnId) && document.querySelector('#'+gainId))
     addGain(gainId, gnId, controlNames);
 
-
-///////////////////////////////////////////////////////////////////////////
-
+////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 };
+
+
+
+/////////////////////////////// modulation/error-correction scheme //////////////////////////////////////
+
+
+
+function addModSlider() {
+
+
+    var md = 1; // starting mode at "r2/3 BPSK"
+
+    var modes = [
+
+        // These must stay consistent with strings like this in
+        // ../../share/crts/plugins/Filters/liquidFrame.cpp.
+
+        "r1/2 BPSK      ",
+        "r2/3 BPSK      ",
+        "r1/2 QPSK      ",
+        "r2/3 QPSK      ",
+        "r8/9 QPSK      ",
+        "r2/3 16-QAM    ",
+        "r8/9 16-QAM    ",
+        "r8/9 32-QAM    ",
+        "r8/9 64-QAM    ",
+        "r8/9 128-QAM   ",
+        "r8/9 256-QAM   ",
+        "uncoded 256-QAM"
+    ];
+
+    serverModeToSliderCB = function(md_in) {
+
+        // This should update the mode slider from the web.
+        //
+
+        md = md_in;
+        document.querySelector('#md').value = modes[md];
+        document.querySelector('#mode').value = md;
+        console.log("md=" + md + "  " + modes[md]);
+    }
+
+    serverModeToSliderCB(md);
+
+
+    function sliderModeCB(md) {
+
+        document.querySelector('#md').value = modes[md];
+
+        if(sendModeCB) 
+            sendModeCB(md);
+
+        console.log("--- md=" + md + "  " + modes[md]);
+    }
+
+    document.querySelector('#mode').oninput = function() {
+        let val = Math.round(parseFloat(document.querySelector('#mode').value));
+        if(md != val)
+            sliderModeCB(md = val);
+    };
+}

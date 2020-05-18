@@ -39,6 +39,46 @@ static void usage(void)
 }
 
 
+
+// We grouped together a few sets of liquidDSP modulation schemes and
+// Forward Error Correction schemes that we share as a single parameter
+// with the CRTS parameter API.
+struct mod_error_corr_scheme {
+
+    // CRTS only knows parameters as doubles.
+    double mode; // We use a double as the parameter value.
+
+    // modulation scheme
+    modulation_scheme mod;
+
+    // FEC (Forward Error Correction) scheme
+    fec_scheme fec;
+
+    // CRTS parameter name.
+    const char *scheme_name;
+};
+
+
+// The scheme_name in this list needs to stay consistent with javaScript
+// in ../../../../HLSI/htdocs/
+static
+const struct mod_error_corr_scheme modes[] = {
+
+    {   0.0,    LIQUID_MODEM_BPSK,      LIQUID_FEC_GOLAY2412,   "r1/2 BPSK"         },
+    {   1.0,    LIQUID_MODEM_BPSK,      LIQUID_FEC_HAMMING128,  "r2/3 BPSK"         },
+    {   2.0,    LIQUID_MODEM_QPSK,      LIQUID_FEC_GOLAY2412,   "r1/2 QPSK"         },
+    {   3.0,    LIQUID_MODEM_QPSK,      LIQUID_FEC_HAMMING128,  "r2/3 QPSK"         },
+    {   4.0,    LIQUID_MODEM_QPSK,      LIQUID_FEC_SECDED7264,  "r8/9 QPSK"         },
+    {   5.0,    LIQUID_MODEM_QAM16,     LIQUID_FEC_HAMMING128,  "r2/3 16-QAM"       },
+    {   6.0,    LIQUID_MODEM_QAM16,     LIQUID_FEC_SECDED7264,  "r8/9 16-QAM"       },
+    {   7.0,    LIQUID_MODEM_QAM32,     LIQUID_FEC_SECDED7264,  "r8/9 32-QAM"       },
+    {   8.0,    LIQUID_MODEM_QAM64,     LIQUID_FEC_SECDED7264,  "r8/9 64-QAM"       },
+    {   9.0,    LIQUID_MODEM_QAM128,    LIQUID_FEC_SECDED7264,  "r8/9 128-QAM"      },
+    {  10.0,    LIQUID_MODEM_QAM256,    LIQUID_FEC_SECDED7264,  "r8/9 256-QAM"      },
+    {  11.0,    LIQUID_MODEM_QAM256,    LIQUID_FEC_NONE,        "uncoded 256-QAM"   }
+};
+
+
 class LiquidFrame : public CRTSFilter
 {
     public:
@@ -66,6 +106,37 @@ class LiquidFrame : public CRTSFilter
         const size_t outChunk;
 
         void _output(size_t numComplex, std::complex<float> *x);
+
+
+        const struct mod_error_corr_scheme *mode;
+
+
+        bool setMode(const double &mm, size_t chan=0)
+        {
+            double m = mm + 0.01; // fix round off to keep it as the same int.
+            if(m>11.1) m = 11.1;
+            else if (m<0.01) m = 0.01;
+            mode = &modes[ (int) m ];
+
+            ofdmflexframegenprops_s fgprops; // frame generator properties
+            ofdmflexframegenprops_init_default(&fgprops);
+            fgprops.check = LIQUID_CRC_32;
+            fgprops.fec1 = mode->fec;       // outer
+            fgprops.fec0 = LIQUID_FEC_NONE; // inner
+            fgprops.mod_scheme = mode->mod;
+
+            ofdmflexframegen_setprops(fg, &fgprops);
+
+            DSPEW("Set liquid frame scheme to (%g): \"%s\"", mode->mode, mode->scheme_name);
+
+            return true;
+        };
+
+        double getMode(size_t chan=0)
+        {
+            DSPEW("MODE=%g", mode->mode);
+            return mode->mode;
+        }
 };
 
 
@@ -79,6 +150,10 @@ LiquidFrame::LiquidFrame(int argc, const char **argv):
 {
     CRTSModuleOptions opt(argc, argv, usage);
 
+    addParameter("mode",
+            [&]() { return getMode(); },
+            [&](double x) { return setMode(x); }
+        );
 
     DSPEW();
 }
@@ -135,13 +210,13 @@ bool LiquidFrame::start(uint32_t numInChannels, uint32_t numOutChannels)
 
     /////////////////////////////////////////////////////////////////
 
-
+    mode = &modes[ 2 ];
     ofdmflexframegenprops_s fgprops; // frame generator properties
     ofdmflexframegenprops_init_default(&fgprops);
     fgprops.check = LIQUID_CRC_32;
-    fgprops.fec1 = LIQUID_FEC_HAMMING128;
+    fgprops.fec1 = mode->fec;
     fgprops.fec0 = LIQUID_FEC_NONE;
-    fgprops.mod_scheme = LIQUID_MODEM_QAM4;
+    fgprops.mod_scheme = mode->mod;
 
     fg = ofdmflexframegen_create(numSubcarriers, cp_len,
                 taper_len, subcarrierAlloc, &fgprops);

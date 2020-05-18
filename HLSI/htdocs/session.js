@@ -164,6 +164,8 @@ function session(scenario, controlNames, f0) {
                 t0 = t1;
                 totalBytesOut0 = value;
             }
+
+
             /////////////////////////////////
         }
 
@@ -172,6 +174,13 @@ function session(scenario, controlNames, f0) {
             controlName, parameter, value) {
 
             //console.log('getParameter Args=' + [].slice.call(arguments));
+
+            if(serverModeToSliderCB && scenario === 2 && controlName === 'liquidFrame2'
+                    && parameter === 'mode') {
+                // We have a mod/err-corr scheme slider
+                console.log('value=' + value);
+                serverModeToSliderCB(value);
+            }
 
             if(scenario === 2 && controlName === 'liquidSync' && parameter === "totalBytesOut")
                 checkThroughput(value);
@@ -193,9 +202,26 @@ function session(scenario, controlNames, f0) {
                 '\n    get=' + JSON.stringify(get) +
                 '\n  image=' + image);
 
+
+
             controlNames.forEach(function(controlName) {
 
+
                 if(set[controlName] !== undefined) {
+
+
+
+                    if(serverModeToSliderCB && controlName === 'liquidFrame2' &&
+                        set[controlName]['mode'] !== undefined) {
+
+                        // We have a mod/err-corr scheme slider
+                        sendModeCB = function(md) {
+                            io.Emit('setParameter', programName, controlName, 'mode', md);
+                        };
+                    }
+
+
+
 
                     if(set[controlName]['resampFactor'] !== undefined) {
                         sendBandwidthCB[controlName] = function(bw) {
