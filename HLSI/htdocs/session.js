@@ -148,7 +148,7 @@ function session(scenario, controlNames, f0) {
 
                     //console.log(" ------------ rate=" + bytesPerSecond);
 
-                    let y0 = [ bytesPerSecond ];
+                    let y0 = [ bytesPerSecond/1000.0 ]; // Mbit/s
                     y = y0.concat(y);
                     y.pop();
 

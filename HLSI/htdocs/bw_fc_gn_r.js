@@ -38,13 +38,13 @@ var spectrum1_usrp = "addr=192.168.40.108";
 
 var cfreq2 = 919.5; // MHz
 
-var tx2_usrp = "addr=192.168.40.212";
+var tx2_usrp = "addr=192.168.40.112";
 
 var rx2_usrp = "addr=192.168.40.211";
 
 var spectrum2_usrp = "addr=192.168.40.111";
 
-var tx2_interferer_usrp = "addr=192.168.40.112";
+var tx2_interferer_usrp = "addr=192.168.40.212";
 
 var ifreq2 = 918; // MHz
 
@@ -108,10 +108,10 @@ onload = function() {
 
         case 2:
 
-            let throughPutMax = 3000;
+            let throughPutMax = 3; // Mbit/s
 
             if(document.querySelector('#mode'))
-                throughPutMax = 7000;
+                throughPutMax = 7; // Mbit/s
 
             makeThroughputPlot(throughPutMax);
             session(scenario, ['tx2', 'tx2_interferer', 'rx2', 'liquidFrame2'], f0);
@@ -134,7 +134,7 @@ var plotThroughputPlot;
 var nPoints = 240; // samples kept
 var dt = 0.5; // period between samples
 
-function makeThroughputPlot(max=3000) {
+function makeThroughputPlot(max=3) {
 
     var y = [];
 
@@ -151,7 +151,7 @@ function makeThroughputPlot(max=3000) {
 
     var svgf = svg_create(margin, width, height, xScale, yScale);
 
-    svg_add_labels(svgf, margin, width, height, "Past Time (s)", "Throughput (Kbit / s)");
+    svg_add_labels(svgf, margin, width, height, "Past Time (s)", "Throughput (Mbit / s)");
 
     svgf.append("clipPath").attr("id","clipf").append("rect").attr("width",width).attr("height",height);
 

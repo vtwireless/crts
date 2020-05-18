@@ -210,7 +210,7 @@ bool LiquidFrame::start(uint32_t numInChannels, uint32_t numOutChannels)
 
     /////////////////////////////////////////////////////////////////
 
-    mode = &modes[ 2 ];
+    mode = &modes[ 1 ];
     ofdmflexframegenprops_s fgprops; // frame generator properties
     ofdmflexframegenprops_init_default(&fgprops);
     fgprops.check = LIQUID_CRC_32;
