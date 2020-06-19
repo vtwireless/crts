@@ -1,20 +1,63 @@
 
 require("/X/session.js");
 
+//////////////////////////////////////////////////////////////////
+//
+//                       CONFIGURATION
+//
+//  We made it so that these numbers are only set in this one
+//  file.   They are passed as arguments to the launcher via
+//  webSockets.
+//
+//  Changing these numbers in more than one file was causing us
+//  pain.
+//
+//////////////////////////////////////////////////////////////////
+
+///// Both scenarios /////
+//
+var rate = 3.57; // MHz
+var gain = 31.5; // relative dB
+
+// These next 2 must be reciprocals of each other:
+var tx_resampFactor = 2.5;
+var rx_resampFactor = 1.0/tx_resampFactor;
+
+
+/////// Scenario 1 ///////
+
+// starting center frequency
+var cfreq1 = 915.5; // MHz
+
+var tx1_usrp = "addr=192.168.40.107";
+
+var spectrum1_usrp = "addr=192.168.40.108";
+
+
+/////// Scenario 2 ///////
+
+var cfreq2 = 919.5; // MHz
+
+var tx2_usrp = "addr=192.168.40.112";
+
+var rx2_usrp = "addr=192.168.40.211";
+
+var spectrum2_usrp = "addr=192.168.40.111";
+
+var tx2_interferer_usrp = "addr=192.168.40.212";
+
+var ifreq2 = 918; // MHz
+
+
+//////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////
+
+
 //////////////////////////////////////////////////////////////////////////////    
 // Pick a scenario: 1 or 2
 var scenario = (document.querySelector('#ign'))?2:1;
 
 console.log(" ++++++++++++++++++ running scenario = " + scenario);
-
-switch(scenario) {
-    case 1:
-        f0 = 915.5e6;
-        break;
-    case 2:
-        f0 = 919.5e6;
-        break;
-}
 
 
 // Globals that are used in session.js and this file.
@@ -22,11 +65,13 @@ switch(scenario) {
 var serverBandwidthToSliderCB = {};
 var sendBandwidthCB = {};
 var serverFreqToSliderCB = {};
+var serverModeToSliderCB = false;
 var sendFreqCB = {};
 var serverGainToSliderCB = {};
 var sendGainCB = {};
-const bins = 200; // number of fft points per plot or number of datapoints
-var f0;/*center Frequency of spectrum plot*/
+var sendModeCB = false;
+var bins = 512; // number of fft points per plot or number of datapoints
+
 
 function plotSpectrum(y) {
 
@@ -36,7 +81,17 @@ function plotSpectrum(y) {
     pathf.datum(dataf).attr("d", linef);
 }
 
+var f0;
 
+switch(scenario) {
+
+    case 1:
+        f0 = cfreq1 * 1.0e6; /*center Frequency of spectrum plot in Hz*/
+        break;
+    case 2:
+        f0 = cfreq2 * 1.0e6; /*center Frequency of spectrum plot in Hz*/
+        break;
+}
 
 
 onload = function() {
@@ -53,16 +108,25 @@ onload = function() {
 
         case 2:
 
-            makeThroughputPlot();
-            session(scenario, ['tx2', 'tx2_interferer', 'rx2'], f0);
+            let throughPutMax = 3; // Mbit/s
+
+            if(document.querySelector('#mode'))
+                throughPutMax = 7; // Mbit/s
+
+            makeThroughputPlot(throughPutMax);
+            session(scenario, ['tx2', 'tx2_interferer', 'rx2', 'liquidFrame2'], f0);
             makeSlidersDisplay(['tx2', 'rx2']/*controlNames*/,
                 /*input/output element IDs: */
                 'bandwidth', 'bw', 'frequency', 'fc', 'gain', 'gn');
             makeSlidersDisplay('tx2_interferer'/*controlName*/,
                 /*input/output element IDs: */
                 'ibandwidth', 'ibw', 'ifrequency', 'ifc', 'igain', 'ign');
+            if(document.querySelector('#mode'))
+                // modulation/error-correction scheme slider
+                addModSlider();
             break;
     }
+
 };
 
 
@@ -70,13 +134,13 @@ var plotThroughputPlot;
 var nPoints = 240; // samples kept
 var dt = 0.5; // period between samples
 
-function makeThroughputPlot() {
+function makeThroughputPlot(max=3) {
 
     var y = [];
 
     var xScale = d3.scaleLinear().domain([nPoints*dt, 0]).range([0, width]);
 
-    var yScale = d3.scaleLinear().domain([0, 3000]).range([height, 0]);
+    var yScale = d3.scaleLinear().domain([0, max]).range([height, 0]);
 
     var linef = d3.line()
         .x(function(d, i) { return xScale(i*dt); })
@@ -87,7 +151,7 @@ function makeThroughputPlot() {
 
     var svgf = svg_create(margin, width, height, xScale, yScale);
 
-    svg_add_labels(svgf, margin, width, height, "Past Time (s)", "Throughput (Kbit / s)");
+    svg_add_labels(svgf, margin, width, height, "Past Time (s)", "Throughput (Mbit / s)");
 
     svgf.append("clipPath").attr("id","clipf").append("rect").attr("width",width).attr("height",height);
 
@@ -116,7 +180,6 @@ function makeThroughputPlot() {
 
     plotThroughputPlot = plot
 }
-
 
 
 // Other Globals that I have not figured out yet:
@@ -166,7 +229,6 @@ var pathf = svgf.append("path")
 
 
 
-
 function makeSlidersDisplay(controlName, bandwidthId, bwId, frequencyId, fcId, gainId, gnId) {
 
 
@@ -179,8 +241,6 @@ function makeSlidersDisplay(controlName, bandwidthId, bwId, frequencyId, fcId, g
     var fc = 0;    // some kind of slider relative frequency
     var bw = 0.25; // relative to plot width filter bandwidth
     var gn = 31.5; // gain in db
-
-
 
 /////////////////////////// BANDWIDTH ////////////////////////////////////
 
@@ -335,8 +395,67 @@ function addGain(sliderId, outputId, controlNames) {
 if(document.querySelector('#'+gnId) && document.querySelector('#'+gainId))
     addGain(gainId, gnId, controlNames);
 
-
-///////////////////////////////////////////////////////////////////////////
-
+////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 };
+
+
+
+/////////////////////////////// modulation/error-correction scheme //////////////////////////////////////
+
+
+
+function addModSlider() {
+
+
+    var md = 1; // starting mode at "r2/3 BPSK"
+
+    var modes = [
+
+        // These must stay consistent with strings like this in
+        // ../../share/crts/plugins/Filters/liquidFrame.cpp.
+
+        "r1/2 BPSK      ",
+        "r2/3 BPSK      ",
+        "r1/2 QPSK      ",
+        "r2/3 QPSK      ",
+        "r8/9 QPSK      ",
+        "r2/3 16-QAM    ",
+        "r8/9 16-QAM    ",
+        "r8/9 32-QAM    ",
+        "r8/9 64-QAM    ",
+        "r8/9 128-QAM   ",
+        "r8/9 256-QAM   ",
+        "uncoded 256-QAM"
+    ];
+
+    serverModeToSliderCB = function(md_in) {
+
+        // This should update the mode slider from the web.
+        //
+
+        md = md_in;
+        document.querySelector('#md').value = modes[md];
+        document.querySelector('#mode').value = md;
+        console.log("md=" + md + "  " + modes[md]);
+    }
+
+    serverModeToSliderCB(md);
+
+
+    function sliderModeCB(md) {
+
+        document.querySelector('#md').value = modes[md];
+
+        if(sendModeCB) 
+            sendModeCB(md);
+
+        console.log("--- md=" + md + "  " + modes[md]);
+    }
+
+    document.querySelector('#mode').oninput = function() {
+        let val = Math.round(parseFloat(document.querySelector('#mode').value));
+        if(md != val)
+            sliderModeCB(md = val);
+    };
+}

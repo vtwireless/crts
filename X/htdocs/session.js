@@ -76,16 +76,42 @@ function session(scenario, controlNames, f0) {
                 // This is for the case when there is no interferer.
                 io.Emit('launch', '/1_spectrumFeed',
                     '--bins ' + bins +
-                    ' --freq ' + f0/1.0e6, { runOne: true });
-                io.Emit('launch', '/1_tx', '', { runOne: true });
+                    ' --device ' + spectrum1_usrp +
+                    ' --freq ' + cfreq1, { runOne: true });
+                io.Emit('launch', '/1_tx',
+                    tx1_usrp + ' ' +
+                    rate + ' ' +
+                    cfreq1 + ' ' +
+                    tx_resampFactor + ' ' +
+                    gain,
+                    { runOne: true });
             } else if(scenario == 2) {
                 // This is for the case when there is an interferer.
                 io.Emit('launch', '/2_spectrumFeed',
                     '--bins ' + bins +
-                    ' --freq ' + f0/1.0e6, { runOne: true });
-                io.Emit('launch', '/2_tx', '', { runOne: true });
-                io.Emit('launch', '/2_rx', '', { runOne: true });
-                io.Emit('launch', '/2_tx_interferer', '', { runOne: true });
+                    ' --device ' + spectrum2_usrp +
+                    ' --freq ' + cfreq2, { runOne: true });
+                io.Emit('launch', '/2_tx',
+                    tx2_usrp + ' ' +
+                    rate + ' ' +
+                    cfreq2 + ' ' +
+                    tx_resampFactor + ' ' +
+                    gain,
+                    { runOne: true });
+                io.Emit('launch', '/2_rx',
+                    rx2_usrp + ' ' +
+                    rate + ' ' +
+                    cfreq2 + ' ' +
+                    rx_resampFactor + ' ' +
+                    gain,
+                    { runOne: true });
+                io.Emit('launch', '/2_tx_interferer',
+                    tx2_interferer_usrp + ' ' +
+                    rate + ' ' +
+                    ifreq2 + ' ' +
+                    tx_resampFactor + ' ' +
+                    gain,
+                    { runOne: true });
             }
         });
 
@@ -122,7 +148,7 @@ function session(scenario, controlNames, f0) {
 
                     //console.log(" ------------ rate=" + bytesPerSecond);
 
-                    let y0 = [ bytesPerSecond ];
+                    let y0 = [ bytesPerSecond/1000.0 ]; // Mbit/s
                     y = y0.concat(y);
                     y.pop();
 
@@ -138,6 +164,8 @@ function session(scenario, controlNames, f0) {
                 t0 = t1;
                 totalBytesOut0 = value;
             }
+
+
             /////////////////////////////////
         }
 
@@ -146,6 +174,13 @@ function session(scenario, controlNames, f0) {
             controlName, parameter, value) {
 
             //console.log('getParameter Args=' + [].slice.call(arguments));
+
+            if(serverModeToSliderCB && scenario === 2 && controlName === 'liquidFrame2'
+                    && parameter === 'mode') {
+                // We have a mod/err-corr scheme slider
+                console.log('value=' + value);
+                serverModeToSliderCB(value);
+            }
 
             if(scenario === 2 && controlName === 'liquidSync' && parameter === "totalBytesOut")
                 checkThroughput(value);
@@ -167,9 +202,26 @@ function session(scenario, controlNames, f0) {
                 '\n    get=' + JSON.stringify(get) +
                 '\n  image=' + image);
 
+
+
             controlNames.forEach(function(controlName) {
 
+
                 if(set[controlName] !== undefined) {
+
+
+
+                    if(serverModeToSliderCB && controlName === 'liquidFrame2' &&
+                        set[controlName]['mode'] !== undefined) {
+
+                        // We have a mod/err-corr scheme slider
+                        sendModeCB = function(md) {
+                            io.Emit('setParameter', programName, controlName, 'mode', md);
+                        };
+                    }
+
+
+
 
                     if(set[controlName]['resampFactor'] !== undefined) {
                         sendBandwidthCB[controlName] = function(bw) {
@@ -230,9 +282,9 @@ function session(scenario, controlNames, f0) {
 
                 let addr = address.split(":")[1];
 
-                if(scenario == 1 && addr === "addr=192.168.40.108")
+                if(scenario == 1 && addr === spectrum1_usrp)
                     spc.subscribe(id, spec_updateCB);
-                else if(scenario == 2 && addr === "addr=192.168.40.111")
+                else if(scenario == 2 && addr === spectrum2_usrp)
                     spc.subscribe(id, spec_updateCB);
             },
 
