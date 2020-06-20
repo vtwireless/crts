@@ -70,7 +70,10 @@ var sendFreqCB = {};
 var serverGainToSliderCB = {};
 var sendGainCB = {};
 var sendModeCB = false;
-var bins = 512; // number of fft points per plot or number of datapoints
+
+//issue: if bins is larger than 2048 plot does not show 
+//and server terminal gets filled with spew of numbers  
+var bins = 1024; // number of fft points per plot or number of datapoints
 
 
 function plotSpectrum(y) {
@@ -111,7 +114,7 @@ onload = function() {
             let throughPutMax = 3; // Mbit/s
 
             if(document.querySelector('#mode'))
-                throughPutMax = 7; // Mbit/s
+                throughPutMax = 6; // Mbit/s
 
             makeThroughputPlot(throughPutMax);
             session(scenario, ['tx2', 'tx2_interferer', 'rx2', 'liquidFrame2'], f0);
@@ -158,7 +161,10 @@ function makeThroughputPlot(max=3) {
     var pathf = svgf.append("path")
         .attr("clip-path","url(#clipf)")
         .datum(dataf)
-        .attr("class", "stroke-med no-fill stroke-red")
+        //.attr("class", "stroke-red")
+        .attr("stroke","red")
+        .attr("fill", "none")
+        .attr("stroke-width", 5)
         .attr("d", linef);
 
     var i;
@@ -199,7 +205,7 @@ var [scale_freq,units_freq] = scale_units(f0+fs/2,0.1); // freq scale
 // 5. X scale will use the index of our data
 var fScale = d3.scaleLinear().domain([(f0-0.5*fs)*scale_freq, (f0+0.5*fs)*scale_freq]).range([0, width]);
 
-var pScale = d3.scaleLinear().domain([-90, -20]).range([height, 0]);
+var pScale = d3.scaleLinear().domain([-90, 0]).range([height, 0]);
 
 // 7. d3's line generator
 var linef = d3.line()
@@ -223,8 +229,10 @@ svgf.append("clipPath").attr("id","clipf").append("rect").attr("width",width).at
 var pathf = svgf.append("path")
     .attr("clip-path","url(#clipf)")
     .datum(dataf)
-    .attr("class", "stroke-med no-fill stroke-red")
-    .attr("d", linef);
+    .attr("class", "no-fill")
+    .attr("stroke","yellow")
+    .attr("stroke-width", 1.0)
+    .attr("d", (linef));
 
 
 
