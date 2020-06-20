@@ -2,7 +2,7 @@
 
 
 #hostname=kermit.wireless.vt.edu
-hostname=192.168.1.184
+hostname=kermit.wireless.vt.edu
 https_port=9092
 http_port=9091
 user=admin
