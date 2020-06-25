@@ -374,7 +374,7 @@ LiquidFrame::input(void *inBuffer, size_t inLen, uint32_t inputChannelNum)
             numComplexOut = 0;
         }
 
-        memset(&outBuffer[numComplexOut], 0,
+        memset(reinterpret_cast<void *>(&outBuffer[numComplexOut]), 0,
                 numPadComplexFloat * sizeof(std::complex<float>));
         numComplexOut += numPadComplexFloat;
     }

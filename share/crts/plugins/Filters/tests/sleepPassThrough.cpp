@@ -75,8 +75,8 @@ bool SleepPassThrough::start(uint32_t numInChannels, uint32_t numOutChannels)
 
     if(numInChannels != numOutChannels)
     {
-        WARN("This filter must have numInChannels("
-                PRIu32 ") == numOutChannels(" PRIu32
+        WARN("This filter must have numInChannels(%"
+                PRIu32 ") == numOutChannels(%" PRIu32
                 ")", numInChannels, numOutChannels);
         return true; // fail
     }

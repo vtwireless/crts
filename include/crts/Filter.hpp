@@ -952,7 +952,7 @@ class CRTSControl
             catch(...)
             {
                 WARN("Control \"%s\" does not have a parameter named \"%s\"",
-                        name, pname);
+                        name, pname.c_str());
                 return NAN;
             }
         };
@@ -999,7 +999,7 @@ class CRTSControl
             catch(...)
             {
                 WARN("Control \"%s\" does not have a parameter named \"%s\"",
-                        name, pname);
+                        name, pname.c_str());
                 return false;
             }
         };

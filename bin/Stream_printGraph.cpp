@@ -86,7 +86,7 @@ bool Stream::printGraph(const char *filename, bool _wait)
             if(_wait)
             {
                 int status = 0;
-                INFO("waiting for child display process", status);
+                INFO("waiting for child display process");
                 errno = 0;
                 // We wait for just this child.
                 if(pid == waitpid(pid, &status, 0))
@@ -249,7 +249,7 @@ int Stream::printGraph(bool _wait)
         if(_wait)
         {
             int status = 0;
-            INFO("waiting for child display process", status);
+            INFO("waiting for child display process");
             errno = 0;
             // We wait for just this child.
             if(pid == waitpid(pid, &status, 0))

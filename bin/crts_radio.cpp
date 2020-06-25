@@ -751,9 +751,9 @@ int main(int argc, const char **argv)
                 {
                     ERROR("The two source filters: \"%s\" and \"%s\""
                             " share the same thread %" PRIu32".\n\n",
-                        filterModule2->thread->threadNum,
                         filterModule->name.c_str(),
-                        filterModule2->name.c_str());
+                        filterModule2->name.c_str(),
+                        filterModule2->thread->threadNum);
 
                     Stream::destroyStreams();
 

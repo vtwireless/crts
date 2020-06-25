@@ -172,7 +172,7 @@ bool Stream::start2(void)
 
         DASSERT(it.second->filter->control,
                 "Filter \"%s\" missing a control",
-                it.second->filter->filterModule->name);
+                it.second->filter->filterModule->name.c_str());
 
         // it.second is a FilterModule pointer
         for(auto const &controller: it.second->filter->control->controllers)
