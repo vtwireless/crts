@@ -9,7 +9,7 @@
 #include "crts/debug.h"
 #include "crts/Filter.hpp"
 
-#define BUFLEN (1024)
+#define BUFLEN ((size_t) 1024)
 
 #define DEFAULT_FILENAME  "-"
 

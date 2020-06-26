@@ -7,7 +7,7 @@
 
 
 #define DEFAULT_BUFFERED  "LINE"
-#define BUFLEN (1024)
+#define BUFLEN ((size_t) 1024)
 
 
 

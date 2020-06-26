@@ -135,7 +135,7 @@ size_t Stream::wait(void)
     // signaling.  I.E. this should work in all cases so long as
     // this is the main thread.
 
-    DSPEW("waiting for %" PRIu32 " stream(s) to finish", streams.size());
+    DSPEW("waiting for %zu stream(s) to finish", streams.size());
 
     waiting = true;
 
@@ -149,7 +149,7 @@ size_t Stream::wait(void)
 
     waiting = false;
 
-    DSPEW("Got cond signal after waiting for %" PRIu32 " stream(s)",
+    DSPEW("Got cond signal after waiting for %zu stream(s)",
             streams.size());
 
     // Now we have the mutex lock again.
@@ -216,7 +216,7 @@ Stream::Stream(void):
     DASSERT(pthread_equal(Thread::mainThread, pthread_self()), "");
  
     streams.push_back(this);
-    DSPEW("now there are %d Streams", streams.size());
+    DSPEW("now there are %zu Streams", streams.size());
 }
 
 
@@ -367,7 +367,7 @@ Stream::~Stream(void)
     // Remove this from the streams list
     streams.remove(this);
 
-    DSPEW("now there are %d Streams", streams.size());
+    DSPEW("now there are %zu Streams", streams.size());
 }
 
 
@@ -483,7 +483,8 @@ bool Stream::connect(uint32_t from, uint32_t to)
     if(from == to)
     {
         ERROR("The filter numbered %" PRIu32
-                " cannot be connected to its self");
+                " cannot be connected to its self",
+                from);
         return true; // failure
     }
 
