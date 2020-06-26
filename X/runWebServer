@@ -3,7 +3,7 @@
 
 #hostname=kermit.wireless.vt.edu
 hostname=kermit.wireless.vt.edu
-https_port=9092
+https_port=9094
 http_port=9091
 user=admin
 password=admin123
