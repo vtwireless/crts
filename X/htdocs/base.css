@@ -1,5 +1,5 @@
 /* TODO: only apply to axis labels? */
-svg * { font: 12px Arial; }
+svg * { font: 16px Arial; fill: rgb(128,128,128); }
 
 /* Style the lines by removing the fill and applying a stroke */
 .no-fill        { fill: none; }

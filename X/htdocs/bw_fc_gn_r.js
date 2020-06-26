@@ -161,9 +161,8 @@ function makeThroughputPlot(max=3) {
     var pathf = svgf.append("path")
         .attr("clip-path","url(#clipf)")
         .datum(dataf)
-        //.attr("class", "stroke-red")
         .attr("stroke","red")
-        .attr("fill", "none")
+        .attr("class", "no-fill")
         .attr("stroke-width", 5)
         .attr("d", linef);
 
