@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 #####################################################################
 # to simply test try running:
@@ -91,8 +91,14 @@ parser.add_argument('-a','--address',\
 
 def SendSpectrum(tcpClientSock, tb, cFreq, bandwidth, period):
 
-    tcpClientSock.sendall('I{"name":"spectrumUpdate","args":[%g,%g,%g,%s]}' %\
-             (cFreq, bandwidth, period, list(tb.blocks_probe_signal_vx_0.level())))
+    start = 'I{"name":"spectrumUpdate","args":['
+    end = ']}'
+    #tcpClientSock.sendall('I{"name":"spectrumUpdate","args":[%g,%g,%g,%s]}' %\
+    #         (cFreq, bandwidth, period, list(tb.blocks_probe_signal_vx_0.level())))
+
+    tcpClientSock.sendall(bytes('{}{:f},{:f},{:f},{}{}'.format(start, cFreq, bandwidth,
+        period, list(tb.blocks_probe_signal_vx_0.level()), end), 'utf-8'))
+
 
 
 # This is bad code.  There's so much wrong with this.
@@ -107,8 +113,17 @@ def Run(tcpClientSock, args):
         period = 1.0/60.0
     tb = spectrum_sensing_nikita(cFreq, bins, bandwidth, args['device'])
     tb.start()
-    tcpClientSock.sendall('I{"name":"spectrumStart","args":["%s:%s",%g,%g,%g,%d]}' %\
-            (platform.node(), args['device'], cFreq, bandwidth, period, bins))
+
+    #tcpClientSock.sendall('I{"name":"spectrumStart","args":["%s:%s",%g,%g,%g,%d]}' %\
+    #        (platform.node(), args['device'], cFreq, bandwidth, period, bins))
+
+    start='I{"name":"spectrumStart","args":["'
+    end=']}'
+
+    # python3 string format() is a drag.
+    tcpClientSock.sendall(bytes('{}{}:{}",{:f},{:f},{:f},{:d}{}'.format(start,platform.node(),args['device'],
+        cFreq, bandwidth, period, bins, end),'utf-8'))
+
     # This may keep the above TCP send from getting merged with the next
     # TCP send.
     time.sleep(1.0)
@@ -117,11 +132,11 @@ def Run(tcpClientSock, args):
     while True: 
         try:
             data = tcpClientSock.recv(10000)
-            print data
+            print(data)
             if data.startswith('{'):
                 # { bandwidth: bandwidth, bins: bins, cFreq: cFreq,
                 #   updatePeriod: updatePeriod in Hz }
-                print data
+                print(data)
                 params = json.loads(data)
                 bandwidth = float(params['bandwidth'])*1e6
                 bins = int(params['bins']);
@@ -129,20 +144,20 @@ def Run(tcpClientSock, args):
                 period = float(params['updatePeriod'])
                 if period < 1.0/60.0:
                     period = 1.0/60.0
-                print 'crts_spectrumFeed Got parameters:'
-                print params
+                print('crts_spectrumFeed Got parameters:')
+                print(params)
                 tb = spectrum_sensing_nikita(cFreq, bins, bandwidth, args['device'])
                 tcpClientSock.settimeout(period)
                 tb.start()
                 SendSpectrum(tcpClientSock, tb, cFreq, bandwidth, period)
             else:
-                print 'crts_spectrumFeed finishing'
+                print('crts_spectrumFeed finishing')
                 tb.stop()
                 break
         except timeout:
             SendSpectrum(tcpClientSock, tb, cFreq, bandwidth, period)
         except Exception as inst:
-            print inst
+            print(inst)
             tb.stop()
             break
 
@@ -153,4 +168,4 @@ if __name__ == '__main__':
     tcpClient.connect((args['address'], int(args['port'])))
     Run(tcpClient, args)
     tcpClient.close()
-    print "crts_spectrumFeed Exiting"
+    print("crts_spectrumFeed Exiting")
