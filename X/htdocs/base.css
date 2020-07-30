@@ -1,5 +1,9 @@
 /* TODO: only apply to axis labels? */
-svg * { font: 16px Arial; fill: rgb(128,128,128); }
+svg * { font: 16px Courier;}
+
+* {
+    font-family: Helvetica, Arial, sans-serif;
+  }
 
 /* Style the lines by removing the fill and applying a stroke */
 .no-fill        { fill: none; }
@@ -11,11 +15,12 @@ svg * { font: 16px Arial; fill: rgb(128,128,128); }
 .stroke-green   { stroke: #008040; }
 .stroke-red     { stroke: #804000; }
 .stroke-gray-0  { stroke: #cccccc; }
+.courier        {}
 
 /* bounding box */
 .domain { display: none; }
 
-.grid line { stroke: #cccccc; }
+/*.grid line { stroke: #ffffff; }*/
 
 .width-1 { width: 240px; }
 .width-2 { width: 320px; }

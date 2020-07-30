@@ -73,7 +73,7 @@ var sendModeCB = false;
 
 //issue: if bins is larger than 2048 plot does not show 
 //and server terminal gets filled with spew of numbers  
-var bins = 1024; // number of fft points per plot or number of datapoints
+var bins = 2048; // number of fft points per plot or number of datapoints
 
 
 function plotSpectrum(y) {
@@ -190,7 +190,7 @@ function makeThroughputPlot(max=3) {
 // Other Globals that I have not figured out yet:
 //
 // 2. Use the margin convention practice
-var margin = {top: 50, right: 50, bottom: 50, left: 50}
+var margin = {top: 50, right: 50, bottom: 50, left: 70}
   , width  = 920 - margin.left - margin.right  // Use the window's width
   , height = 320 - margin.top - margin.bottom; // Use the window's height
 
@@ -219,7 +219,7 @@ var dataf = d3.range(0,bins-1).map(function(f) { return {"y": 0 } })
 var svgf = svg_create(margin, width, height, fScale, pScale);
 
 // add labels
-svg_add_labels(svgf, margin, width, height, "Frequency ("+units_freq+"Hz)", "Power Spectra Density (dB)");
+svg_add_labels(svgf, margin, width, height, "Frequency ("+units_freq+"Hz)", "Power Spectral Density (dB)");
 
 // clip paths
 svgf.append("clipPath").attr("id","clipf").append("rect").attr("width",width).attr("height",height);
