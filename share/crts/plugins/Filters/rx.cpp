@@ -45,7 +45,7 @@ class Rx : public CRTSFilter
         // Related to output buffer size.
         size_t max_num_samps, numRxChannels;
 
-        
+
         ////////////////////////////////////////////////////////////////
         // Inline helper/wrapper utilities to set and get parameters
         // for this filter.
