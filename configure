@@ -30,7 +30,7 @@
 # TODO: Add options to remove spew and DEBUG macros.
 
 
-DEFAULT_PREFIX=/usr/local/crts
+DEFAULT_PREFIX=/usr/local/encap/crts
 
 function usage() {
 
