@@ -1,7 +1,16 @@
 #!/bin/bash
 
 # crts_spectrumFeed2 depends on a grc flowgraph 
-# that uses gr-specest.
+# that uses gr-specest. Furthermore, the python 
+# environment variable needs to be sourced this way:
+#
+#
+# $ source ~/.bashrc
+#
+# where bashrc contains:
+# export PYTHONPATH=/usr/local/lib/python3/dist-packages:usr/local/lib/python2.7/site-packages:$PYTHONPATH
+# export LD_LIBRARY_PATH=/user/local/lib:$LD_LIBRARY_PATH
+
 
 #
 # To see possible options args run:
