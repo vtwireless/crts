@@ -1,0 +1,191 @@
+#!/usr/bin/env python3
+
+#####################################################################
+# to simply test try running:
+#
+#   nc -lp 9282
+#
+# and:
+#
+#   crts_spectrumFeed
+#
+#
+# You should see json spew in the output of nc (netcat). 
+#
+#####################################################################
+
+
+from gnuradio import blocks
+from gnuradio import fft
+from gnuradio import gr
+from gnuradio import uhd
+from gnuradio import eng_notation
+from gnuradio.filter import firdes
+from gnuradio.fft import window
+from gnuradio.eng_arg import eng_float, intx
+import json
+import argparse
+from argparse import ArgumentParser
+from socket import *
+import sys
+import platform
+import os
+import time
+import signal
+import specest
+
+class spectrum_sensing_nikita(gr.top_block):
+
+    def __init__(self, center_freq, bins, bandwidth, device_addr):
+        gr.top_block.__init__(self, "Spectrum Sensing Nikita")
+
+        ##################################################
+        # Blocks
+        ##################################################
+        self.uhd_usrp_source_0 = uhd.usrp_source(
+            device_addr=device_addr,
+            stream_args=uhd.stream_args(
+                cpu_format="fc32",
+                channels=range(1),
+            ),
+        )
+        self.uhd_usrp_source_0.set_samp_rate(bandwidth)
+        self.uhd_usrp_source_0.set_center_freq(center_freq, 0)
+        self.uhd_usrp_source_0.set_gain(10, 0)
+        self.uhd_usrp_source_0.set_bandwidth(bandwidth, 0)
+
+        # No synchronization enforced.
+        self.specest_welch_0 = specest.welch(bins, -1, 8, True, firdes.WIN_HAMMING, 6.76)
+        self.blocks_probe_signal_vx_0 = blocks.probe_signal_vf(bins)
+        self.blocks_nlog10_ff_0 = blocks.nlog10_ff(10, bins, 0)
+        
+        
+
+        #self.fft_vxx_0 = fft.fft_vcc(bins, True, (window.blackmanharris(bins)), True, 1)
+        #self.blocks_stream_to_vector_0 = blocks.stream_to_vector(\
+        #        gr.sizeof_gr_complex*1, bins)
+        #self.blocks_probe_signal_vx_0 = blocks.probe_signal_vf(bins)
+        #self.blocks_complex_to_mag_0 = blocks.complex_to_mag(bins)
+
+        ##################################################
+        # Connections
+        ##################################################
+        #self.connect((self.uhd_usrp_source_0, 0), (self.blocks_stream_to_vector_0, 0))
+        #self.connect((self.blocks_stream_to_vector_0, 0), (self.fft_vxx_0, 0))
+        #self.connect((self.fft_vxx_0, 0), (self.blocks_complex_to_mag_0, 0))
+        #elf.connect((self.blocks_complex_to_mag_0, 0), (self.blocks_probe_signal_vx_0, 0))
+
+        #self.connect((self.blocks_nlog10_ff_0, 0), (self.blocks_probe_signal_vx_0, 0))
+        #self.connect((self.specest_welch_0, 0), (self.blocks_nlog10_ff_0, 0))
+        #self.connect((self.uhd_usrp_source_0, 0), (self.specest_welch_0, 0))
+       
+
+        self.connect((self.specest_welch_0, 0), (self.blocks_probe_signal_vx_0, 0))
+        self.connect((self.uhd_usrp_source_0, 0), (self.specest_welch_0, 0))
+
+parser = argparse.ArgumentParser(description='Spectrum feed script.  Replace the CAPITALIZED words with input values')
+parser.add_argument('-f','--freq',\
+        help='Center frequency in MHz',\
+        default=914.5)
+parser.add_argument('-b','--bandwidth',\
+        help='Bandwidth in MHz',\
+        default=0.5)
+parser.add_argument('-n','--bins',\
+        help='Number of FFT bins.  More for higher accuracy',\
+        default=80)
+parser.add_argument('-P','--period',\
+        help='The period of time in seconds between data sends',\
+        default=0.05)
+parser.add_argument('-p','--port',\
+        help='Server port.  Env SPECTRUM_PORT will override this value.',\
+        default=9282)
+parser.add_argument('-d','--device',\
+        help='UHD USRP device.  For example: -d addr=192.168.10.3',\
+        default='addr=192.168.10.3')
+parser.add_argument('-a','--address',\
+        help='Server address to send spectrum data to.  Env SERVER_ADDRESS will override this value.',\
+        default='localhost')
+
+
+# The format is 
+
+def SendSpectrum(tcpClientSock, tb, cFreq, bandwidth, period):
+
+    start = 'I{"name":"spectrumUpdate","args":['
+    end = ']}'
+    #tcpClientSock.sendall('I{"name":"spectrumUpdate","args":[%g,%g,%g,%s]}' %\
+    #         (cFreq, bandwidth, period, list(tb.blocks_probe_signal_vx_0.level())))
+
+    tcpClientSock.sendall(bytes('{}{:f},{:f},{:f},{}{}'.format(start, cFreq, bandwidth,
+        period, list(tb.blocks_probe_signal_vx_0.level()), end), 'utf-8'))
+
+
+
+# This is bad code.  There's so much wrong with this.
+#
+def Run(tcpClientSock, args):
+
+    bandwidth = float(args['bandwidth'])*1e6
+    bins = int(args['bins']);
+    cFreq = float(args['freq'])*1e6
+    period = float(args['period'])
+    if period < 1.0/60.0:
+        period = 1.0/60.0
+    tb = spectrum_sensing_nikita(cFreq, bins, bandwidth, args['device'])
+    tb.start()
+
+    #tcpClientSock.sendall('I{"name":"spectrumStart","args":["%s:%s",%g,%g,%g,%d]}' %\
+    #        (platform.node(), args['device'], cFreq, bandwidth, period, bins))
+
+    start='I{"name":"spectrumStart","args":["'
+    end=']}'
+
+    # python3 string format() is a drag.
+    tcpClientSock.sendall(bytes('{}{}:{}",{:f},{:f},{:f},{:d}{}'.format(start,platform.node(),args['device'],
+        cFreq, bandwidth, period, bins, end),'utf-8'))
+
+    # This may keep the above TCP send from getting merged with the next
+    # TCP send.
+    time.sleep(1.0)
+    tcpClientSock.settimeout(period)
+
+    while True: 
+        try:
+            data = tcpClientSock.recv(10000)
+            print(data)
+            if data.startswith('{'):
+                # { bandwidth: bandwidth, bins: bins, cFreq: cFreq,
+                #   updatePeriod: updatePeriod in Hz }
+                print(data)
+                params = json.loads(data)
+                bandwidth = float(params['bandwidth'])*1e6
+                bins = int(params['bins']);
+                cFreq = float(params['cFreq'])*1e6
+                period = float(params['updatePeriod'])
+                if period < 1.0/60.0:
+                    period = 1.0/60.0
+                print('crts_spectrumFeed Got parameters:')
+                print(params)
+                tb = spectrum_sensing_nikita(cFreq, bins, bandwidth, args['device'])
+                tcpClientSock.settimeout(0.1)
+                tb.start()
+                SendSpectrum(tcpClientSock, tb, cFreq, bandwidth, period)
+            else:
+                print('crts_spectrumFeed finishing')
+                tb.stop()
+                break
+        except timeout:
+            SendSpectrum(tcpClientSock, tb, cFreq, bandwidth, period)
+        except Exception as inst:
+            print(inst)
+            tb.stop()
+            break
+
+
+if __name__ == '__main__':
+    args = vars(parser.parse_args())
+    tcpClient = socket(AF_INET,SOCK_STREAM)
+    tcpClient.connect((args['address'], int(args['port'])))
+    Run(tcpClient, args)
+    tcpClient.close()
+    print("crts_spectrumFeed Exiting")
