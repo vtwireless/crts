@@ -86,6 +86,12 @@ declare -a gnuradio_dep=(
  "python-wxversion"
  "python-yaml"
  "python-zmq"
+ "liblapack-dev"
+ "libopenblas-dev"
+ "libarpack2-dev"
+ "liblapack-dev"
+ "libblas-dev"
+ "libsuperlu-dev"
 )
 
 OS="$(lsb_release -is)"

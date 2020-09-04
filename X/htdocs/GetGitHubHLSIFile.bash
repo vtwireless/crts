@@ -16,7 +16,7 @@ function DownloadFile() {
     URL=https://raw.githubusercontent.com/vtwireless/HLSI/$2/$1
 
     if [ ! -f "$1" ] ; then
-        wget -O $1 $URL
+        wget --no-check-certificate -O $1 $URL
     fi
 
     if [ -n "$3" ] ; then

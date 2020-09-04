@@ -2,7 +2,7 @@
 
 
 hostname=kermit.wireless.vt.edu
-https_port=9090
+https_port=9095
 http_port=9091
 user=admin
 password=admin123
@@ -33,7 +33,7 @@ function PrintURL() {
     local_url="http://localhost:${http_port}${PATH}"
     try=0
 
-    while ! wget "$local_url" -O /dev/null -o /dev/null --timeout=4 --quiet
+    while ! wget --no-check-certificate "$local_url" -O /dev/null -o /dev/null --timeout=4 --quiet
     do
         let try=${try}+1
         if [ $try = 3 ] ; then
@@ -61,7 +61,8 @@ $server\
  --user=$user\
  --password=$password\
  --launcher_dir webLauncher_programs\
- --debug &
+ --debug\
+ $* &
 
 
 PrintURL

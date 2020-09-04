@@ -95,7 +95,7 @@ function generateQuickBuild() {
 
 EOF
     # get the quickbuild.make file from the web
-    wget $qb_url -O quickbuild.make.org 
+    wget --no-check-certificate $qb_url -O quickbuild.make.org 
 
     if [ -n "$quickbuild_make_sha512sum" ] ; then
         set +x

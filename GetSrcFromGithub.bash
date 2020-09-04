@@ -17,7 +17,7 @@ function GetSrcFromGithub()
     local tarfile=$4.tar.gz
 
     # This gets a tarball file from github for the package
-    wget -O $tarfile https://github.com/$path/tarball/$tag
+    wget --no-check-certificate -O $tarfile https://github.com/$path/tarball/$tag
 
     if [ -n "$5" ] ; then
         set +e
