@@ -78,8 +78,11 @@ var bins = 2048; // number of fft points per plot or number of datapoints
 
 function plotSpectrum(y) {
 
+    console.log('plotSpectrum' + y);
     dataf = d3.range(0,bins-1).map(function(i) { 
-            return {"y": 20*Math.log10(y[i]) }
+            return {"y": 10*Math.log10(y[i]) }
+            // don't know how, but y is negative numbers, so can't take log
+            //return {"y": 20*Math.log10(y[i]) }
     });
     pathf.datum(dataf).attr("d", linef);
 }
@@ -204,7 +207,7 @@ var [scale_freq,units_freq] = scale_units(f0+fs/2,0.1); // freq scale
 // 5. X scale will use the index of our data
 var fScale = d3.scaleLinear().domain([(f0-0.5*fs)*scale_freq, (f0+0.5*fs)*scale_freq]).range([0, width]);
 
-var pScale = d3.scaleLinear().domain([-90, 0]).range([height, 0]);
+var pScale = d3.scaleLinear().domain([-100, -30]).range([height, 0]);
 
 // 7. d3's line generator
 var linef = d3.line()

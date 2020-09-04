@@ -1,8 +1,11 @@
 #!/bin/bash
 
+# crts_spectrumFeed depends on a grc flowgraph 
+# that uses gr-specest
+
 #
 # To see possible options args run:
-#  ../../bin/crts_spectrumFeed --help
+#  ../../bin/crts_spectrumFeed2 --help
 #
 
 
@@ -13,7 +16,7 @@ set -ex
 cd $(dirname ${BASH_SOURCE[0]})
 
 
-spectrumFeed="../../bin/crts_spectrumFeed"
+spectrumFeed="../../bin/crts_spectrumFeed2"
 
 exec $spectrumFeed\
  --period 0.1\
