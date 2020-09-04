@@ -10,6 +10,8 @@
 # where bashrc contains:
 # export PYTHONPATH=/usr/local/lib/python3/dist-packages:usr/local/lib/python2.7/site-packages:$PYTHONPATH
 # export LD_LIBRARY_PATH=/user/local/lib:$LD_LIBRARY_PATH
+#
+# all of this above is specific to the vm called "pear"
 
 
 #
