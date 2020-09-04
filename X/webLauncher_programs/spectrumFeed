@@ -1,7 +1,7 @@
 #!/bin/bash
 
-# crts_spectrumFeed depends on a grc flowgraph 
-# that uses gr-specest
+# crts_spectrumFeed2 depends on a grc flowgraph 
+# that uses gr-specest.
 
 #
 # To see possible options args run:
