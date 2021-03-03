@@ -1,9 +1,8 @@
 #!/bin/bash
 
 
-#hostname=kermit.wireless.vt.edu
 hostname=kermit.wireless.vt.edu
-https_port=9094
+https_port=9090
 http_port=9091
 user=admin
 password=admin123

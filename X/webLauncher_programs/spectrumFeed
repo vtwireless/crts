@@ -19,12 +19,24 @@
 #  ../../bin/crts_spectrumFeed2 --help
 #
 
+# The PREFIX where out of core GNUradio block module "gr-specest" is:
+specest_root=/usr/local/encap/gr-specst-8b872b5-try-1
 
 set -ex
 
 
 # change working directory to this directory.
 cd $(dirname ${BASH_SOURCE[0]})
+
+# Add PYTHONPATH and stuff to environment
+# so GNUradio can run.
+_JUST_PATHS_=yes
+# need these 2 exports for out of core GNUradio block module "gr-specest"
+export PYTHONPATH=$specest_root/lib/python3.9/site-packages
+export GRC_BLOCKS_PATH=$specest_root/share/gnuradio/grc/blocks
+# grrun will add yet more crap to GRC_BLOCKS_PATH and PYTHONPATH and other
+# stuff.
+source /usr/local/bin/grrun
 
 
 spectrumFeed="../../bin/crts_spectrumFeed2"
