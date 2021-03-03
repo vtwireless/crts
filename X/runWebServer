@@ -14,7 +14,7 @@ server=../bin/crts_contestWebServer
 # This is just one of what will be many pages:
 path=/X/index.html
 
-URL="https://${hostname}:${https_port}${path}?user=${user}&password=$password"
+URL="https://${hostname}:${https_port}${path}"
 
 set -eo pipefail
 
