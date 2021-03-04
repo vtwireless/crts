@@ -31,7 +31,7 @@ gain="$5"
 
 crts_radio="../../bin/crts_radio"
 
- $crts_radio\
+exec $crts_radio\
  -f stdin\
  -f liquidFrame\
  -f tx [\

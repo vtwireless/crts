@@ -105,7 +105,7 @@ static pthread_barrier_t *startupBarrier = 0;
 
 static void signalExitProgramCatcher(int sig)
 {
-    INFO("Caught signal %d waiting to cleanly exit", sig);
+    INFO("Caught signal %d exiting now", sig);
 
     // To keep this re-entrant we can only set the
     // signalExitThreadIsRunning value here.  By adding this extra
@@ -113,6 +113,11 @@ static void signalExitProgramCatcher(int sig)
     // Stream method, with it's mutex locking, would not be safe in
     // general.
     signalExitThreadIsRunning = false;
+
+    // I give up.  Signals are hanging this program.  Just exit for crying
+    // out loud.  TODO: Is this success, exit(0), or failure,
+    // exit(nonzero)?
+    exit(0);
 }
 
 // We have yet another thread call this, because it catches the exit
