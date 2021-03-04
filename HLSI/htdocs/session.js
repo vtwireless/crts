@@ -269,7 +269,7 @@ function session(scenario, controlNames, f0) {
                 updatePeriod = args.shift();
 
             var y = args.shift();
-
+            console.log('plotSpectrum: ' + y );
             plotSpectrum(y);
         }
 

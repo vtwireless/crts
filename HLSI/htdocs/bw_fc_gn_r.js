@@ -70,13 +70,19 @@ var sendFreqCB = {};
 var serverGainToSliderCB = {};
 var sendGainCB = {};
 var sendModeCB = false;
-var bins = 200; // number of fft points per plot or number of datapoints
+
+//issue: if bins is larger than 2048 plot does not show 
+//and server terminal gets filled with spew of numbers  
+var bins = 2048; // number of fft points per plot or number of datapoints
 
 
 function plotSpectrum(y) {
 
+    console.log('plotSpectrum' + y);
     dataf = d3.range(0,bins-1).map(function(i) { 
-            return {"y": 20*Math.log10(y[i]) }
+            return {"y": 10*Math.log10(y[i]) }
+            // don't know how, but y is negative numbers, so can't take log
+            //return {"y": 20*Math.log10(y[i]) }
     });
     pathf.datum(dataf).attr("d", linef);
 }
@@ -111,7 +117,7 @@ onload = function() {
             let throughPutMax = 3; // Mbit/s
 
             if(document.querySelector('#mode'))
-                throughPutMax = 7; // Mbit/s
+                throughPutMax = 6; // Mbit/s
 
             makeThroughputPlot(throughPutMax);
             session(scenario, ['tx2', 'tx2_interferer', 'rx2', 'liquidFrame2'], f0);
@@ -158,7 +164,9 @@ function makeThroughputPlot(max=3) {
     var pathf = svgf.append("path")
         .attr("clip-path","url(#clipf)")
         .datum(dataf)
-        .attr("class", "stroke-med no-fill stroke-red")
+        .attr("stroke","red")
+        .attr("class", "no-fill")
+        .attr("stroke-width", 5)
         .attr("d", linef);
 
     var i;
@@ -185,7 +193,7 @@ function makeThroughputPlot(max=3) {
 // Other Globals that I have not figured out yet:
 //
 // 2. Use the margin convention practice
-var margin = {top: 50, right: 50, bottom: 50, left: 50}
+var margin = {top: 50, right: 50, bottom: 70, left: 100}
   , width  = 920 - margin.left - margin.right  // Use the window's width
   , height = 320 - margin.top - margin.bottom; // Use the window's height
 
@@ -199,7 +207,7 @@ var [scale_freq,units_freq] = scale_units(f0+fs/2,0.1); // freq scale
 // 5. X scale will use the index of our data
 var fScale = d3.scaleLinear().domain([(f0-0.5*fs)*scale_freq, (f0+0.5*fs)*scale_freq]).range([0, width]);
 
-var pScale = d3.scaleLinear().domain([-90, -20]).range([height, 0]);
+var pScale = d3.scaleLinear().domain([-100, -30]).range([height, 0]);
 
 // 7. d3's line generator
 var linef = d3.line()
@@ -214,7 +222,7 @@ var dataf = d3.range(0,bins-1).map(function(f) { return {"y": 0 } })
 var svgf = svg_create(margin, width, height, fScale, pScale);
 
 // add labels
-svg_add_labels(svgf, margin, width, height, "Frequency ("+units_freq+"Hz)", "Power Spectra Density (dB)");
+svg_add_labels(svgf, margin, width, height, "Frequency ("+units_freq+"Hz)", "Power Spectral Density (dB)");
 
 // clip paths
 svgf.append("clipPath").attr("id","clipf").append("rect").attr("width",width).attr("height",height);
@@ -223,8 +231,10 @@ svgf.append("clipPath").attr("id","clipf").append("rect").attr("width",width).at
 var pathf = svgf.append("path")
     .attr("clip-path","url(#clipf)")
     .datum(dataf)
-    .attr("class", "stroke-med no-fill stroke-red")
-    .attr("d", linef);
+    .attr("class", "no-fill")
+    .attr("stroke","yellow")
+    .attr("stroke-width", 1.0)
+    .attr("d", (linef));
 
 
 

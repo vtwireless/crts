@@ -2,7 +2,7 @@
 
 
 hostname=kermit.wireless.vt.edu
-https_port=9095
+https_port=9090
 http_port=9091
 user=admin
 password=admin123
@@ -14,7 +14,7 @@ server=../bin/crts_contestWebServer
 # This is just one of what will be many pages:
 path=/HLSI/index.html
 
-URL="https://${hostname}:${https_port}${path}?user=${user}&password=$password"
+URL="https://${hostname}:${https_port}${path}"
 
 set -eo pipefail
 
@@ -61,8 +61,7 @@ $server\
  --user=$user\
  --password=$password\
  --launcher_dir webLauncher_programs\
- --debug\
- $* &
+ --debug &
 
 
 PrintURL
