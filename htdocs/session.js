@@ -137,8 +137,8 @@ function createSession(connectCallback=null, opts = {}) {
         var cookies = {};
         document.cookie.split('; ').forEach(function(cookieStr) {
             var cookie = cookieStr.split('=');
-            assert(cookies.passcode === undefined,
-                "You can't be more than one user");
+            //assert(cookies.passcode === undefined,
+            //    "You can't be more than one user");
             if(cookie.length === 2)
                 cookies[cookie[0]] = cookie[1];
         });
