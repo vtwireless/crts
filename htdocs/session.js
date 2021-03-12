@@ -4,7 +4,7 @@ require('/socketIO.js');
 
 // opts.addAdminPanel
 //      true to add admin panel
-//      false to not add admin pannel
+//      false to not add admin panel
 //
 // opts.showHeader
 //      true to add HTML page body top header and CSS

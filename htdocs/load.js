@@ -131,7 +131,7 @@ function require(url, callback = function() {}) {
         require.waiting = true;
 
         // TODO: Should we change this timeout value???
-        const timeoutSecs = 10;
+        const timeoutSecs = 60;
 
 
         var timeout = setTimeout(function() {

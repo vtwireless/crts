@@ -6,23 +6,20 @@
   <script src='/load.js'></script>
   <script>
 
-require('/spectrum/feed.js');
+// This makes the black background and other CSS and some svg stuff:
+require('/HLSI/hlsi.css');
+require('/HLSI/hlsi_session.js', function() {
 
-onload = function() {
+    createHLSISession({"scenario": "scenario2.js"});
+});
 
-    createSession(function(io) {
-
-        console.log("Got CRTS session");
-
-    }, { addAdminPanel: false, showHeader: false });
-};
 
 </script>
-  <link rel="stylesheet" type="text/css" media="all" href="base.css">
+
 </head>
-
 <body>
-  <h2>Exercise - Frequency; Test</h2>
+
+    <h2>Testing 123</h2>
+  
 </body>
-
-
+</html>

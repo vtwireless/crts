@@ -160,7 +160,8 @@ function session(scenario, controlNames, f0) {
                     y.pop();
                 }
 
-                plotThroughputPlot(y);
+                if(plotThroughputPlot)
+                    plotThroughputPlot(y);
                 t0 = t1;
                 totalBytesOut0 = value;
             }
@@ -182,7 +183,7 @@ function session(scenario, controlNames, f0) {
                 serverModeToSliderCB(value);
             }
 
-            if(scenario === 2 && controlName === 'liquidSync' && parameter === "totalBytesOut")
+            if(scenario === 2 && controlName === 'liquidSync' && parameter === "totalBytesOut" && plotThroughputPlot)
                 checkThroughput(value);
 
             if(parameter !== 'freq' &&
@@ -269,8 +270,9 @@ function session(scenario, controlNames, f0) {
                 updatePeriod = args.shift();
 
             var y = args.shift();
-            console.log('plotSpectrum: ' + y );
-            plotSpectrum(y);
+            //console.log('plotSpectrum: ' + y );
+            if(plotSpectrum)
+                plotSpectrum(y);
         }
 
         var spc = spectrumFeeds(io, {

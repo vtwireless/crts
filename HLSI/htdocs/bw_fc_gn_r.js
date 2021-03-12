@@ -70,6 +70,8 @@ var sendFreqCB = {};
 var serverGainToSliderCB = {};
 var sendGainCB = {};
 var sendModeCB = false;
+// Function to plot throughput
+var plotThroughputPlot = false;
 
 //issue: if bins is larger than 2048 plot does not show 
 //and server terminal gets filled with spew of numbers  
@@ -78,7 +80,7 @@ var bins = 2048; // number of fft points per plot or number of datapoints
 
 function plotSpectrum(y) {
 
-    console.log('plotSpectrum' + y);
+    //console.log('plotSpectrum' + y);
     dataf = d3.range(0,bins-1).map(function(i) { 
             return {"y": 10*Math.log10(y[i]) }
             // don't know how, but y is negative numbers, so can't take log
@@ -136,11 +138,11 @@ onload = function() {
 };
 
 
-var plotThroughputPlot;
-var nPoints = 240; // samples kept
-var dt = 0.5; // period between samples
+const nPoints = 240; // samples kept
 
 function makeThroughputPlot(max=3) {
+
+    const dt = 0.5; // period between samples
 
     var y = [];
 
