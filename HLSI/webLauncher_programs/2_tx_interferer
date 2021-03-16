@@ -30,7 +30,7 @@ crts_radio="../../bin/crts_radio"
 
 exec $crts_radio\
  -f stdin\
- -f liquidFrame\
+ -f liquidFrame [ --name liquidFrame_i ]\
  -f tx [ --name tx2_interferer\
  --uhd "$USRP"\
  --freq $freq\

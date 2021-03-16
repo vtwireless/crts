@@ -3,6 +3,15 @@
 //
 
 
+// This is a kludge to get io thingy to another javaScript file.  We may
+// even need to make this onConnect thing an array of functions.
+//
+if(typeof window['onConnect'] === undefined)
+    var onConnect = false;
+
+
+
+
 // Call with array of controlNames
 //
 // or
@@ -66,6 +75,11 @@ function session(scenario, controlNames, f0) {
 
 
     createSession(function(io) {
+
+
+        if(onConnect)
+            onConnect(io);
+
 
         io.Emit('getLauncherPrograms');
         io.On('receiveLauncherPrograms', function(programs) {
@@ -176,14 +190,18 @@ function session(scenario, controlNames, f0) {
 
             //console.log('getParameter Args=' + [].slice.call(arguments));
 
-            if(serverModeToSliderCB && scenario === 2 && controlName === 'liquidFrame2'
+            if(serverModeToSliderCB &&
+                    typeof serverModeToSliderCB[controlName] == 'function' &&
+                    scenario === 2 && controlName === 'liquidFrame2'
                     && parameter === 'mode') {
                 // We have a mod/err-corr scheme slider
                 console.log('value=' + value);
-                serverModeToSliderCB(value);
+
+                serverModeToSliderCB[controlName](value);
             }
 
-            if(scenario === 2 && controlName === 'liquidSync' && parameter === "totalBytesOut" && plotThroughputPlot)
+            if(scenario === 2 && controlName === 'liquidSync' &&
+                    parameter === "totalBytesOut" && plotThroughputPlot)
                 checkThroughput(value);
 
             if(parameter !== 'freq' &&
@@ -211,12 +229,12 @@ function session(scenario, controlNames, f0) {
                 if(set[controlName] !== undefined) {
 
 
-
-                    if(serverModeToSliderCB && controlName === 'liquidFrame2' &&
+                    if(sendModeCB && 
+                        controlName === 'liquidFrame2' &&
                         set[controlName]['mode'] !== undefined) {
 
                         // We have a mod/err-corr scheme slider
-                        sendModeCB = function(md) {
+                        sendModeCB[controlName] = function(md) {
                             io.Emit('setParameter', programName, controlName, 'mode', md);
                         };
                     }
@@ -228,14 +246,17 @@ function session(scenario, controlNames, f0) {
                         sendBandwidthCB[controlName] = function(bw) {
 
                             resampFactor = rate/bw;
-                            console.log("bw=" + bw +  " rate=" + rate + "  Setting  " + controlName +
+                            console.log("bw=" + bw +  " rate=" + rate +
+                                    "  Setting  " + controlName +
                                     ":resampFactor=" + resampFactor);
 
                             if(controlName !== 'rx2')
-                                io.Emit('setParameter', programName, controlName, 'resampFactor', resampFactor);
+                                io.Emit('setParameter', programName, controlName,
+                                        'resampFactor', resampFactor);
                             else
                                 // For rx2 we invert the resampFactor
-                                io.Emit('setParameter', programName, controlName, 'resampFactor', 1.0/resampFactor);
+                                io.Emit('setParameter', programName, controlName,
+                                        'resampFactor', 1.0/resampFactor);
                         }
                     }
 

@@ -65,13 +65,13 @@ console.log(" ++++++++++++++++++ running scenario = " + scenario);
 var serverBandwidthToSliderCB = {};
 var sendBandwidthCB = {};
 var serverFreqToSliderCB = {};
-var serverModeToSliderCB = false;
 var sendFreqCB = {};
 var serverGainToSliderCB = {};
 var sendGainCB = {};
-var sendModeCB = false;
+var serverModeToSliderCB = {};
+var sendModeCB = {};
 // Function to plot throughput
-var plotThroughputPlot = false;
+var plotThroughputPlot;
 
 //issue: if bins is larger than 2048 plot does not show 
 //and server terminal gets filled with spew of numbers  
@@ -119,7 +119,7 @@ onload = function() {
             let throughPutMax = 3; // Mbit/s
 
             if(document.querySelector('#mode'))
-                throughPutMax = 6; // Mbit/s
+                throughPutMax = 7; // Mbit/s
 
             makeThroughputPlot(throughPutMax);
             session(scenario, ['tx2', 'tx2_interferer', 'rx2', 'liquidFrame2'], f0);
@@ -131,7 +131,7 @@ onload = function() {
                 'ibandwidth', 'ibw', 'ifrequency', 'ifc', 'igain', 'ign');
             if(document.querySelector('#mode'))
                 // modulation/error-correction scheme slider
-                addModSlider();
+                addModSlider('mode', 'md', 'liquidFrame2');
             break;
     }
 
@@ -417,7 +417,7 @@ if(document.querySelector('#'+gnId) && document.querySelector('#'+gainId))
 
 
 
-function addModSlider() {
+function addModSlider(sliderId, outputId, controlName) {
 
 
     var md = 1; // starting mode at "r2/3 BPSK"
@@ -441,32 +441,34 @@ function addModSlider() {
         "uncoded 256-QAM"
     ];
 
-    serverModeToSliderCB = function(md_in) {
+    serverModeToSliderCB[controlName] = function(md_in) {
 
         // This should update the mode slider from the web.
         //
 
         md = md_in;
-        document.querySelector('#md').value = modes[md];
-        document.querySelector('#mode').value = md;
-        console.log("md=" + md + "  " + modes[md]);
+        document.querySelector('#'+outputId).value = modes[md];
+        document.querySelector('#'+sliderId).value = md;
+        console.log('#'+outputId+"=" + md + "  " + modes[md]);
     }
 
-    serverModeToSliderCB(md);
+    serverModeToSliderCB[controlName](md);
 
 
-    function sliderModeCB(md) {
+    function sliderModeCB(md_in) {
 
-        document.querySelector('#md').value = modes[md];
+        md = md_in;
 
-        if(sendModeCB) 
-            sendModeCB(md);
+        document.querySelector('#'+outputId).value = modes[md];
+
+        if(sendModeCB && typeof sendModeCB[controlName] == 'function') 
+            sendModeCB[controlName](md);
 
         console.log("--- md=" + md + "  " + modes[md]);
     }
 
-    document.querySelector('#mode').oninput = function() {
-        let val = Math.round(parseFloat(document.querySelector('#mode').value));
+    document.querySelector('#'+sliderId).oninput = function() {
+        let val = Math.round(parseFloat(document.querySelector('#'+sliderId).value));
         if(md != val)
             sliderModeCB(md = val);
     };

@@ -1,0 +1,79 @@
+/* TODO: only apply to axis labels? */
+svg * { font: 18px Courier; fill: white;}
+
+* {
+    font-family: Helvetica, Arial, sans-serif;
+  }
+
+a:link {
+  color: green;
+  background-color: transparent;
+  text-decoration: none;
+}
+a:visited {
+  color: pink;
+  background-color: transparent;
+  text-decoration: none;
+}
+a:hover {
+  color: red;
+  background-color: transparent;
+  text-decoration: underline;
+}
+a:active {
+  color: yellow;
+  background-color: transparent;
+  text-decoration: underline;
+}
+
+select.edited {
+    background-color: #D2D2D2;
+}
+
+select.notedited {
+    background-color: #88B3E3;
+}
+
+
+
+span.func {
+    font-size: 150%;
+}
+
+
+textarea.userfunction {
+    color: white;
+    font: 1em monospace;
+    font-size: 150%;
+    background-color:#686868;
+    border-width: 5px;
+}
+
+/* Style the lines by removing the fill and applying a stroke */
+.no-fill        { fill: none; }
+.no-display     { display: none; }
+.stroke-light   { stroke-width: 2; }
+.stroke-med     { stroke-width: 3; }
+.dashed         { stroke-dasharray: 4,4; }
+.stroke-blue    { stroke: #004080; }
+.stroke-green   { stroke: #008040; }
+.stroke-red     { stroke: #804000; }
+.stroke-gray-0  { stroke: #cccccc; }
+.courier        {}
+
+/* bounding box */
+.domain { display: none; }
+
+/*.grid line { stroke: #ffffff; }*/
+
+.width-1 { width: 240px; }
+.width-2 { width: 320px; }
+.width-3 { width: 480px; }
+.width-4 { width: 640px; }
+.width-5 { width: 960px; }
+
+
+body {
+    background-color: rgb(0,0,0);
+    color:rgb(255,255,255);
+}

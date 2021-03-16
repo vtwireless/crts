@@ -90,7 +90,7 @@ bool Stream::start1(void)
         }
     }
 
-
+#if 0
     ///////////////////////////////////////////////////////////////////////
     // 2:  Add totalBytesIn() and totalBytesOut() parameter getters for
     //     all filter connections.
@@ -151,6 +151,7 @@ bool Stream::start1(void)
             }
 
     }
+#endif
 
     return false;
 }

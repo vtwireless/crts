@@ -31,6 +31,10 @@ class LiquidSync : public CRTSFilter
 
     public:
 
+        double getTotalBytesOut(void) {
+            return totalBytesOut;
+        }
+
         // We need to access these in frameSyncCallback()
         //
         unsigned char *outputBuffer;
@@ -38,6 +42,7 @@ class LiquidSync : public CRTSFilter
         
         // bytes out at each write().
         size_t len_out;
+        double totalBytesOut;
 };
 
 
@@ -77,6 +82,7 @@ frameSyncCallback(unsigned char *header, int header_valid,
         // Go to forward in the output buffer.
         liquidSync->outputBuffer += payload_len;
         liquidSync->len_out += payload_len;
+        liquidSync->totalBytesOut += payload_len;
 
         // Do not overrun the output buffer.
         ASSERT(liquidSync->len_out <= liquidSync->outBufferLen, "");
@@ -115,6 +121,10 @@ void LiquidSync::input(void *buffer, size_t len, uint32_t channelNum)
     ASSERT(len_out <= outBufferLen, "");
 
     output(len_out, CRTSFilter::ALL_CHANNELS);
+    
+
+    totalBytesOut += len_out;
+    setParameter("totalBytesOut", totalBytesOut);
 }
 
 
@@ -132,12 +142,19 @@ LiquidSync::LiquidSync(int argc, const char **argv):
                 (framesync_callback) frameSyncCallback,
                 this/*callback data*/);
 
+    addParameter("totalBytesOut",
+                [&]() { return getTotalBytesOut(); },
+                0/* no set()*/
+    );
+
     DSPEW();
 }
 
 
 bool LiquidSync::start(uint32_t numInChannels, uint32_t numOutChannels)
 {
+    totalBytesOut = 0;
+
     if(numInChannels != 1)
     {
         WARN("Should have 1 input channel got %" PRIu32, numInChannels);
@@ -163,6 +180,8 @@ bool LiquidSync::start(uint32_t numInChannels, uint32_t numOutChannels)
     // We use the same ring buffer for all output channels
     //
     createOutputBuffer(outBufferLen);
+
+    setParameter("totalBytesOut", totalBytesOut);
 
     return false; // success
 }

@@ -171,7 +171,7 @@ void FilterModule::runUsersActions(size_t len, Input *input)
 
     while(len)
     {
-        size_t startingUnreadLen = input->unreadLength;
+        //size_t startingUnreadLen = input->unreadLength;
 
         // If the filter has a choke length set we may call the
         // filter->write() many times, so that we do not write more than
@@ -199,6 +199,7 @@ void FilterModule::runUsersActions(size_t len, Input *input)
         if(currentInput && !advancedInput)
             filter->advanceInput(lenIn);
 
+#if 0
         // Now push out the "totalBytesIn" parameters.
         //
         // TODO: Should this be done (N times) in the while loop here, or
@@ -215,6 +216,7 @@ void FilterModule::runUsersActions(size_t len, Input *input)
                 filter->setParameter(s, filter->control->totalBytesIn(inputChannelNum));
             }
         }
+#endif
 
         len -= lenIn;
     }

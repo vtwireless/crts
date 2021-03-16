@@ -397,7 +397,7 @@ inline void FilterModule::AdvanceWriteBuffer(size_t len, Output *o,
     // For all output channels in the filter
     filter->_totalBytesOut += len;
 
-
+#if 0
     if(numOutputs)
         filter->setParameter("totalBytesOut", filter->control->totalBytesOut());
     if(numOutputs > 1)
@@ -407,6 +407,7 @@ inline void FilterModule::AdvanceWriteBuffer(size_t len, Output *o,
         s += std::to_string(outputChannelNum);
         filter->setParameter(s, filter->control->totalBytesOut(outputChannelNum));
     }
+#endif
 }
 
 
