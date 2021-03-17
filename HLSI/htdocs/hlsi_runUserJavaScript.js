@@ -60,7 +60,7 @@ function SetupRunUserJavaScript(io) {
         textArea.value = func.substring(0, func.lastIndexOf("\n"));
 
         if(running)
-            stop();
+            Stop();
     };
 
     // Initialize the userFunction textArea.
@@ -117,7 +117,7 @@ function SetupRunUserJavaScript(io) {
         } catch(e) {
 
             if(running)
-                stop();
+                Stop();
             alert("Can't run. Bad code\n\n" + e);
             return;
         }
@@ -190,10 +190,10 @@ function SetupRunUserJavaScript(io) {
         if(select.className !== 'edited')
             select.className = 'edited';
         if(running)
-            stop();
+            Stop();
     });
 
-    function start() {
+    function Start() {
         if(running) return;
 
         console.log("Starting");
@@ -211,7 +211,7 @@ function SetupRunUserJavaScript(io) {
         running = true;
     }
 
-    function stop() {
+    function Stop() {
         console.log("Stopping");
         clearInterval(intervalId);
         checkbox.checked = false;
@@ -222,9 +222,9 @@ function SetupRunUserJavaScript(io) {
     checkbox.onclick = function() {
         if(this.checked) {
             if(!running)
-                start();
+                Start();
         } else if(running)
-            stop();
+            Stop();
     };
 
 

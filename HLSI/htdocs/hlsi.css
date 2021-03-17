@@ -45,8 +45,11 @@ textarea.userfunction {
     color: white;
     font: 1em monospace;
     font-size: 150%;
-    background-color:#686868;
+    background-color: #1D2029;
+    border-color: #373A41;
     border-width: 5px;
+    border-radius: 20px;
+    border-top-left-radius: 2px;
 }
 
 /* Style the lines by removing the fill and applying a stroke */
