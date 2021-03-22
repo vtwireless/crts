@@ -148,7 +148,32 @@ function() {
 
     // or not.
 
+},
+
+
+    "freq1 -- Random walk frequency example":
+function() {
+
+    // Random walk frequency example
+ 
+    // Initialize / update userData.freq1, used to set freq1 (freq1 is in Hz)
+    if(init)
+        userData.freq1 = 919.5e6;
+    else
+        userData.freq1 += -2.0e5 + 4e5*Math.random();
+ 
+    // userData is automatically saved.
+    return { freq1: userData.freq1 };
+},
+
+
+    "Blank":
+function() {
+
+    // Paste your code in here.
+
 }
+
 
 
 };
