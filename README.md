@@ -17,6 +17,10 @@ Currently developing on:
 
 ## Dependencies
 
+```
+apt install libjansson
+```
+
 See README in dependencies/ subdirectory.  Installing the dependencies is
 more involved than installing CRTS, so we provide a separate dependencies
 directory.
