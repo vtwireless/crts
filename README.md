@@ -18,7 +18,7 @@ Currently developing on:
 ## Dependencies
 
 ```
-apt install libjansson
+apt install libjansson libreadline-dev
 ```
 
 See README in dependencies/ subdirectory.  Installing the dependencies is
