@@ -31,7 +31,7 @@ select.edited {
 }
 
 select.notedited {
-    background-color: #88B3E3;
+    background-color: #D7D7D7;
 }
 
 
@@ -45,12 +45,18 @@ textarea.userfunction {
     color: white;
     font: 1em monospace;
     font-size: 150%;
-    background-color: #1D2029;
-    border-color: #373A41;
+    background-color: #686868;
+    border-color: #E0E0E0;
     border-width: 5px;
     border-radius: 20px;
     border-top-left-radius: 2px;
 }
+
+
+.no-fill {
+    background-color: #000;
+}
+
 
 /* Style the lines by removing the fill and applying a stroke */
 .no-fill        { fill: none; }
@@ -76,7 +82,12 @@ textarea.userfunction {
 .width-5 { width: 960px; }
 
 
+/*svg {
+    background-color: #000000;
+}*/
+
+
 body {
-    background-color: rgb(0,0,0);
+    background-color: #484848;
     color:rgb(255,255,255);
 }
