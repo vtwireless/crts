@@ -5,9 +5,37 @@ selectFunctions = {
     // hence the odd text layout in these functions, they are
     // pushed to the left side.
     //
+    // They are called like so:
     //
-    // function callback(freq1, bw1, gn1, mcs1, bytes1, freq2, bw2, gn2, mcs2, bytes2, dt, userData)
+    // function callback(freq1, bw1, gn1, mcs1, bytes1, freq2, bw2, gn2, mcs2, bytes2, dt, userData, init)
     //
+
+    "Largest contiguous interference-free sub-band":
+function() {
+    // Make Signal 1 occupy the largest contiguous interference-free sub-band
+    // freq1 and freq2 are in Hz
+    // freq2 and bw2 are assumed to be known
+
+    var mid_freq = min_freq + (max_freq - min_freq)/2.0;
+
+    if(freq2 > mid_freq) {
+        freq1 = (freq2 - bw2/2.0 + min_freq)/2.0;
+        bw1 = 2.0*(freq1 - min_freq);
+    } else {
+        freq1 = (freq2 + bw2/2.0 + max_freq)/2.0;
+        bw1 = 2.0*(max_freq - freq1);
+    };
+
+    // We have limited bandwidth.
+    if(bw1 > max_bw)
+        bw1 = max_bw;
+    else if(bw1 < min_bw)
+        bw1 = min_bw;
+
+   return { freq1: freq1, bw1: bw1 };
+},
+
+
 
     "Changing freq1":
 function() {

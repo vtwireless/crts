@@ -1,12 +1,18 @@
-const min_freq1 = 918e6; // Hz
-const max_freq1 = 921e6; // Hz
-const min_freq2 = 918e6; // Hz
-const max_freq2 = 921e6; // Hz
+const min_freq = 918e6; // Hz
+const max_freq = 921e6; // Hz
 
-const min_bw1 = 0.4e6;  // Hz
-const max_bw1 = 3.57e6; // Hz
-const min_bw2 = 0.4e6;  // Hz
-const max_bw2 = 3.57e6; // Hz
+const min_freq1 = min_freq; // Hz
+const max_freq1 = max_freq; // Hz
+const min_freq2 = min_freq; // Hz
+const max_freq2 = max_freq; // Hz
+
+const min_bw = 0.4e6;   // Hz
+const max_bw = 3.57e6;  // Hz
+
+const min_bw1 = min_bw;  // Hz
+const max_bw1 = max_bw; // Hz
+const min_bw2 = min_bw;  // Hz
+const max_bw2 = max_bw; // Hz
 
 const min_gn1 = 0.0;  // dB
 const max_gn1 = 31.5; // dB
