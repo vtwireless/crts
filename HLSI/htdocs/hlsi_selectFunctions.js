@@ -10,6 +10,80 @@ selectFunctions = {
     // function callback(freq1, bw1, gn1, mcs1, bytes1, freq2, bw2, gn2, mcs2, bytes2, dt, userData, init)
     //
 
+
+
+
+
+
+
+
+ 
+
+
+
+
+
+
+    "Adapt mcs1":
+function() {
+ 
+    // Code to adapt mcs1; waits tTryAgain seconds after the
+    // last transmission failure before trying to increase mcs1
+
+    function reset() {
+        userData.t = 0.0;
+        userData.done = false;
+        userData.lastBytes = bytes1;
+    }
+       
+ 
+    if(init){
+            userData.lastLastBytes = 0;
+            userData.lastBytes = bytes1;
+            userData.lastdBytes = 0;
+            userData.tSinceBeginning = 0.0;
+            userData.tLastTimeBelowThreshold = 0.0;
+            reset();
+    }
+       
+    if(userData.done) return;
+ 
+    userData.t += dt; // in seconds
+    userData.tSinceBeginning += dt; // in seconds
+ 
+    const minBytes = 1000; // Reduce mcs if fewer bytes are received during measureT seconds
+    const measureT = 5.0; // Interval in seconds for measuring bytes transmitted and received
+    const tTryAgain = 25.0;// Time to try increasing mcs
+ 
+    if(userData.t < measureT) return;
+ 
+    // Total bytes over 5 seconds.
+    var dBytes = bytes1 - userData.lastBytes;
+ 
+    console.log("   dBytes=" + dBytes);
+ 
+    reset();
+ 
+    var tSinceLastFailure = userData.tSinceBeginning - userData.tLastTimeBelowThreshold;
+ 
+    if(dBytes < minBytes) {
+        // Reduce mcs
+        // userData.done = true;
+        userData.lastdBytes = dBytes;
+        userData.tLastTimeBelowThreshold = userData.tSinceBeginning;
+        return { mcs1: mcs1-2 };
+    }else if(tSinceLastFailure < tTryAgain){
+        userData.lastdBytes = dBytes;
+        return { mcs1: mcs1 };
+    }else if(mcs1 < max_mcs1) {
+        // Try for more throughput.
+        userData.lastdBytes = dBytes;
+        return { mcs1: mcs1+1 };
+    }
+},
+
+
+
     "Largest contiguous interference-free sub-band":
 function() {
     // Make Signal 1 occupy the largest contiguous interference-free sub-band
