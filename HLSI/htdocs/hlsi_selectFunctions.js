@@ -12,18 +12,6 @@ selectFunctions = {
 
 
 
-
-
-
-
-
- 
-
-
-
-
-
-
     "Adapt mcs1":
 function() {
  
