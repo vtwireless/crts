@@ -33,6 +33,15 @@ function SetupRunUserJavaScript(io) {
 
     var textArea = document.querySelector('#userfunction');
 
+    var editor = CodeMirror.fromTextArea(
+        textArea, {
+            lineNumbers: true,
+            theme: "blackboard",
+            mode: {name: "javascript", globalVars: true}
+        }
+    );
+
+
     var checkbox = document.querySelector('#run');
     checkbox.checked = false;
     var running = false;
@@ -63,13 +72,13 @@ function SetupRunUserJavaScript(io) {
 
         var func = selectFunctions[select.value].toString();
         func = func.substring(func.indexOf("\n")+1);
-        textArea.value = func.substring(0, func.lastIndexOf("\n"));
+        editor.setValue(func.substring(0, func.lastIndexOf("\n")));
 
         if(running)
             Stop();
     };
 
-    // Initialize the userFunction textArea.
+    // Initialize the userFunction editor.
     select.onchange();
 
     var parameters = {
@@ -191,7 +200,7 @@ function SetupRunUserJavaScript(io) {
     }
 
 
-    textArea.addEventListener('input', function() {
+    editor.on('change', function() {
 
         if(select.className !== 'edited')
             select.className = 'edited';
@@ -209,7 +218,7 @@ function SetupRunUserJavaScript(io) {
         userFunction = new Function(
                     'freq1', 'bw1', 'gn1', 'mcs1', 'bytes1',
                     'freq2', 'bw2', 'gn2', 'mcs2', 'bytes2',
-                    'dt', 'userData', 'init', textArea.value);
+                    'dt', 'userData', 'init', editor.getValue());
 
         init = true;
         intervalId = setInterval(callUserFunction, Math.round(1000.0*dt)/*milliseconds*/);

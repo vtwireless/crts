@@ -1,0 +1,46 @@
+#!/bin/bash
+
+set -e
+
+
+source ../../GetSrcFromGithub.bash
+
+#Usage: GetSrcFromGithub user package tag tarname [sha512]
+package=CodeMirror
+tag=5.61.0
+tarname=$package-$tag
+dir=codemirror
+tarfile=$tarname.tar.gz
+
+instDir=$PWD/$dir
+
+GetSrcFromGithub codemirror $package $tag $tarname\
+ dac856ce2ccf44ada862aef01031b7b\
+325b7d870c6c3ae7d1d03f100ec86fc5f34c28a67d4f0cc88\
+ff8ef0ee1a69b90c766ef716765c83a2542ed442697a8a70
+
+rm -rf $dir
+mkdir $dir
+cd $dir
+
+tar --strip-components=1 -xzf ../$tarfile
+
+
+export NODE_PATH=/usr/local/lib/node_modules
+
+
+# This builds lib/codemirror.js
+npm run-script build
+
+# Now compress and install in $instDir
+yui-compressor --type css --line-break 80\
+ lib/codemirror.css -o $instDir/codemirror.min.css
+
+yui-compressor --type js  --line-break 80\
+ lib/codemirror.js  -o $instDir/codemirror.min.js
+
+yui-compressor --type js --line-break 80\
+ mode/javascript/javascript.js -o $instDir/javascript.min.js
+
+yui-compressor --type css --line-break 80\
+ theme/blackboard.css -o $instDir/blackboard.min.css
