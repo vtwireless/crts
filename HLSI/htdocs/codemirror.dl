@@ -27,7 +27,11 @@ tar --strip-components=1 -xzf ../$tarfile
 
 mkdir -p node_modules
 
-export NODE_PATH=$PWD/node_modules
+#export NODE_PATH=$PWD/node_modules
+
+# Looks like npm has a BUG that makes it look at environment variable
+# PREFIX.
+unset PREFIX
 
 # In order to build codemirror we need this:
 npm install @rollup/plugin-buble rollup@1.20.0
