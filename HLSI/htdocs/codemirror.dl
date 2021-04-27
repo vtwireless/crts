@@ -30,7 +30,7 @@ mkdir -p node_modules
 #export NODE_PATH=$PWD/node_modules
 
 # Looks like npm has a BUG that makes it look at environment variable
-# PREFIX.
+# PREFIX and do stupid things with it.
 unset PREFIX
 
 # In order to build codemirror we need this:
