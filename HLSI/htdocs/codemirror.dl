@@ -27,7 +27,7 @@ tar --strip-components=1 -xzf ../$tarfile
 
 mkdir -p node_modules
 
-#export NODE_PATH=$tmpnodepath
+export NODE_PATH=$PWD/node_modules
 
 # In order to build codemirror we need this:
 npm install @rollup/plugin-buble rollup@1.20.0
