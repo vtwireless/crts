@@ -24,6 +24,7 @@ INSTALL_DIR = $(PREFIX)/share/crts/plugins/$(notdir $(CURDIR))
 
 LIQUID_LDFLAGS := -L$(ROOT)/lib -lliquid -Wl,-rpath=\$$ORIGIN/$(ROOT)/lib
 
+
 # uncomment to build quickscope.so
 #BUILD_QUICKSCOPE := yes
 
@@ -46,7 +47,9 @@ srcs :=\
  joystick.cpp\
  sink.cpp\
  fileIn.cpp\
- TUN.cpp
+ TUN.cpp\
+ tcpClientSource.cpp\
+ tcpClientSink.cpp
 
 
 
@@ -81,6 +84,11 @@ liquidSync.so_LDFLAGS := $(LIQUID_LDFLAGS)
 liquidFrame.so_LDFLAGS := $(LIQUID_LDFLAGS)
 
 liquidFMDemod.so_LDFLAGS := $(LIQUID_LDFLAGS)
+
+
+tcpClientSource.so_LDFLAGS := -lcrts -L$(ROOT)/lib -Wl,-rpath=\$$ORIGIN/$(ROOT)/lib
+tcpClientSink.so_LDFLAGS := -lcrts -L$(ROOT)/lib -Wl,-rpath=\$$ORIGIN/$(ROOT)/lib
+
 
 
 # above we auto generate lines like this:
