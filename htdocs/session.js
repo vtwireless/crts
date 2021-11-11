@@ -2,45 +2,35 @@ require('/socketIO.js');
 
 
 
-// opts.addAdminPanel
-//      true to add admin panel
-//      false to not add admin panel
+// connectCallback() is a function that this called after the
+//      connection/session is good to go.  When called it is passed the io
+//      object.  See socketIO.js for the io object.
 //
 // opts.showHeader
 //      true to add HTML page body top header and CSS
-//      false to not add HTML page body top header and CSS
+//      false to not add HTML page body top header and CSS.
+//      By default we do not show header.
 //
 // opts.loadCRTScss
 //      true to add main.css to the page
 //      false to not add main.css to the page
+//      By default this is false, and we do not load
+//      main.css to the page.
 //
-function createSession(connectCallback=null, opts = {}) {
-
-    // We changed this interface, it used to be:
-    // createSession(connectCallback=null, addAdminPanel=true) {}
-    // This if(){} will make it compatible with the old interface.
-    if(typeof opts === 'boolean') {
-        let addAdminPanel = opts;
-        opts = {};
-        opts.addAdminPanel = addAdminPanel;
-    } else {
-        if(opts.addAdminPanel === undefined)
-            // This is the default; bad as it was and is.
-            opts.addAdminPanel = true;
-    }
+function Session(connectCallback=null, opts = {}) {
 
     // Set opts defaults if they have not be overridden yet.
     //
     if(opts.showHeader === undefined)
-        opts.showHeader = true; // true is the old default.
+        opts.showHeader = false; // true is the old default.
     if(opts.loadCRTScss === undefined)
-        opts.loadCRTScss = true; // true is the old default.
+        opts.loadCRTScss = false; // true is the old default.
 
 
     function _showUser(user) {
 
-        let sessionStatusDiv = document.getElementById('sessionStatus');
-        let userDiv = document.getElementById('user');
+        let sessionStatusDiv = document.getElementById('crts_sessionStatus');
+        let userDiv = document.getElementById('crts_user');
 
         if(sessionStatusDiv && userDiv) {
             if(user === null) {
@@ -67,7 +57,8 @@ function createSession(connectCallback=null, opts = {}) {
         // This function call will add the, socketIO like, On() and Emit()
         // methods to ws.  Also adds ws.CheckForSocketIOMessage() which
         // eats messages if they of a form that we use to make this
-        // socketIO like On() interfaces.
+        // socketIO like On() interfaces.  It's something like SocketIO
+        // without the bloat of SocketIO.
 
         // io will be the exposed "public" object.
         var io = createSocketIOObject(function(msg) { ws.send(msg); });
@@ -81,6 +72,8 @@ function createSession(connectCallback=null, opts = {}) {
                 // handled.
                 return;
 
+            // Or the message was not handled; not that there's anything
+            // wrong with that.
             console.log("got webSocket message=" + message);
         };
 
@@ -103,10 +96,8 @@ function createSession(connectCallback=null, opts = {}) {
             // go.  i.e. waiting for a reply to the send above is
             // pointless.
 
-            if(connectCallback) {
-
+            if(connectCallback)
                 connectCallback(io);
-            }
         };
 
         ws.onclose = function(e) {
@@ -176,38 +167,5 @@ function createSession(connectCallback=null, opts = {}) {
         });
     }
 
-
-    if(user.name !== 'admin' || !opts.addAdminPanel) {
-        _client(user, connectCallback);
-        return;
-    }
-
-
-
-    /////////////////////////////////////////////////////////////////
-    // At this point we are an "admin" so load contestAdmin.js
-    // and other stuff for the admin.
-    /////////////////////////////////////////////////////////////////
-
-    // TODO: It would be hard to compile these require() calls out.
-    // Currently the server will not get files from /admin/ for
-    // non-admin users.
-    //
-    require('/admin/contestAdmin.js', function() {
-
-        // This gets called after /admin/contestAdmin.css and /admin/contestAdmin.js
-        // and all that they require() are loaded:
-        //
-        _client(user, function(client) {
-
-            // contestAdminInit() is from '/admin/contestAdmin.js'
-            // and it needs the client webSocket.  "This code here"
-            // is being called before the webSocket receives any data,
-            // but after the webSocket connection is open.
-            contestAdminInit(client);
-
-            if(connectCallback)
-                connectCallback(client);
-        });
-    });
+    _client(user, connectCallback);
 }

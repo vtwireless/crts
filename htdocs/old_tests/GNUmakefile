@@ -1,7 +1,4 @@
-
 INSTALL_DIR = $(PREFIX)/htdocs/tests
-
-#INSTALLED := doc sessionHeader.htm
 
 
 include ../../quickbuild.make

@@ -1,11 +1,11 @@
-table.header {
+table.crts_header {
     width:100%;
     padding-top:0px;
     padding-bottom:2px;
     left:0px;
     margin:0px;
     width:100%;
-    background-image:url('/img/sessionFooterBackground.png');
+    background-image:url('/img/sessionHeaderBackground.png');
     padding: 0px;
     font-weight: bold;
 }
@@ -14,10 +14,9 @@ div.version {
     background-color:#8E9EDD;
     font-size:80%;
     padding: 5px;
-    overflow: hide;
     white-space: nowrap;
     border-radius:8px;
-    -moz-border-radius:8px;
+    border-radius:8px;
     border: solid 1px #45454F;
 
 }

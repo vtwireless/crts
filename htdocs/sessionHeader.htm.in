@@ -1,5 +1,4 @@
-
-<table summary="header menu" class=header>
+<table summary="header menu" class=crts_header>
   <tr>
 
     <td class=header1 style="width:46%">
@@ -13,12 +12,9 @@
     </td>
 
     <td class=user>
-        <span id=sessionStatus>Unknown login state.</span>
-        <span id=user></span>
+        <span id=crts_sessionStatus>Unknown login state.</span>
+        <span id=crts_user></span>
     </td>
 
   </tr>
 </table>
-
-
-<p>This is the Cognitive Radio Test System (CRTS).</p>

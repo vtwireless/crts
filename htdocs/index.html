@@ -6,17 +6,22 @@
     <script>
     require('session.js');
     onload = function() {
-        createSession();
-    }
+        Session(null, { 
+            showHeader: true,
+            loadCRTScss: true
+        });
+    };
     </script>
     <title>CRTS</title>
 </head>
 <body>
 
+
+    <p>This page is for running develop tests.</p>
+
     <h3>Links</h3>
 
     <ul>
-        <li><a href="/contest_data">contest_data</a></li>
         <li><a href="tests/">tests</a></li>
     </ul>
 

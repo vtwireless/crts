@@ -12,23 +12,29 @@ This software package is not ready for general public use.
 ## Ports
 
 Currently developing on: 
-  - Debian GNU/Linux 9.3 (stretch)
-  - Ubuntu 16.04, 18.04
+  - Ubuntu 20.04.1 LTS
+
 
 ## Dependencies
 
-```
-apt install libjansson libreadline-dev dia
-```
+*GNUradio version 3.8*
 
-See README in dependencies/ subdirectory.  Installing the dependencies is
-more involved than installing CRTS, so we provide a separate dependencies
-directory.
+*libuhd UHD_4.0.0.0-0*
 
-If you are using this source code from a git repository there is a git
-submodule, webtop, https://github.com/vtwireless/webtop.git, that is
-software depends on.  Webtop can be downloaded by running the included
-*bootstrap* script.
+How GNUradio gets installed on Ubuntu seems to change over time, and so
+how to install dependencies is a moving target.
+
+This list of dependences may be incomplete.  It may work with an APT
+installed gnuradio-dev and libuhd-dev.  That is assuming that it installed
+GNUradio version 3.8.
+
+Another place to start in installing prerequisites from source using
+scripts in 
+
+```
+https://github.com/lanceman2/small_utils.git
+```
+in 070_installScripts/
 
 
 ## Building and Installing CRTS (this package)
@@ -54,22 +60,6 @@ make target as in running *make download* as you'll see below.
 
 Currently the *bootstrap* script will run *make download* which
 does not require configuration.
-
-## TODO
-
-- Add --add_directory as option to bin/crts_contestWebServer to add
-  a static files to the we server.  It would make it so that there is
-  effectively a symlink to a directory from the htdocs/ servers static
-  root directory; so  for example:
-  ```
-    crts_contestWebServer --add_directory my_demo
-  ```
-  would add the directory my_demo to URLs like
-  *https://servername.com/my_demo/*
-  to the server that it runs.  The files in my_demo/ can then
-  access all the files in the document root with a relative path
-  in URLs in the files in my_demo/.  Currently we are using symlinks
-  in htdocs/ to do this.
 
 
 ## Up grading Firmware and FPGA Images with Pre-built Images
@@ -121,30 +111,3 @@ $UHD_PREFIX/bin/uhd_image_loader" --args="type=x300,addr=192.168.12.2"
 For USB USRP devices
 https://files.ettus.com/manual/page_transport.html#transport_usb_udev
 
-## Development notes
-
-If you are developing using a git repository, run
-
-*git add htdocs/webtop && git commit -m "upgraded version of webtop"*
-
-to upgrade the webtop git submodule to your current checkout of
-crts.
-
-### on git submodules
-How can I specify a branch/tag when adding a Git submodule?
-https://stackoverflow.com/questions/1777854/how-can-i-specify-a-branch-tag-when-adding-a-git-submodule
-
-If you want to move the submodule to a particular tag:
-```
-  cd submodule_directory
-  git checkout v1.0
-  cd ..
-  git add submodule_directory
-  git commit -m "moved submodule to v1.0"
-  git push
-```
-Then, another developer who wants to have submodule_directory changed to that tag, does this
-```
-  git pull
-  git submodule update --init
-```

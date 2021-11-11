@@ -1,0 +1,14 @@
+#!/bin/bash
+
+set -ex
+
+cd $(dirname ${BASH_SOURCE[0]})
+
+
+exec ../../bin/crts_radio\
+ -f stdin\
+ -f throttle\
+ -f throttle [ --name secondThrottle ]\
+ -f stdout\
+ -C webClient < /dev/urandom > /dev/null
+
