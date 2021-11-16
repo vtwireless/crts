@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang=en>
+<head>
+    <meta charset="utf-8"/>
+    <script src="/load.js"></script>
+    <script>
+    require('/session.js');
+    require('/admin/contestAdmin.js');
+
+    function AdminInit(io) {
+        ContestAdminInit(io, 'contestAdminPanel');
+    }
+
+    onload = function() {
+        Session(AdminInit, { 
+            showHeader: true,
+            loadCRTScss: true
+        });
+    };
+    </script>
+    <title>CRTS</title>
+</head>
+<body>
+
+    <h4><a href="..">up</a></h4>
+
+    <div id=contestAdminPanel></div>
+
+</body>
+</html>
