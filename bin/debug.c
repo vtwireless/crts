@@ -6,6 +6,7 @@
 #include <string.h>
 #include <sys/syscall.h>
 #include <pthread.h>
+#include <stdlib.h>
 
 #ifndef SYS_gettid
 #  error "SYS_gettid unavailable on this system"
@@ -76,13 +77,14 @@ void _spew(FILE *stream, int errn, const char *pre, const char *file,
 
 void _assertAction(FILE *stream)
 {
-    pid_t pid;
-    pid = getpid();
+
 #ifdef ASSERT_ACTION_EXIT
     fprintf(stream, "Will exit due to error\n");
     exit(1); // atexit() calls are called
     // See `man 3 exit' and `man _exit'
 #else // ASSERT_ACTION_SLEEP
+    pid_t pid;
+    pid = getpid();
     int i = 1; // User debugger controller, unset to effect running code.
     fprintf(stream, "  Consider running: \n\n  gdb -pid %u\n\n  "
         "pid=%u:%zu will now SLEEP ...\n", pid, pid, syscall(SYS_gettid));

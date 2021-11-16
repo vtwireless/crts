@@ -4,11 +4,18 @@ set -ex
 
 cd $(dirname ${BASH_SOURCE[0]})
 
+# We get PROGRAM_NAME from the environment; the
+# crts_contestWebServer will set it in launcher.js.
+
+if [ -z "${PROGRAM_NAME}" ] ; then
+    echo "PROGRAM_NAME was not set"
+    exit 1
+fi
+
 
 exec ../../bin/crts_radio\
  -f stdin\
  -f throttle\
  -f throttle [ --name secondThrottle ]\
  -f stdout\
- -C webClient < /dev/urandom > /dev/null
-
+ -C webClient [ --program_name ${PROGRAM_NAME} ] < /dev/urandom > /dev/null

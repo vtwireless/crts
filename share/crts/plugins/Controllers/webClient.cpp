@@ -48,8 +48,8 @@
 
 /*************************************************************************
  *
- *    BIG TODO:  How this module stops needs to be thought through.  It
- *    may not have a robust stopping that catches all TCP requests.  It
+ *    BIG TODO:  How this module needs to be thought through.  It
+ *    may not have a robust framing that catches all TCP requests.  It
  *    may need a shutdown sequence of commands to and from the server to
  *    let both this client and the server shutdown in a synchronous fashion.
  *
@@ -179,6 +179,8 @@ class Client: public CRTSController
             MUTEX_UNLOCK(&writerMutex);
         };
 
+        const char *programName;
+
 };
 
 
@@ -232,6 +234,10 @@ unsigned short Client::getOptions(int argc, const char **argv)
     address = opt.get("--server_address", DEFAULT_ADDRESS);
 
     period = opt.get("--period", DEFAULT_PERIOD);
+
+    programName = opt.get("--program_name", "");
+
+    DSPEW("programName=\"%s\"", programName);
 
     return (port = opt.get("--server_port", DEFAULT_PORT));
 }
@@ -291,6 +297,13 @@ Client::Client(int argc, const char **argv):
     port(getOptions(argc, argv)),
     socket(address, port)
 {
+
+    if(!programName || programName[0] == '\0') {
+        errno = 0;
+        DSPEW("programName=\"%s\"", programName);
+        throw "Required argument --program_name was not set";
+    }
+
     runThread = true;
     // We must add this CRTSController to all filter controller callbacks
     // so that Client::start(c), Client::execute(c) and Client::stop(c) get
@@ -356,7 +369,10 @@ void Client::start(CRTSControl *c, uint32_t numIn, uint32_t numOut)
     // controlList is the buffer we will send.
     //
     std::string controlList("I{\"name\": \"controlList\",\n"
-            "  \"args\":[\n    {");
+            "  \"args\":[\n    \"");
+    controlList += programName;
+    controlList += "\",\n    {";
+
 
     c = getControl<CRTSControl*>("",
         false/*add controller*/,
@@ -421,7 +437,7 @@ void Client::start(CRTSControl *c, uint32_t numIn, uint32_t numOut)
             // We got at least one parameter in a control, now finish it off.
             controlList += "]\n";
             ++ccount; // We have another control with parameters.
-#if 0
+#if 1
             DSPEW("added TCP/IP client command interface for control:"
                     "%s with %d set parameters",
                     c->getName(), pcount);

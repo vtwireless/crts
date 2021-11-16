@@ -21,4 +21,3 @@ exec ../bin/crts_contestWebServer\
  --contest_dir ../htdocs/tests\
  --debug\
  $*
-

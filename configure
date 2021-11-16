@@ -100,7 +100,7 @@ CXXFLAGS := \$(CFLAGS)
 
 # Add extra debugging code to the buffering code
 # only when the below DEBUG thing is defined
-CPPFLAGS := -DBUFFER_DEBUG
+CPPFLAGS := -DBUFFER_DEBUG -DASSERT_ACTION_EXIT
 
 
 # select 1 of the next two lines, effects include/crts/debug.h
