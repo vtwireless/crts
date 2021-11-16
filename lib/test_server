@@ -15,8 +15,10 @@ exec ../bin/crts_contestWebServer\
  --password=passwd1_123\
  --user=team2\
  --password=passwd2_123\
- --launcher_dir=test_webLauncher_programs\
- --contest_dir=test_contest\
+ --user=team3\
+ --password=passwd2_123\
+ --launcher_dir test_webLauncher_programs\
+ --contest_dir ../htdocs/tests\
  --debug\
  $*
 

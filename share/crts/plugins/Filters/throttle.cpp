@@ -94,6 +94,11 @@ class Throttle : public CRTSFilter
             return true;
         };
 
+        double getTotalBytesOut(void) {
+            return totalBytesOut;
+        }
+
+
         double getPeriod(void)
         {
             return (double) period.tv_sec + period.tv_nsec/1000000000.0F;
@@ -102,10 +107,11 @@ class Throttle : public CRTSFilter
         size_t bytes;
         struct timespec period, rem; // Time to sleep and remaining time
         uint32_t numOutputs;
+        double totalBytesOut;
 };
 
 
-Throttle::Throttle(int argc, const char **argv)
+Throttle::Throttle(int argc, const char **argv): totalBytesOut(0)
 {
     CRTSModuleOptions opt(argc, argv, usage);
 
@@ -122,6 +128,12 @@ Throttle::Throttle(int argc, const char **argv)
                 [&]() { return getPeriod(); },
                 [&](double x) { return setPeriod(x); }
     );
+
+    addParameter("totalBytesOut",
+                [&]() { return getTotalBytesOut(); },
+                0/* no set()*/
+    );
+
 
     DSPEW();
 }
@@ -201,8 +213,11 @@ void Throttle::input(void *buffer, size_t len, uint32_t inChannelNum)
         }
     }
 
-    if(numOutputs)
+    if(numOutputs) {
+        totalBytesOut += len;
+        setParameter("totalBytesOut", totalBytesOut);
         output(len, 0);
+    }
 
     //else // This is done automatically.
         //advanceInput(len);

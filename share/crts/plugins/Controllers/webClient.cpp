@@ -1,5 +1,7 @@
 // This CRTSController module connects to a TCP/IP server and relays
-// commands from that server to the filter stream.
+// commands from that server to the filter stream.   There is node server
+// code that is on the other end of this TCP connection that is in
+// lib/controllerServer.js.
 // 
 #include <stdio.h>
 #include <math.h>
@@ -65,11 +67,15 @@ static void usage(void)
     fprintf(stderr,
 "\n"
 "\n"
-"Usage: %s [ OPTIONS ]\n"
+"Usage: %s [ --program_name PNAME [OPTIONS]]\n"
 "\n"
 "  This controller module connects to the CRTS web server letting a browser\n"
 "  control and monitor the stream.  It can sends and receive all filter control\n"
 "  parameter values for all filters that it finds in all streams that it finds.\n"
+"\n"
+"\n"
+"   --program_name PNAME     set the program name that the web server IDs this\n"
+"                            connection with.  --program_name IS A REQUIRED ARGUMENT.\n"
 "\n"
 "\n"
 "  ---------------------------------------------------------------------------\n"
@@ -139,14 +145,12 @@ class Client: public CRTSController
 
         double period;
 
-
         // We store a list of parameters that have not been pushed to the
         // server yet.  These are parameters that the web clients
         // subscribe to.
         std::map<const std::string, double> parameterChanges;
 
         std::atomic<bool> runThread;
-
 
     private:
 

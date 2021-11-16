@@ -2,9 +2,11 @@ require('/showHide.js');
 require('/admin/contestAdmin.css');
 
 
-function contestAdminInit(io, parentElement=null) {
+function ContestAdminInit(io, parentElement=null) {
 
-    function _addControllerPanels(io, contestPanel, users) {
+    var userNames = [];
+    
+    function _addControllerPanels(io, contestPanel) {
 
         var controllers = {};
 
@@ -26,7 +28,7 @@ function contestAdminInit(io, parentElement=null) {
 
             console.log('getParameter ' + parameter + " id=" + id);
 
-            _contest.io.Emit('getParameter', programName, controlName,
+            io.Emit('getParameter', programName, controlName,
                 parameter, id);
         }
 
@@ -43,11 +45,11 @@ function contestAdminInit(io, parentElement=null) {
         // This will keep adding controller panels to the ContestPanel as
         // they come up.
 
-        // makeActionTable() makes a set or get table for a controller.
+        // makeControllerTable() makes a set or get table for a controller.
         //
         // type is "set" or "get"
         //
-        function makeActionTable(type, setOrGet, parentNode, programName) {
+        function makeControllerTable(type, setOrGet, parentNode, programName) {
 
             function checkbox(userName, controlName, parameterName, value) {
 
@@ -103,7 +105,7 @@ function contestAdminInit(io, parentElement=null) {
                     tr.appendChild(th);
                 }
 
-                users.forEach(function(userName) {
+                userNames.forEach(function(userName) {
                     th = document.createElement('th');
                     th.className = type;
                     th.appendChild(document.createTextNode(userName));
@@ -159,7 +161,7 @@ function contestAdminInit(io, parentElement=null) {
                         tr.appendChild(td);
                     }
 
-                    users.forEach(function(userName) {
+                    userNames.forEach(function(userName) {
                         td = document.createElement('td');
                         td.className = type;
                         var boolValue = access[userName];
@@ -188,7 +190,7 @@ function contestAdminInit(io, parentElement=null) {
             controllerDiv.className = "controller";
             let h3 = document.createElement('h3');
             let span = document.createElement('span');
-            h3.appendChild(document.createTextNode('Controller '));
+            h3.appendChild(document.createTextNode('Controllers for '));
             span.appendChild(document.createTextNode(programName));
             span.className = 'controller';
             h3.appendChild(span);
@@ -203,8 +205,8 @@ function contestAdminInit(io, parentElement=null) {
             img.className = 'controller';
             controllerDiv.appendChild(img);
 
-            makeActionTable("set", set, controllerDiv, programName);
-            makeActionTable("get", get, controllerDiv, programName);
+            makeControllerTable("set", set, controllerDiv, programName);
+            makeControllerTable("get", get, controllerDiv, programName);
             makeShowHide(controllerDiv, { header: h3 });
 
             return controllerDiv;
@@ -313,6 +315,11 @@ function contestAdminInit(io, parentElement=null) {
 
             th = document.createElement('th');
             th.className = 'launcher';
+            th.appendChild(document.createTextNode('unique name'));
+            header_tr.appendChild(th);
+
+            th = document.createElement('th');
+            th.className = 'launcher';
             th.appendChild(document.createTextNode('run with arguments'));
             header_tr.appendChild(th);
 
@@ -333,7 +340,6 @@ function contestAdminInit(io, parentElement=null) {
         makeTable();
  
 
-        io.Emit('getLauncherPrograms');
 
         io.On('receiveLauncherPrograms', function(programs_in) {
 
@@ -375,16 +381,29 @@ function contestAdminInit(io, parentElement=null) {
                 argsInput.type = 'text';
                 argsInput.value = '';
 
+                var programName = document.createElement('input');
+                programName.type = 'text';
+                programName.value = '';
+
 
                 var td = document.createElement('td');
+                td.title = 'launch';
                 td.className = 'launcher';
                 td.appendChild(document.createTextNode(path));
                 tr.appendChild(td);
                 td.onclick = function() {
-                    console.log("launch program=" + path + ' ' +
-                        argsInput.value);
-                    io.Emit('launch', path, argsInput.value);
+                    console.log("launch program=\"" + path + ' ' +
+                        argsInput.value + '" name= "' +
+                        programName.value + '"');
+                    io.Emit('launch', path, argsInput.value, programName.value);
                 };
+
+                td = document.createElement('td');
+                td.className = 'args';
+                // The user may or may not set a program name
+                // The program name must be unique to this server.
+                td.appendChild(programName);
+                tr.appendChild(td);
 
                 td = document.createElement('td');
                 td.className = 'args';
@@ -454,6 +473,11 @@ function contestAdminInit(io, parentElement=null) {
             tr.appendChild(th);
 
             th = document.createElement('th');
+            th.appendChild(document.createTextNode('unique name'));
+            th.className = 'programs';
+            tr.appendChild(th);
+
+            th = document.createElement('th');
             th.appendChild(document.createTextNode('args'));
             th.className = 'programs';
             tr.appendChild(th);
@@ -475,7 +499,7 @@ function contestAdminInit(io, parentElement=null) {
         }
 
 
-        function addProgram(path, pid, args) {
+        function addProgram(path, name, pid, args) {
 
             let tr = document.createElement('tr');
 
@@ -490,6 +514,11 @@ function contestAdminInit(io, parentElement=null) {
             let td = document.createElement('td');
             td.className = 'programs';
             td.appendChild(document.createTextNode(path));
+            tr.appendChild(td);
+
+            td = document.createElement('td');
+            td.className = 'programs';
+            td.appendChild(document.createTextNode(name));
             tr.appendChild(td);
 
             td = document.createElement('td');
@@ -513,6 +542,7 @@ function contestAdminInit(io, parentElement=null) {
             span.onclick = function() {
                 io.Emit('signalProgram', pid, input.value);
             };
+            span.title = 'send signal';
             td.appendChild(span);
             td.appendChild(input);
             tr.appendChild(td);
@@ -520,11 +550,11 @@ function contestAdminInit(io, parentElement=null) {
         }
 
 
-        io.On('programRunStatus', function(path, pid, args, state) {
+        io.On('programRunStatus', function(path, name, pid, args, state) {
 
             if(programs[pid] === undefined && state !== 'exited') {
 
-                addProgram(path, pid, args);
+                addProgram(path, name, pid, args);
 
             } else if(programs[pid] !== undefined && state === 'exited') {
 
@@ -535,14 +565,13 @@ function contestAdminInit(io, parentElement=null) {
         });
 
 
-        io.Emit('runningPrograms');
 
         io.On('runningPrograms', function(runningPrograms) {
 
             var keys = Object.keys(runningPrograms);
             keys.forEach(function(pid) {
                 var rp = runningPrograms[pid];
-                addProgram(rp.path, rp.pid, rp.args);
+                addProgram(rp.path, rp.name, rp.pid, rp.args);
             });
         });
 
@@ -550,7 +579,7 @@ function contestAdminInit(io, parentElement=null) {
 
 
     /////////////////////////////////////////////////////////////////////
-    // That's it for the functions in this function.  Now do stuff.
+    // That's it for the functions in this function.  Now build the page.
 
     var contestPanel = document.createElement('div');
     contestPanel.className = "contestPanel";
@@ -561,43 +590,33 @@ function contestAdminInit(io, parentElement=null) {
     h.className = 'contestPanel';
     contestPanel.appendChild(h);
 
-    if(typeof(WTApp) === 'function' && false/* this does not work yet*/) {
+    if(typeof(parentElement) !== 'string' && parentElement !== null)
+        parentElement.appendChild(contestPanel);
+    else if(typeof(parentElement) === 'string')
+        parentElement = document.getElementById(parentElement);
+    else
+        parentElement = document.body;
 
-        // It's just not compatible yet.
-        new WTApp('Control Panel', contestPanel);
-
-    } else {
-        if(parentElement) parentElement.appendChild(contestPanel);
-        else {
-            parentElement = document.getElementById('contestAdminPanel');
-            if(parentElement)
-                parentElement.appendChild(contestPanel);
-            else
-                document.body.appendChild(contestPanel);
-        }
-    }
+    parentElement.appendChild(contestPanel);
 
     // We user could add this  contestPanel <div> as a child to whatever
     // they like.
     this.getElement = function() { return contestPanel; };
 
 
-    let showHide = makeShowHide(contestPanel, {header: h, startShow: false});
+    let showHide = makeShowHide(contestPanel, {header: h, startShow: true});
 
-    console.log('created contest panel');
 
-    io.Emit('addUsers');
+    /************* Make "Contestant User URLs" panel ***********/
+    var userPanel = document.createElement('div');
+    userPanel.className = 'userLinks';
+    contestPanel.appendChild(userPanel);
+    // Make this a show/hide clickable thing.
+    makeShowHide(userPanel, { header: "Contestant User URLs" });
 
     io.On('addUsers', function(users, urls) {
 
-        /************* Make "Contestant User URLs" panel ***********/
-        var div = document.createElement('div');
-        div.className = 'userLinks';
-        contestPanel.appendChild(div);
-        // Make this a show/hide clickable thing.
-        makeShowHide(div, { header: "Contestant User URLs" });
 
-        var userNames = [];
         Object.keys(users).forEach(function(userName) {
             if(userName === 'admin') return;
             userNames.push(userName);
@@ -608,18 +627,18 @@ function contestAdminInit(io, parentElement=null) {
         p.appendChild(document.createTextNode(
             'Contest participants  may login and access the ' +
             'contest with the following URLs:'));
-        div.appendChild(p);
+        userPanel.appendChild(p);
 
         urls.forEach(function(url) {
 
             var h3 = document.createElement('h3');
             h3.className = 'userLinks';
             h3.appendChild(document.createTextNode(url));
-            div.appendChild(h3);
+            userPanel.appendChild(h3);
 
             var table = document.createElement('table');
             table.className = 'userLinks';
-            div.appendChild(table);
+            userPanel.appendChild(table);
 
             userNames.forEach(function(userName) {
 
@@ -656,16 +675,23 @@ function contestAdminInit(io, parentElement=null) {
                 tr.appendChild(td);
             });
         });
-
-        /******************* Make three more panels ************/
-        // We add panels in this order.
-        //
-        _addLauncherPanel(io, contestPanel);
-        _addRunningProgramsPanel(io, contestPanel);
-        _addControllerPanels(io, contestPanel, userNames);
-
-        // This could not be hidden until all the child widgets where
-        // added.  Now that we are done we can hide it.
-        showHide.hide();
     });
+
+
+    /******************* Make three more panels ************/
+    // We add panels in this order.
+    //
+    _addLauncherPanel(io, contestPanel);
+    _addRunningProgramsPanel(io, contestPanel);
+
+    _addControllerPanels(io, contestPanel);
+
+    console.log('created contest panel');
+
+    // Tell the server we ready to receive contest state data.
+    io.Emit('addAdminConnection');
+
+    // Tell the server more of the admin stuff we want.
+    io.Emit('runningPrograms');
+    io.Emit('getLauncherPrograms');
 }

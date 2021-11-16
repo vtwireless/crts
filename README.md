@@ -21,6 +21,8 @@ Currently developing on:
 
 *libuhd UHD_4.0.0.0-0*
 
+*node JS*
+
 How GNUradio gets installed on Ubuntu seems to change over time, and so
 how to install dependencies is a moving target.
 
