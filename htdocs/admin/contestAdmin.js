@@ -58,14 +58,14 @@ function ContestAdminInit(io, parentElement=null) {
                 input.checked = value;
                 input.onchange = function() {
 
-                    // TODO: We need to group commands sent like this ...
-
                     io.Emit('changePermission', userName, programName, type,
                         controlName, parameterName, input.checked);
                     console.log('changePermission ("' +  userName +
+                            '","' + programName +
+                            '","' + type +
                             '","' + controlName +
                             '","' + parameterName +
-                            '","' + type + '")');
+                            '","' + input.checked + '")');
                 };
 
                 return input;
