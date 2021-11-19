@@ -240,7 +240,6 @@ function ContestAdminInit(io, parentElement=null) {
                       }
 
                     var access = setOrGet[controlName][parameterName].access;
-console.log("access=" + JSON.stringify(access));
 
                     userNames.forEach(function(userName) {
                         td = document.createElement('td');
