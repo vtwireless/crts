@@ -4,13 +4,10 @@ require('/admin/contestAdmin.css');
 
 function ContestAdminInit(io, parentElement=null) {
 
-    var userNames = [];
     
     function _addControllerPanels(io, contestPanel) {
 
         var controllers = {};
-
-
 
         function setParameterMinMax(type, programName, controlName,
                     parameterName, value) {
@@ -657,8 +654,87 @@ function ContestAdminInit(io, parentElement=null) {
     }
 
 
+
+
+    function _addUsersPanel() {
+
+        /************* Make "Contestant User URLs" panel ***********/
+        var userPanel = document.createElement('div');
+        userPanel.className = 'userLinks';
+        contestPanel.appendChild(userPanel);
+        // Make this a show/hide clickable thing.
+        makeShowHide(userPanel, { header: "Contestant User URLs" });
+
+        io.On('addUsers', function(users, urls) {
+
+
+            Object.keys(users).forEach(function(userName) {
+                if(userName === 'admin') return;
+                userNames.push(userName);
+            });
+
+            let p = document.createElement('p');
+            p.className = 'userLinks';
+            p.appendChild(document.createTextNode(
+                'Contest participants  may login and access the ' +
+                'contest with the following URLs:'));
+            userPanel.appendChild(p);
+
+            urls.forEach(function(url) {
+
+                var h3 = document.createElement('h3');
+                h3.className = 'userLinks';
+                h3.appendChild(document.createTextNode(url));
+                userPanel.appendChild(h3);
+
+                var table = document.createElement('table');
+                table.className = 'userLinks';
+                userPanel.appendChild(table);
+
+                userNames.forEach(function(userName) {
+
+                    let tr = document.createElement('tr');
+                    tr.className = 'userLinks';
+                    table.appendChild(tr);
+                    let td = document.createElement('td');
+                    td.className = 'userLinks';
+                    let a = document.createElement('a');
+                    a.className = 'userLinks';
+                    let link = a.href = url + '/?user=' + userName +
+                        '&password=' + users[userName].password;
+                    a.appendChild(document.createTextNode(userName));
+                    td.appendChild(a);
+                    tr.appendChild(td);
+
+
+                    if(url.match(/^https\:/) == null)
+                        return;
+
+                    // this is a https server url.
+                    // so add email to user option.
+
+                    td = document.createElement('td');
+                    td.className = 'userLinks';
+                    a = document.createElement('a');
+                    a.href='mailto:' + userName +
+                        '?to&subject=CRTS%20Participant%20Link&body=Hello%20' +
+                        userName + '%2C%0A%0AYour%20user%20CRTS%20Participant%20Link%20' +
+                        'is%3A%20' + link.replace(/\&/,'%26') + '%0A%0A';
+                    a.appendChild(document.createTextNode(
+                        'Email participant link to ' + userName));
+                    td.appendChild(a);
+                    tr.appendChild(td);
+                });
+            });
+        });
+    }
+
+
     /////////////////////////////////////////////////////////////////////
     // That's it for the functions in this function.  Now build the page.
+
+
+    var userNames = [];
 
     var contestPanel = document.createElement('div');
     contestPanel.className = "contestPanel";
@@ -683,87 +759,19 @@ function ContestAdminInit(io, parentElement=null) {
     this.getElement = function() { return contestPanel; };
 
 
-    let showHide = makeShowHide(contestPanel, {header: h, startShow: true});
+    makeShowHide(contestPanel, {header: h, startShow: true});
 
 
-    /************* Make "Contestant User URLs" panel ***********/
-    var userPanel = document.createElement('div');
-    userPanel.className = 'userLinks';
-    contestPanel.appendChild(userPanel);
-    // Make this a show/hide clickable thing.
-    makeShowHide(userPanel, { header: "Contestant User URLs" });
 
-    io.On('addUsers', function(users, urls) {
-
-
-        Object.keys(users).forEach(function(userName) {
-            if(userName === 'admin') return;
-            userNames.push(userName);
-        });
-
-        let p = document.createElement('p');
-        p.className = 'userLinks';
-        p.appendChild(document.createTextNode(
-            'Contest participants  may login and access the ' +
-            'contest with the following URLs:'));
-        userPanel.appendChild(p);
-
-        urls.forEach(function(url) {
-
-            var h3 = document.createElement('h3');
-            h3.className = 'userLinks';
-            h3.appendChild(document.createTextNode(url));
-            userPanel.appendChild(h3);
-
-            var table = document.createElement('table');
-            table.className = 'userLinks';
-            userPanel.appendChild(table);
-
-            userNames.forEach(function(userName) {
-
-                let tr = document.createElement('tr');
-                tr.className = 'userLinks';
-                table.appendChild(tr);
-                let td = document.createElement('td');
-                td.className = 'userLinks';
-                let a = document.createElement('a');
-                a.className = 'userLinks';
-                let link = a.href = url + '/?user=' + userName +
-                    '&password=' + users[userName].password;
-                a.appendChild(document.createTextNode(userName));
-                td.appendChild(a);
-                tr.appendChild(td);
-
-
-                if(url.match(/^https\:/) == null)
-                    return;
-
-                // this is a https server url.
-                // so add email to user option.
-
-                td = document.createElement('td');
-                td.className = 'userLinks';
-                a = document.createElement('a');
-                a.href='mailto:' + userName +
-                    '?to&subject=CRTS%20Participant%20Link&body=Hello%20' +
-                    userName + '%2C%0A%0AYour%20user%20CRTS%20Participant%20Link%20' +
-                    'is%3A%20' + link.replace(/\&/,'%26') + '%0A%0A';
-                a.appendChild(document.createTextNode(
-                    'Email participant link to ' + userName));
-                td.appendChild(a);
-                tr.appendChild(td);
-            });
-        });
-    });
-
-
-    /******************* Make three more panels ************/
+    /******************* Make 4 more panels ************/
+    //
     // We add panels in this order.
     //
+    _addUsersPanel();
     _addLauncherPanel(io, contestPanel);
     _addRunningProgramsPanel(io, contestPanel);
-
     _addControllerPanels(io, contestPanel);
+
 
     console.log('created contest panel');
 

@@ -11,5 +11,7 @@ libcrts.so_LDFLAGS := -ljansson
 
 CPPFLAGS := -I../include
 
+CLEANDIRS := test_upload_dir
+
 
 include ../quickbuild.make
