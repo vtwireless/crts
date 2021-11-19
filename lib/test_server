@@ -19,5 +19,7 @@ exec ../bin/crts_contestWebServer\
  --password=passwd3_123\
  --launcher_dir test_webLauncher_programs\
  --contest_dir ../htdocs/tests\
+ --upload_dir ../test_upload_dir\
+ --upload_dir_overwrite\
  --debug\
  $*
