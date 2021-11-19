@@ -50,7 +50,7 @@ function ContestAdminInit(io, parentElement=null) {
                     [].slice.call(arguments) + ')');
             try {
                 var access = controllers[programName][setOrGet][controlName]
-                    [parameterName][userName];
+                    [parameterName].access[userName];
                 if(boolValue !== access.checkbox.checked) {
                     access.checkbox.checked = boolValue;
                 }
@@ -209,7 +209,6 @@ function ContestAdminInit(io, parentElement=null) {
                 parameters.forEach(function(parameterName) {
                     // Make a row for this parameter
                     //
-                    var access = setOrGet[controlName][parameterName];
                     var tr = document.createElement('tr');
                     table.appendChild(tr);
 
@@ -240,6 +239,9 @@ function ContestAdminInit(io, parentElement=null) {
                         tr.appendChild(td);
                       }
 
+                    var access = setOrGet[controlName][parameterName].access;
+console.log("access=" + JSON.stringify(access));
+
                     userNames.forEach(function(userName) {
                         td = document.createElement('td');
                         td.className = type;
@@ -247,8 +249,7 @@ function ContestAdminInit(io, parentElement=null) {
                         access[userName] = {
                             checkbox:
                                 checkbox(userName, controlName,
-                                    parameterName, boolValue),
-                            permission: boolValue
+                                    parameterName, boolValue)
                         };
                         td.appendChild(access[userName].checkbox);
                         tr.appendChild(td);
