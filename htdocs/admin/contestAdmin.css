@@ -7,6 +7,14 @@ div.contestPanel {
     border: 2px solid black;
     border-radius: 4px;
 }
+div.statePanel {
+    margin: 10px;
+}
+span.stateInputTitle {
+    padding-right: 6px;
+}
+
+
 h3.contestPanel {
 }
 div.launcher {

@@ -5,7 +5,7 @@ require('/admin/contestAdmin.css');
 function ContestAdminInit(io, parentElement=null) {
 
     
-    function _addControllerPanels(io, contestPanel) {
+    function _addControllerPanels() {
 
         var controllers = {};
 
@@ -349,7 +349,7 @@ function ContestAdminInit(io, parentElement=null) {
     //  _addLauncherPanel() makes HTML that is a clickable list of programs
     //  that we can launch on the server by clicking on the client browser.
     //
-    function _addLauncherPanel(io, contestPanel) {
+    function _addLauncherPanel() {
 
 
         var programs = null;
@@ -528,7 +528,7 @@ function ContestAdminInit(io, parentElement=null) {
     // We can preform actions on the running programs with
     // this panel.
     //
-    function _addRunningProgramsPanel(io, contestPanel) {
+    function _addRunningProgramsPanel() {
 
         var programs = {};
         var table;
@@ -628,11 +628,9 @@ function ContestAdminInit(io, parentElement=null) {
 
         io.On('programRunStatus', function(path, name, pid, args, state) {
 
-            if(programs[pid] === undefined && state !== 'exited') {
-
+            if(programs[pid] === undefined && state !== 'exited')
                 addProgram(path, name, pid, args);
-
-            } else if(programs[pid] !== undefined && state === 'exited') {
+            else if(programs[pid] !== undefined && state === 'exited') {
 
                 // Remove this from the panel.
                 table.removeChild(programs[pid].tr);
@@ -652,8 +650,6 @@ function ContestAdminInit(io, parentElement=null) {
         });
 
     }
-
-
 
 
     function _addUsersPanel() {
@@ -730,9 +726,52 @@ function ContestAdminInit(io, parentElement=null) {
     }
 
 
-    /////////////////////////////////////////////////////////////////////
-    // That's it for the functions in this function.  Now build the page.
+    function _addStateSavePanel() {
 
+        var panel = document.createElement('div');
+        panel.className = 'userLinks';
+        contestPanel.appendChild(panel);
+        // Make this a show/hide clickable thing.
+        makeShowHide(panel, { header: "Saving Contest State" });
+
+        let div = document.createElement('div');
+        div.className = 'statePanel'
+        panel.appendChild(div);
+
+        let p = document.createElement('p');
+        p.appendChild(document.createTextNode(
+            'To save the current state of this contest:'));
+        div.appendChild(p);
+
+        let sp = document.createElement('span');
+        sp.appendChild(document.createTextNode('File Name'));
+        sp.className = 'stateInputTitle';
+        div.appendChild(sp);
+
+        let button = document.createElement('button');
+        button.type = 'button';
+        button.appendChild(document.createTextNode('submit'));
+        button.onclick = function() {
+            io.Emit('saveState', input.value);
+        };
+        div.appendChild(button);
+
+        var input = document.createElement('input');
+        input.type = 'text';
+        input.value = 'xxx.json';
+        input.size = 80;
+        div.appendChild(input);
+
+        io.On('stateFileName', function(fileName) {
+            input.value = fileName;
+        });
+
+    }
+
+
+    //////////////////////////////////////////////////////////////////////
+    // That's it for the functions in this function.  Now build the page.
+    //////////////////////////////////////////////////////////////////////
 
     var userNames = [];
 
@@ -767,10 +806,11 @@ function ContestAdminInit(io, parentElement=null) {
     //
     // We add panels in this order.
     //
+    _addStateSavePanel();
     _addUsersPanel();
-    _addLauncherPanel(io, contestPanel);
-    _addRunningProgramsPanel(io, contestPanel);
-    _addControllerPanels(io, contestPanel);
+    _addLauncherPanel();
+    _addRunningProgramsPanel();
+    _addControllerPanels();
 
 
     console.log('created contest panel');
