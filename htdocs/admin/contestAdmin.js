@@ -10,16 +10,53 @@ function ContestAdminInit(io, parentElement=null) {
 
         var controllers = {};
 
+
+
+        function setParameterMinMax(type, programName, controlName,
+                    parameterName, value) {
+            try {
+                // Set the value if we can; if not then don't.
+                controllers[programName].
+                        set[controlName][parameterName]
+                        [type + 'Input'].value = value;
+            } catch {
+                console.log("Cannot set controllers[" +
+                        [].slice.call(arguments) + "]." +
+                        type + 'Input.value')
+            }
+        }
+
+
+        io.On('setParameterMin', function(programName, controlName,
+                    parameterName, value) {
+
+            setParameterMinMax('min', programName, controlName,
+                    parameterName, value);
+        });
+
+
+        io.On('setParameterMax', function(programName, controlName,
+                    parameterName, value) {
+
+            setParameterMinMax('max', programName, controlName,
+                    parameterName, value);
+        });
+
+
         io.On('changePermission', function(userName, programName, setOrGet,
                 controlName, parameterName, boolValue) {
 
                 console.log("On 'changePermission' (" +
                     [].slice.call(arguments) + ')');
-
-            var access = controllers[programName][setOrGet][controlName]
-                [parameterName][userName];
-            if(boolValue !== access.checkbox.checked) {
-                access.checkbox.checked = boolValue;
+            try {
+                var access = controllers[programName][setOrGet][controlName]
+                    [parameterName][userName];
+                if(boolValue !== access.checkbox.checked) {
+                    access.checkbox.checked = boolValue;
+                }
+            } catch {
+                 console.log("On 'changePermission' (" +
+                    [].slice.call(arguments) + ') failed');
             }
         });
 
@@ -103,6 +140,16 @@ function ContestAdminInit(io, parentElement=null) {
                     th.className = type;
                     th.appendChild(document.createTextNode('set to:'));
                     tr.appendChild(th);
+
+                    th = document.createElement('th');
+                    th.className = type;
+                    th.appendChild(document.createTextNode('min'));
+                    tr.appendChild(th);
+
+                    th = document.createElement('th');
+                    th.className = type;
+                    th.appendChild(document.createTextNode('max'));
+                    tr.appendChild(th);
                 }
 
                 userNames.forEach(function(userName) {
@@ -116,6 +163,48 @@ function ContestAdminInit(io, parentElement=null) {
             Object.keys(setOrGet).forEach(function(controlName) {
 
                 var parameters = Object.keys(setOrGet[controlName]);
+
+                function makeSetterInput(setWhat, programName, controlName,
+                                parameterName, initValue, type=null) {
+
+                    td = document.createElement('td');
+                    td.className = 'setValue';
+                    let input = document.createElement('input');
+                    input.size = 8; // makes it smaller than default length
+                    input.type = 'text';
+                    input.onchange = function() {
+                        console.log('io.Emit(' + "'" + setWhat + "'," + [
+                            programName, controlName,
+                            parameterName, parseFloat(input.value)] + ')');
+
+                        io.Emit(setWhat, programName, controlName,
+                            parameterName, parseFloat(input.value));
+                    };
+                    if(type) {
+                        try {
+                            // set this if we can.  If not fuck it.
+                            controllers[programName].
+                                set[controlName][parameterName]
+                                [type + 'Input'] = input;
+                        } catch {
+                            console.log("Cannot set controllers[" +
+                                [].slice.call(arguments) + "]." +
+                                type + 'Input');
+                        }
+                    }
+
+                    let button = document.createElement('button');
+                    button.type = 'button';
+                    button.appendChild(document.createTextNode('submit'));
+                    button.onclick = function() {
+                        input.onchange();
+                    };
+                    if(initValue !== null)
+                        input.value = initValue;
+                    td.appendChild(button);
+                    td.appendChild(input);
+                    return td;
+                }
 
                 parameters.forEach(function(parameterName) {
                     // Make a row for this parameter
@@ -138,28 +227,18 @@ function ContestAdminInit(io, parentElement=null) {
                         tr.appendChild(td);
                     } else {
                         // type === 'set'
-                        td = document.createElement('td');
-                        td.className = 'setValue';
-                        let input = document.createElement('input');
-                        input.type = 'text';
-                        input.onchange = function() {
-                            console.log('io.Emit(' + ['setParameter',
-                                programName, controlName,
-                                parameterName, parseFloat(input.value)] + ')');
-
-                            io.Emit('setParameter', programName, controlName,
-                                parameterName, parseFloat(input.value));
-                        };
-                        let button = document.createElement('button');
-                        button.type = 'button';
-                        button.appendChild(document.createTextNode('submit'));
-                        button.onclick = function() {
-                            input.onchange();
-                        };
-                        td.appendChild(button);
-                        td.appendChild(input);
+                        td = makeSetterInput('setParameter', programName, controlName,
+                                parameterName, null);
                         tr.appendChild(td);
-                    }
+                        val = setOrGet[controlName][parameterName].min;
+                        td = makeSetterInput('setParameterMin', programName, controlName,
+                                parameterName, val, 'min');
+                        tr.appendChild(td);
+                        val = setOrGet[controlName][parameterName].max;
+                        td = makeSetterInput('setParameterMax', programName, controlName,
+                                parameterName, val, 'max');
+                        tr.appendChild(td);
+                      }
 
                     userNames.forEach(function(userName) {
                         td = document.createElement('td');
