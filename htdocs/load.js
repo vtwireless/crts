@@ -125,7 +125,7 @@ function require(url, callback = function() {}) {
         }
 
         if(require.waiting) 
-            // We wait and call load() after the script it loaded.
+            // We wait and call load() after the script is loaded.
             return;
 
         require.waiting = true;
@@ -152,7 +152,7 @@ function require(url, callback = function() {}) {
             load();
         }
 
-        let content = false;
+        var content = false;
 
         switch(getFileType(src.path)) {
             case 'js':

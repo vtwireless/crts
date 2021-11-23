@@ -1,0 +1,10 @@
+div.userPanel {
+    background-color:#999DBE;
+    padding: 5px;
+    min-height: 10px;
+    width: auto;
+    display: inline-block;
+    border: 2px solid black;
+    border-radius: 4px;
+}
+

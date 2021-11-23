@@ -152,8 +152,18 @@ function Session(connectCallback=null, opts = {}) {
 
     console.log("We are authenticated as user: " + user.name);
 
+
+    // We must call _client(user, connectCallback) only once after the
+    // other files are loaded via require(); hence the weird if() stuff
+    // below.  This way the users connectCallback() is called after
+    // everything is setup.
+    //
+
     if(opts.loadCRTScss)
-        require('/main.css');
+        require('/main.css', function() {
+            if(!opts.showHeader)
+                _client(user, connectCallback);
+        });
 
     if(opts.showHeader) {
         // Now that we know who the user is we can setup the session header
@@ -164,8 +174,9 @@ function Session(connectCallback=null, opts = {}) {
             header.innerHTML = htm;
             document.body.insertBefore(header, document.body.firstChild);
             _showUser(user);
-        });
-    }
 
-    _client(user, connectCallback);
+            _client(user, connectCallback);
+        });
+    } else if(!opts.loadCRTScss)
+        _client(user, connectCallback);
 }
