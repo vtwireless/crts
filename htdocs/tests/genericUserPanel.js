@@ -5,9 +5,6 @@ require('/tests/genricUserPanel.css');
 
 function GenricUserPanel(io, parentElement=null) {
 
-
-
-
     var userPanel = document.createElement('div');
     userPanel.className = "userPanel";
 
@@ -33,8 +30,7 @@ function GenricUserPanel(io, parentElement=null) {
     makeShowHide(userPanel, {header: h, startShow: true});
 
 
-    console.log("Making user panel");
-
+    console.log("Made user panel");
 }
 
 
