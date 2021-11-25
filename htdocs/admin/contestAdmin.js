@@ -4,7 +4,7 @@ require('/admin/contestAdmin.css');
 
 function ContestAdminInit(io, parentElement=null) {
 
-    
+
     function _addControllerPanels() {
 
         var controllers = {};
@@ -409,6 +409,13 @@ function ContestAdminInit(io, parentElement=null) {
             th.appendChild(document.createTextNode('run count'));
             header_tr.appendChild(th);
 
+            userNames.forEach(function(user) {
+                th = document.createElement('th');
+                th.className = 'launcher';
+                th.appendChild(document.createTextNode(user));
+                header_tr.appendChild(th);
+            });
+
             table.appendChild(header_tr);
             div.appendChild(table);
         }
@@ -417,7 +424,7 @@ function ContestAdminInit(io, parentElement=null) {
  
 
 
-        io.On('receiveLauncherPrograms', function(programs_in) {
+        io.On('receiveLauncherPrograms', function(programs_in, permissions) {
 
             var programNames = Object.keys(programs_in);
 
@@ -425,6 +432,9 @@ function ContestAdminInit(io, parentElement=null) {
                 console.log('got NO receiveLauncherPrograms');
                 return;
             }
+
+            console.log('receiveLauncherPrograms permissions=' +
+                JSON.stringify(permissions));
 
  
             if(programs) {
@@ -497,6 +507,17 @@ function ContestAdminInit(io, parentElement=null) {
                 launcher.runCountText = document.createTextNode('');
                 td.appendChild(launcher.runCountText);
                 tr.appendChild(td);
+
+                Object.keys(permissions[key]).forEach(function(user) {
+                    td = document.createElement('td');
+                    td.className = 'runCount';
+                    let input = document.createElement('input');
+                    input.type = 'checkbox';
+                    input.checked = permissions[key][user];
+                    input.onchange = function() {};
+                    td.appendChild(input);
+                    tr.appendChild(td);
+                });
 
                 table.appendChild(tr);
                 displayLauncher(launcher);
@@ -808,9 +829,14 @@ function ContestAdminInit(io, parentElement=null) {
     //
     _addStateSavePanel();
     _addUsersPanel();
-    _addLauncherPanel();
-    _addRunningProgramsPanel();
-    _addControllerPanels();
+
+
+    io.On('addUsers', function(x,y) {
+        // We cannot make these panels until we know the user names:
+        _addLauncherPanel();
+        _addRunningProgramsPanel();
+        _addControllerPanels();
+    });
 
 
     console.log('created contest panel');
