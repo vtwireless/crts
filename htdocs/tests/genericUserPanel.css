@@ -7,4 +7,7 @@ div.userPanel {
     border: 2px solid black;
     border-radius: 4px;
 }
+div.launcher {
+    background-color:#9FC6E3;
+}
 

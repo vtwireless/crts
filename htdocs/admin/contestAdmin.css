@@ -13,7 +13,12 @@ div.statePanel {
 span.stateInputTitle {
     padding-right: 6px;
 }
-
+span.saved {
+    padding-left: 6px;
+}
+input.minMax {
+    background-color: #D7E5F4;
+}
 
 h3.contestPanel {
 }

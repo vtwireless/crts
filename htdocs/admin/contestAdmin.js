@@ -5,7 +5,7 @@ require('/admin/contestAdmin.css');
 function ContestAdminInit(io, parentElement=null) {
 
 
-    function _addControllerPanels() {
+    function AddControllerPanels() {
 
         var controllers = {};
 
@@ -178,6 +178,7 @@ function ContestAdminInit(io, parentElement=null) {
                             parameterName, parseFloat(input.value));
                     };
                     if(type) {
+                        input.className = 'minMax';
                         try {
                             // set this if we can.  If not fuck it.
                             controllers[programName].
@@ -346,10 +347,10 @@ function ContestAdminInit(io, parentElement=null) {
 
 
 
-    //  _addLauncherPanel() makes HTML that is a clickable list of programs
+    //  AddLauncherPanel() makes HTML that is a clickable list of programs
     //  that we can launch on the server by clicking on the client browser.
     //
-    function _addLauncherPanel() {
+    function AddLauncherPanel() {
 
 
         var programs = null;
@@ -421,7 +422,18 @@ function ContestAdminInit(io, parentElement=null) {
         }
 
         makeTable();
- 
+
+        var userPermissionInputs = {};
+
+
+        io.On('launcherPermission', function(userName, path, permit) {
+
+            try {
+                userPermissionInputs[path][userName].checked = permit;
+            } catch(e) {
+
+            }
+        });
 
 
         io.On('receiveLauncherPrograms', function(programs_in, permissions) {
@@ -508,13 +520,18 @@ function ContestAdminInit(io, parentElement=null) {
                 td.appendChild(launcher.runCountText);
                 tr.appendChild(td);
 
+                userPermissionInputs[key] = { };
+
                 Object.keys(permissions[key]).forEach(function(user) {
                     td = document.createElement('td');
                     td.className = 'runCount';
                     let input = document.createElement('input');
                     input.type = 'checkbox';
                     input.checked = permissions[key][user];
-                    input.onchange = function() {};
+                    input.onchange = function() {
+                        io.Emit('launcherPermission', user, path, input.checked);
+                    };
+                    userPermissionInputs[key][user] = input;
                     td.appendChild(input);
                     tr.appendChild(td);
                 });
@@ -549,7 +566,7 @@ function ContestAdminInit(io, parentElement=null) {
     // We can preform actions on the running programs with
     // this panel.
     //
-    function _addRunningProgramsPanel() {
+    function AddRunningProgramsPanel() {
 
         var programs = {};
         var table;
@@ -660,7 +677,6 @@ function ContestAdminInit(io, parentElement=null) {
         });
 
 
-
         io.On('runningPrograms', function(runningPrograms) {
 
             var keys = Object.keys(runningPrograms);
@@ -673,7 +689,7 @@ function ContestAdminInit(io, parentElement=null) {
     }
 
 
-    function _addUsersPanel() {
+    function AddUsersPanel(users, urls) {
 
         /************* Make "Contestant User URLs" panel ***********/
         var userPanel = document.createElement('div');
@@ -682,72 +698,64 @@ function ContestAdminInit(io, parentElement=null) {
         // Make this a show/hide clickable thing.
         makeShowHide(userPanel, { header: "Contestant User URLs" });
 
-        io.On('addUsers', function(users, urls) {
+
+        let p = document.createElement('p');
+        p.className = 'userLinks';
+        p.appendChild(document.createTextNode(
+            'Contest participants  may login and access the ' +
+            'contest with the following URLs:'));
+        userPanel.appendChild(p);
+
+        urls.forEach(function(url) {
+
+            var h3 = document.createElement('h3');
+            h3.className = 'userLinks';
+            h3.appendChild(document.createTextNode(url));
+            userPanel.appendChild(h3);
+
+            var table = document.createElement('table');
+            table.className = 'userLinks';
+            userPanel.appendChild(table);
+
+            userNames.forEach(function(userName) {
+
+                let tr = document.createElement('tr');
+                tr.className = 'userLinks';
+                table.appendChild(tr);
+                let td = document.createElement('td');
+                td.className = 'userLinks';
+                let a = document.createElement('a');
+                a.className = 'userLinks';
+                let link = a.href = url + '/?user=' + userName +
+                    '&password=' + users[userName].password;
+                a.appendChild(document.createTextNode(userName));
+                td.appendChild(a);
+                tr.appendChild(td);
 
 
-            Object.keys(users).forEach(function(userName) {
-                if(userName === 'admin') return;
-                userNames.push(userName);
-            });
+                if(url.match(/^https\:/) == null)
+                    return;
 
-            let p = document.createElement('p');
-            p.className = 'userLinks';
-            p.appendChild(document.createTextNode(
-                'Contest participants  may login and access the ' +
-                'contest with the following URLs:'));
-            userPanel.appendChild(p);
+                // this is a https server url.
+                // so add email to user option.
 
-            urls.forEach(function(url) {
-
-                var h3 = document.createElement('h3');
-                h3.className = 'userLinks';
-                h3.appendChild(document.createTextNode(url));
-                userPanel.appendChild(h3);
-
-                var table = document.createElement('table');
-                table.className = 'userLinks';
-                userPanel.appendChild(table);
-
-                userNames.forEach(function(userName) {
-
-                    let tr = document.createElement('tr');
-                    tr.className = 'userLinks';
-                    table.appendChild(tr);
-                    let td = document.createElement('td');
-                    td.className = 'userLinks';
-                    let a = document.createElement('a');
-                    a.className = 'userLinks';
-                    let link = a.href = url + '/?user=' + userName +
-                        '&password=' + users[userName].password;
-                    a.appendChild(document.createTextNode(userName));
-                    td.appendChild(a);
-                    tr.appendChild(td);
-
-
-                    if(url.match(/^https\:/) == null)
-                        return;
-
-                    // this is a https server url.
-                    // so add email to user option.
-
-                    td = document.createElement('td');
-                    td.className = 'userLinks';
-                    a = document.createElement('a');
-                    a.href='mailto:' + userName +
-                        '?to&subject=CRTS%20Participant%20Link&body=Hello%20' +
-                        userName + '%2C%0A%0AYour%20user%20CRTS%20Participant%20Link%20' +
-                        'is%3A%20' + link.replace(/\&/,'%26') + '%0A%0A';
-                    a.appendChild(document.createTextNode(
-                        'Email participant link to ' + userName));
-                    td.appendChild(a);
-                    tr.appendChild(td);
-                });
+                td = document.createElement('td');
+                td.className = 'userLinks';
+                a = document.createElement('a');
+                a.href='mailto:' + userName +
+                    '?to&subject=CRTS%20Participant%20Link&body=Hello%20' +
+                    userName + '%2C%0A%0AYour%20user%20CRTS%20Participant%20Link%20' +
+                    'is%3A%20' + link.replace(/\&/,'%26') + '%0A%0A';
+                a.appendChild(document.createTextNode(
+                    'Email participant link to ' + userName));
+                td.appendChild(a);
+                tr.appendChild(td);
             });
         });
     }
 
 
-    function _addStateSavePanel() {
+    function AddStateSavePanel() {
 
         var panel = document.createElement('div');
         panel.className = 'userLinks';
@@ -761,7 +769,12 @@ function ContestAdminInit(io, parentElement=null) {
 
         let p = document.createElement('p');
         p.appendChild(document.createTextNode(
-            'To save the current state of this contest:'));
+            'Submit to save the current state of this contest.  ' +
+            'Saves the user access state for all current controller set '+
+            'and get, ' +
+            'and the user program launch access; but it does not save ' +
+            'the current running programs.  Programs must be launched ' +
+            'when and how the scenario decides.'));
         div.appendChild(p);
 
         let sp = document.createElement('span');
@@ -787,6 +800,16 @@ function ContestAdminInit(io, parentElement=null) {
             input.value = fileName;
         });
 
+        var savedSpan = document.createElement('span');
+        savedSpan.textContent = 'Saved';
+        savedSpan.className = 'saved';
+        div.appendChild(savedSpan);
+        io.On('unsaved', function() {
+            savedSpan.textContent = 'Unsaved';
+        });
+        io.On('saved', function() {
+            savedSpan.textContent = 'Saved';
+        });
     }
 
 
@@ -823,23 +846,31 @@ function ContestAdminInit(io, parentElement=null) {
 
 
 
-    /******************* Make 4 more panels ************/
+    /******************** Make 5 sub-panels ********************/
     //
     // We add panels in this order.
     //
-    _addStateSavePanel();
-    _addUsersPanel();
+    /* 1 */ AddStateSavePanel();
 
 
-    io.On('addUsers', function(x,y) {
-        // We cannot make these panels until we know the user names:
-        _addLauncherPanel();
-        _addRunningProgramsPanel();
-        _addControllerPanels();
+    io.On('addUsers', function(users, urls) {
+
+        Object.keys(users).forEach(function(userName) {
+            if(userName === 'admin') return;
+            userNames.push(userName);
+        });
+
+        // We cannot make these panels until we know the user names, hence
+        // these panel setup functions are called in this On 'addUsers'
+        // callback.
+        //
+        /* 2 */ AddUsersPanel(users, urls);
+        /* 3 */ AddLauncherPanel();
+        /* 4 */ AddRunningProgramsPanel();
+        /* 5 */ AddControllerPanels(); /* This could a lot of panels */
+
+        console.log('created contest admin panel');
     });
-
-
-    console.log('created contest panel');
 
     // Tell the server we ready to receive contest state data.
     io.Emit('addAdminConnection');
