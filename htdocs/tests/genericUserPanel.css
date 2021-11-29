@@ -10,4 +10,26 @@ div.userPanel {
 div.launcher {
     background-color:#9FC6E3;
 }
+div.launcher {
+    background-color:#9FC6E3;
+}
+table.launcher, table.userLinks {
+    border: 2px solid black;
+}
+th.launcher, td.launcher, td.args, td.runCount, td.numRunning, td.userLinks{
+    border: 1px solid black;
+}
+td.launcher {
+    color: #34F;
+    cursor: pointer;
+}
+td.launcher:focus {
+    color: #34A;
+}
+td.launcher:hover {
+    color: #84A;
+}
+td.launcher:active {
+    color: #C25;
+}
 

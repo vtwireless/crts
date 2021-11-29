@@ -352,7 +352,6 @@ function ContestAdminInit(io, parentElement=null) {
     //
     function AddLauncherPanel() {
 
-
         var programs = null;
 
         function displayLauncher(launcher) {
