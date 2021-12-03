@@ -1,3 +1,6 @@
+// TODO: A lot of code in his file is replicated in
+// ../tests/genericUserPanel.js
+
 require('/showHide.js');
 require('/admin/contestAdmin.css');
 
