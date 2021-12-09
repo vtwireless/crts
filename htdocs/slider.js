@@ -52,6 +52,10 @@ function Slider(controllers, program, filter, parameter, input=null,
     // This will finish setting up this slider to act with the web socket
     // data as it changes a parameter.  If the parameter is never defined
     // on the server, it is never set up.
+    //
+    // initParameter() is an event handler that is called if the parameter
+    // with name "program" "filter" "parameter" comes into existence.
+    //
     controllers.parameter(initParameter, program, filter, parameter);
 }
 
