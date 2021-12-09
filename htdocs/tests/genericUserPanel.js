@@ -469,7 +469,7 @@ function GenricUserPanel(io, parentElement=null) {
                         td.id = makeId('getTD', programName, controlName, parameterName);
                         td.appendChild(document.createTextNode('value'));
                         tr.appendChild(td);
-                        io.Emit('subscribeToGetter', programName, controlName, parameterName)
+                        io.Emit('subscribeToGetter', programName, controlName, parameterName);
                     } else {
                         // type === 'set'
                         td = makeSetterInput('setParameter', programName, controlName,

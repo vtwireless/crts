@@ -1,6 +1,0 @@
-#!/bin/bash
-
-set -e
-cd $(dirname ${BASH_SOURCE[0]})
-
-(for i in *.bash ; do echo ./$i ; done) | ../../demo_launcher/src/demo_launcher --list -

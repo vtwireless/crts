@@ -3,7 +3,7 @@
 set -e
 
 
-source ../../GetSrcFromGithub.bash
+source ../GetSrcFromGithub.bash
 
 #Usage: GetSrcFromGithub user package tag tarname [sha512]
 package=CodeMirror

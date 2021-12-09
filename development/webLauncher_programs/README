@@ -1,5 +1,0 @@
-This directory contains the default web launcher programs, that is
-programs that can be launched via a web client via the
-crts_contestWebServer.  You can use crts_contestWebServer command-line
-options to change this directory and what files in it are served and
-executed.

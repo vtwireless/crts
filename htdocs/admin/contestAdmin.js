@@ -61,14 +61,6 @@ function ContestAdminInit(io, parentElement=null) {
         });
 
 
-        function getParameter(programName, controlName, parameter, id) {
-
-            console.log('getParameter ' + parameter + " id=" + id);
-
-            io.Emit('getParameter', programName, controlName,
-                parameter, id);
-        }
-
         function makeId(elementType, programName, controlName, parameter) {
 
             var ret = "";
