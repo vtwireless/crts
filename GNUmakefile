@@ -18,8 +18,7 @@ SUBDIRS :=\
  bin\
  share\
  etc\
- htdocs\
- HLSI/htdocs
+ htdocs
 
 
 # The program crts_mkTUN needs a special installation so it can startup as
