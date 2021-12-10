@@ -2,30 +2,50 @@ require('/controllers.js');
 
 
 
+// Display a parameter as a number.
+//
+//
+//
+//   output:  HTML output element, or querySelector string to an
+//            HTML output element, or null to append a newly created div
+//            to the bottom of page body.
+//
+//
+// options arg:
+//
+//    opts:
+//
+//         digits: integer number of digits to display for number
+//         prefix: string or not set
+//         suffix: string or not set
+//         scale:  float to multiple the parameter value by
+//                 to get a number to display
+//
+//
+function Label(controllers, program, filter, parameter, output=null,
+        opts = {}) {
 
-function Slider(parameter, input=null, opts = {}) {
-
-
+    // Defaults:
     var digits = 3;
+    var prefix = null;
+    var suffix = null;
+    var scale = 1.0;
 
     if(opts.digits !== undefined)
         digits = opts.digits;
 
-    if(typeof(input) === "string")
+    if(typeof(output) === "string")
         // We'll assume that this is a CSS Selector string
         // for a page with HTML already built.
-        input = document.querySelector(input);
+        output = document.querySelector(output);
 
-    if(!input) {
-        input = document.createElement("input");
-        input.type = "range";
+    if(!output) {
+        output = document.createElement("output");
         let div = document.createElement("div");
-        div.appendChild(input);
+        div.appendChild(output);
         document.body.appendChild(div);
     }
 
-    if(input.type !== "range")
-        throw("Cannot setup slider from input of type: " + input.type);
 
 
     function initParameter(par) {
@@ -39,7 +59,7 @@ function Slider(parameter, input=null, opts = {}) {
             par.set(parseFloat(input.value).toPrecision(digits));
         };
 
-        console.log("        par=" + JSON.stringify(par));
+        console.log("par=" + JSON.stringify(par));
 
         par.addOnChange(function(value) {
             input.value = value;
@@ -54,6 +74,6 @@ function Slider(parameter, input=null, opts = {}) {
     // initParameter() is an event handler that is called if the parameter
     // with name "program" "filter" "parameter" comes into existence.
     //
-    parameter.onSetup(initParameter);
+    //controllers.parameter(initParameter, program, filter, parameter);
 }
 

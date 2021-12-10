@@ -1,21 +1,6 @@
 require('/session.js');
 
 
-// It turns out that the javaScript getter and setter notation is not very
-// useful for the parameter controller objects; as it forces the parameter
-// object (example: freq) to only be used in setting and getting the value
-// of the parameter and it can't be used for anything else, like setting a
-// user callback for when the value changes.  We can set a "value"
-// property of the parameter object like:
-//
-//    freq = getParameter(...)
-//
-//    freq.value = 56.4; // using set property
-//
-//    var val = freq.value; // using get property
-//
-// that does not seem like a big gain.
-
 
 // The user may call Controllers(io) as many times as they like.
 //
@@ -92,6 +77,19 @@ function Controllers(io) {
                 },
                 addOnChange(callback) {
                     par.getCallbacks.push(callback);
+                },
+                // User interface function to add a callback that sets up
+                // the users widget or whatever it is.
+                onSetup: function(startCallback) {
+
+                    if(par.addControllerCalled)
+                        // No need to wait to call this.
+                        startCallback(par.api);
+
+                    // Store the callback to maybe call it later; anytime there is a
+                    // 'addController' io event that has this program, filter, and
+                    // parameter.
+                    par.initParameterCallbacks.push(startCallback);
                 }
             };
         }
@@ -207,7 +205,6 @@ function Controllers(io) {
 
         console.log("io.On('addController', (" +
                 JSON.stringify(arguments) + ")");
-
     });
 
 
@@ -253,16 +250,10 @@ function Controllers(io) {
     });
 
 
-    ret.parameter = function(startCallback, program, filter, parameter) {
+    ret.Parameter = function(program, filter, parameter) {
 
         initParameter(program, filter, parameter, false);
-
-        let par = obj[program][filter][parameter];
-
-        if(par.addControllerCalled)
-            startCallback(par.api);
-        else
-            par.initParameterCallbacks.push(startCallback);
+        return obj[program][filter][parameter].api;
     };
 
 
