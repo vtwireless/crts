@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang=en>
+<head>
+    <meta charset="utf-8"/>
+    <script src="/load.js"></script>
+    <script>
+    require('/session.js');
+    onload = function() {
+        Session(null, {
+            showHeader: true,
+            loadCRTScss: true
+        });
+    };
+    </script>
+    <title>CRTS</title>
+</head>
+<body>
+
+    <h4><a href="..">up</a></h4>
+
+    <h3>Test Contest Index Page</h3>
+
+
+    <p>These test pages will work for the particular server scenario
+    gotten by running the file <i>test_service/test_server</i> as seen
+    from the top CRTS source directory.  This service will not use USRPs
+    (Universal Software Radio Peripherals) so that it works without
+    them; and we may develop and test code without USRPs.</p>
+
+    <ul>
+        <li><a href="scenario.html">test all widgets</a></li>
+    </ul>
+
+
+    <p>Most of these test pages one would not want to use for a CRTS
+    contest.  This pages are generic; that is they will work for
+    any CRTS contest scenario.</p>
+
+    <ul>
+        <li><a href="/tests/testAll.html">user's testing all</a></li>
+        <li><a href="/tests/userHeader.html">session user Header</a></li>
+        <li><a href="/tests/noHeader.html">session with no Header</a></li>
+    </ul>
+
+
+</body>
+</html>

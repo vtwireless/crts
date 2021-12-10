@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang=en>
+<head>
+    <meta charset="utf-8"/>
+    <script src="/load.js"></script>
+    <script>
+    require('/slider.js');
+    require('/label.js');
+    onload = function() {
+        Session(function(io) {
+
+            // If we have permission, this will start this program only if
+            // a program with the name '/throttle' is not running already.
+            io.Emit('launch', '/throttle'/*path*/,
+                []/*args array*/, '/throttle'/*program Name*/);
+
+            var controllers = Controllers(io);
+
+            var period = controllers.Parameter('/throttle'/*program*/,
+                    'throttle'/*filter*/, 'period'/*parameter*/);
+
+            Slider(period);
+            Slider(period);
+
+        }, { 
+            showHeader: true,
+            loadCRTScss: true
+        });
+    };
+    </script>
+    <title>CRTS</title>
+</head>
+<body>
+
+    <h4><a href=".">up</a></h4>
+
+</body>
+</html>
