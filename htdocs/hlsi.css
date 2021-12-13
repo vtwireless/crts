@@ -1,0 +1,98 @@
+
+body {
+    color: #FFFFFF;
+    background-color: #484848;
+}
+
+output.slider {
+    font-weight: bold;
+}
+
+input.slider {
+    width: 640px;
+}
+
+output.red { color: #F00;}
+
+/* D3 drawing CSS classes */
+svg {
+    font: 12px Arial;
+}
+
+.stroke-light {
+    stroke-width: 2;
+}
+
+.stroke-med {
+    stroke-width: 3;
+}
+
+.stroke-green-o {
+    stroke: #66ff00;
+}
+
+.dashed {
+    stroke-dasharray: 4, 4;
+}
+
+.no-fill {
+    fill: none;
+}
+
+.stroke-yellow {
+    stroke: #FFFF00;
+}
+
+.stroke-red {
+    stroke: #FF0000;
+}
+
+.stroke-orange {
+    stroke: #FAB81F;
+}
+
+
+.CodeMirror {
+    resize: both;
+    overflow-x: scroll;
+}
+
+a {
+    color: rgb(36, 248, 255);
+}
+a:visited {
+    color: #46BCDB;
+}
+a:hover {
+    color: #99D4E4;
+}
+
+div.editor {
+    float: left;
+    width: auto;
+}
+
+
+table.argsTable {
+    border: 2px solid #FFF;
+    margin: 12px;
+    border-collapse: collapse;
+    float: left;
+}
+
+th.ph1,th.ph2,th.ph3 {
+    padding: 5px;
+}
+
+td.p1 {
+    padding: 4px;
+}
+td.p2 {
+    padding: 4px;
+}
+
+div.clearLeft {
+    clear: left;
+}
+
+

@@ -1,10 +1,17 @@
 require('/controllers.js');
-
+require('/d3.v5.min.js'); // for d3.format(".2f") ... etc
 
 
 // Display a parameter as a number.
 //
 //
+// Looks like so:
+//
+//    prefix number*scale suffix
+//
+// For example:
+//
+//    freq 205 MHz
 //
 //   output:  HTML output element, or querySelector string to an
 //            HTML output element, or null to append a newly created div
@@ -22,58 +29,61 @@ require('/controllers.js');
 //                 to get a number to display
 //
 //
-function Label(controllers, program, filter, parameter, output=null,
-        opts = {}) {
+//
+function Label(parameter, opts = {}) {
 
-    // Defaults:
-    var digits = 3;
-    var prefix = null;
-    var suffix = null;
-    var scale = 1.0;
 
-    if(opts.digits !== undefined)
-        digits = opts.digits;
+    function getOpt(x, defaultVal) {
+        if(opts[x] !== undefined)
+            return opts[x];
+        return defaultVal;
+    };
 
-    if(typeof(output) === "string")
+
+    var digits     = getOpt('digits',     4     );
+    var prefix     = getOpt('prefix',     ''    );
+    if(!prefix)
+        prefix     = getOpt('label',      ''    );
+    var step       = getOpt('step',       false );
+    var scale      = getOpt('scale',      1.0   );
+    var suffix     = getOpt('suffix',     ''    );
+    var parentNode = getOpt('parentNode', null  );
+
+
+    if(typeof(parentNode) === "string") {
+        let str = parentNode;
         // We'll assume that this is a CSS Selector string
         // for a page with HTML already built.
-        output = document.querySelector(output);
+        parentNode = document.querySelector(str);
+        if(!parentNode)
+            throw("Slider element parent \"" + str + '" was not found');
+        if(parentNode.className === undefined)
+            parentNode.className = 'slider';
+    } else if(parentNode === null) {
+        parentNode = document.createElement("div");
+        parentNode.className = 'slider';
+        document.body.appendChild(parentNode);
+    } // Else
+      // the user passed in a parentNode that we will try to use.
 
-    if(!output) {
-        output = document.createElement("output");
-        let div = document.createElement("div");
-        div.appendChild(output);
-        document.body.appendChild(div);
+
+    var output = document.createElement("output");
+    output.className = 'label';
+    parentNode.appendChild(output);
+
+
+    function Value(value) {
+        return d3.format('.' + digits + 'f')(value * scale);
     }
-
 
 
     function initParameter(par) {
 
-        input.min = par.min;
-        input.max = par.max;
-        input.step = (input.max - input.min)/1000;
-        input.onchange = function() {
-            // This will send a request through the web socket to change
-            // the value via the parameter setter (=).
-            par.set(parseFloat(input.value).toPrecision(digits));
-        };
-
-        console.log("par=" + JSON.stringify(par));
-
         par.addOnChange(function(value) {
-            input.value = value;
-            //console.log("setting " + parameter + "=" + value);
+            output.value = prefix + Value(value) + suffix;
         });
     }
 
-    // This will finish setting up this slider to act with the web socket
-    // data as it changes a parameter.  If the parameter is never defined
-    // on the server, it is never set up.
-    //
-    // initParameter() is an event handler that is called if the parameter
-    // with name "program" "filter" "parameter" comes into existence.
-    //
-    //controllers.parameter(initParameter, program, filter, parameter);
+    parameter.onSetup(initParameter);
 }
 

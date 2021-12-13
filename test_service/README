@@ -1,0 +1,12 @@
+CRTS Test Service
+
+This directory has files that are specific to a CRTS service scenario.  If
+you need to make a specific CRTS service scenario you could start by
+copying all the files in this directory, and then edit every file.
+
+There are a lot of more generic CRTS service files that this CRTS service
+scenario uses in other directories.
+
+Edit test_server and then run it.  Then browse the web pages from the
+printed URL that the test_server printed to standard out.
+

@@ -1,0 +1,25 @@
+#!/bin/bash
+
+set -ex
+
+cd $(dirname ${BASH_SOURCE[0]})
+
+
+exec ../bin/crts_contestWebServer\
+ --https_hostname=kermit\
+ --https_port 9090\
+ --http_port 9091\
+ --user=admin\
+ --password=admin123\
+ --user=team1\
+ --password=passwd1_123\
+ --user=team2\
+ --password=passwd2_123\
+ --user=team3\
+ --password=passwd3_123\
+ --launcher_dir webLauncher_programs\
+ --contest_dir htdocs\
+ --upload_dir test_upload_dir\
+ --upload_dir_overwrite\
+ --debug\
+ $*

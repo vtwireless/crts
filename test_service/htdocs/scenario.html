@@ -4,8 +4,10 @@
     <meta charset="utf-8"/>
     <script src="/load.js"></script>
     <script>
+    require('/hlsi.css');
     require('/slider.js');
     require('/label.js');
+    require('/scrollPlot.js');
     onload = function() {
         Session(function(io) {
 
@@ -16,15 +18,45 @@
 
             var controllers = Controllers(io);
 
-            var period = controllers.Parameter('/throttle'/*program*/,
+            // Parameters we will get, or set and get.
+            var period1 = controllers.Parameter('/throttle'/*program*/,
                     'throttle'/*filter*/, 'period'/*parameter*/);
+            var period2 = controllers.Parameter('/throttle'/*program*/,
+                    'secondThrottle'/*filter*/, 'period'/*parameter*/);
+            var bytes = controllers.Parameter('/throttle',
+                    'secondThrottle', 'totalBytesOut');
 
-            Slider(period);
-            Slider(period);
+
+            Slider(period2, {suffix: " sec", prefix: "period2"});
+            // Test building slider from querySelector
+            Slider(period1, { parentNode: "#slider1", suffix: " seconds"});
+
+            Label(bytes, { prefix: 'Total Bytes', suffix: 'bytes',
+                digits: 0 });
+            Label(bytes, { prefix: 'Total Bytes ', suffix: ' kbytes',
+                scale: 1.0/1024.0, digits: 1 });
+            Label(bytes, { prefix: 'Total Bytes ', suffix: ' Mbytes',
+                scale: 1.0e-6, digits: 1 });
+
+
+            ScrollPlot(period1);
+            ScrollPlot(period2, { yTicks: [ 0.0, 0.2, 0.4, 0.6, 0.8, 1.0 ]});
+
+            ScrollPlot(period2, { 
+                        yLog: true,
+                        yTicks: [ 0.2, 0.4, 0.6, 0.8, 1.0 ],
+                        yMin: 0.01,
+                        yMax: 2.0,
+                        yLabel: "bytes"
+            });
+
+
+
+
 
         }, { 
             showHeader: true,
-            loadCRTScss: true
+            loadCRTScss: false
         });
     };
     </script>
@@ -33,6 +65,8 @@
 <body>
 
     <h4><a href=".">up</a></h4>
+
+    <div id=slider1></div>
 
 </body>
 </html>
