@@ -12,6 +12,10 @@ input.slider {
     width: 640px;
 }
 
+div.scrollPlot {
+    float: left;
+}
+
 output.red { color: #F00;}
 
 /* D3 drawing CSS classes */

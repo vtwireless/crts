@@ -38,8 +38,6 @@
             Label(bytes, { prefix: 'Total Bytes ', suffix: ' Mbytes',
                 scale: 1.0e-6, digits: 1 });
 
-
-            ScrollPlot(period1);
             ScrollPlot(period2, { yTicks: [ 0.0, 0.2, 0.4, 0.6, 0.8, 1.0 ]});
 
             ScrollPlot(period2, { 
@@ -47,8 +45,60 @@
                         yTicks: [ 0.2, 0.4, 0.6, 0.8, 1.0 ],
                         yMin: 0.01,
                         yMax: 2.0,
-                        yLabel: "bytes"
+                        yLabel: "Period2 (seconds)"
             });
+
+
+            ///////////////////////////////////////////////////////////////////
+            //  ScrollPlot with a crude time derivative
+            //////////////////////////////////////////////////////////////////
+            // We need some state data to calculate a rate in bits/second
+            // We just can't let rateToPlot start at zero.
+            var rateToPlot = 1.0; // bits/second
+
+            var t0 = 0; // time in milliseconds
+            var totalBytesOut0 = 0.0;
+            const maxDt = 3.7e+3; // milliseconds
+
+            bytes.addOnChange(function(val) {
+
+                let t1 = Date.now();
+                let dt = t1 - t0;
+
+                // This is the simplest way to take a derivative, and
+                // not likely the best.  A sliding average over more than
+                // 2 points would be better and less wiggly.
+
+                if(dt < maxDt && dt > 1.3e+3 && val > 1.1) {
+                    // val is in bytes.  dt is in milliseconds.
+                    // There are 8 bits for every byte.
+                    // The rate of numbers coming in is about once
+                    // every 1/2 second.
+                    rateToPlot = 8000*(val - totalBytesOut0)/dt;
+
+                    // Every time we use a new value we do this.
+                    t0 = t1;
+                    totalBytesOut0 = val;
+
+                } else if(dt > maxDt) {
+                    t0 = t1;
+                    totalBytesOut0 = val;
+                }
+            });
+
+            ScrollPlot(function() { return rateToPlot; }, { 
+                    yLog: true,
+                    autoScaleY: true,
+                    yTicks: [
+                        1e3, 2e3, 4e3,
+                        1e4, 2e4, 4e4,
+                        1e5
+                       ],
+                    yMin: 1e3,
+                    yMax: 1e5,
+                    yLabel: "bits/sec"
+            });
+
 
 
 

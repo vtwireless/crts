@@ -1,13 +1,16 @@
 require('/controllers.js');
 require('/d3.v5.min.js');
 require('/hlsi.css');
+require('/plotDimensions.js');
 
 
 // Plot a parameter as a function of time.
 //
+//  parameter: may be a parameter object or a function that
+//             returns the Y value to plot at any time.
 //
 //
-// options arg:
+// options argument:
 //
 //    opts:
 //
@@ -17,6 +20,8 @@ require('/hlsi.css');
 //       updatePeriod: float in seconds
 //
 //       parentNode:
+//
+//
 //
 //
 function ScrollPlot(parameter, opts = {}) {
@@ -36,6 +41,11 @@ function ScrollPlot(parameter, opts = {}) {
     var yTicks       = getOpt('yTicks'      , [ 0.0, 0.25, 0.5, 0.75, 1.0 ]);
     var yLog         = getOpt('yLog'        , false          );
     var yLabel       = getOpt('yLabel'      , ''             );
+    var autoScaleY   = getOpt('autoScaleY'  , false          );
+
+    // Default Y value to plot:
+    var getValue = function() { return value; };
+
 
     var deltaY = yMax - yMin;
 
@@ -47,39 +57,34 @@ function ScrollPlot(parameter, opts = {}) {
         if(!parentNode)
             throw("Slider element parent \"" + str + '" was not found');
         if(parentNode.className === undefined)
-            parentNode.className = 'slider';
+            parentNode.className = 'scrollPlot';
     } else if(parentNode === null) {
         parentNode = document.createElement("div");
-        parentNode.className = 'slider';
+        parentNode.className = 'scrollPlot';
         document.body.appendChild(parentNode);
     } // Else
       // the user passed in a parentNode that we will try to use.
 
 
-    function Value(value) {
-        return value * scale;
-    }
 
-
-// TODO: remove or fix this scale_units.
 // determine scale and units for sample value v; use p to adjust cut-off threshold
 function scale_units(v,p)
 {
-    return [1.0, ''];
+    if(!autoScaleY) return [ 1.0, '' ];
+
+    let r = v * (p==null ? 1 : p);
+    if      (r >= 1e+12) { return [1e-12, 'T']; }
+    else if (r >= 1e+09) { return [1e-09, 'G']; }
+    else if (r >= 1e+06) { return [1e-06, 'M']; }
+    else if (r >= 1e+03) { return [1e-03, 'k']; }
+    else if (r >= 1e+00) { return [1e+00, '' ]; }
+    else if (r >= 1e-03) { return [1e+03, 'm']; }
+    else if (r >= 1e-06) { return [1e+06, 'u']; }
+    else if (r >= 1e-09) { return [1e+09, 'n']; }
+    else if (r >= 1e-12) { return [1e+12, 'p']; }
+    else                 { return [1e+16, 'f']; }
 }
 
-
-
-    var plot = {
-        margin: { top: 10, right: 50, bottom: 50, left: 50 },
-    };
-
-    plot.width = 720 - plot.margin.left - plot.margin.right;
-    plot.height = 320 - plot.margin.top - plot.margin.bottom;
-
-
-    // Current rate in bits/second.  Changes as time goes on.
-    var rate = 0.0;
 
     var width =  plot.width;
     var height = plot.height;
@@ -97,15 +102,17 @@ function scale_units(v,p)
     var num_steps = plot_time_length / plot_period;
 
     var yStart = yMin - 0.3 * deltaY;
-    if(yLog && yStart <= 0.0)
+    if(yLog && yStart < 0.0)
         // TODO: this is arbitrary.  We just can't have a log of a number
         // less than zero.
-        yStart = 1.0e-12;
+        yStart = 1e-10;
 
+    // Y Value plotted for the default case.
+    var value = yStart*yScale;
 
-    var datar = d3.range(0,num_steps).map(function(f) { return {"y": yStart*yScale} });
+    var datar = d3.range(0,num_steps-1).map(function(f) { return {"y": yStart*yScale} });
 
-    var svgr = d3.select("body")
+    var svgr = d3.select(parentNode)
         .append("svg")
         .attr("width",  width  + margin.left + margin.right)
         .attr("height", height + margin.top +  margin.bottom)
@@ -118,11 +125,11 @@ function scale_units(v,p)
 
     if(yLog)
         var rscale = d3.scaleLog().domain([
-                yMin, yMax+0.1*deltaY]).range([height, 0]);
+                yMin, yMax]).range([height, 0]);
     else    
         var rscale = d3.scaleLinear().domain([
                 yMin,
-                yMax+0.1*deltaY]).range([height, 0]);
+                yMax]).range([height, 0]);
      
     var liner = d3.line()
         .x(function(d, i) { return tscale(-plot_period*(num_steps-i)); })
@@ -191,27 +198,21 @@ function scale_units(v,p)
         .attr("d", liner);
 
 
-    function reset() {
-
-        datar = d3.range(0,num_steps-1).map(function(f) { return {"y":yStart*yScale} });
-        pathr.datum(datar).attr("d", liner);
-    }
-
-
     function update_plot() {
 
-        let r = rate;
+        value = getValue();
 
         // update historical plot
-        datar.push({"y": r});
+        datar.push({"y": value * yScale});
         datar.shift();
         pathr.datum(datar).attr("d", liner);
     }
 
-    parameter.addOnChange(function(value) {
-        rate = value;
-    });
-
-    reset();
+    if(typeof(parameter) !== 'function')
+        parameter.addOnChange(function(value_in) {
+            value = value_in;
+        });
+    else
+        getValue = parameter;
 }
 
