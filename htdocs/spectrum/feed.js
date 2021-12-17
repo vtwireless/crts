@@ -43,7 +43,7 @@ function spectrumFeeds(io, opts = {}) {
 
         spectrums[id] = {
             subscribers: [], // spectrumUpdate user callbacks.
-            update: [] // last update
+            update: [id, cFreq, bandwidth, updatePeriod] // last update
         };
 
         if(typeof(opts.newSpectrum) === 'function')
@@ -71,16 +71,15 @@ function spectrumFeeds(io, opts = {}) {
             updatePeriod, data) {
 
         if(spectrums[id] !== undefined) {
-            args = [...arguments];
             if(spectrums[id].subscribers.length > 0) {
                 spectrums[id].subscribers.forEach(function(subscriber) {
                     // call the users spectrum display callback
                     //console.log("subscriber=" + subscriber);
-                    subscriber([...args]);
+                    subscriber(id, cFreq, bandwidth, updatePeriod, data);
                 });
             }
-            // Save the last update state:
-            spectrums[id].update = args;
+            // Save the last update state without the data:
+            spectrums[id].update = [id, cFreq, bandwidth, updatePeriod];
         }
     });
 

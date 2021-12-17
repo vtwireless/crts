@@ -8,21 +8,40 @@
     require('/slider.js');
     require('/label.js');
     require('/scrollPlot.js');
+    require('/spectrumPlot.js');
     onload = function() {
         Session(function(io) {
+
+
+            const usrpAddr1 = "192.168.40.107";
+            const usrpAddr2 = "192.168.40.102";
+
 
             // If we have permission, this will start this program only if
             // a program with the name '/throttle' is not running already.
             io.Emit('launch', '/throttle'/*path*/,
-                []/*args array*/, '/throttle'/*program Name*/);
+                ''/*args as string*/, '/throttle'/*program Name*/);
+
+
+            io.Emit('launch', '/spectrumFeed'/*path*/,
+                "--device addr=" + usrpAddr1/*args USRP addr*/,
+                'spectrum107'/*program Name*/);
+
+            io.Emit('launch', '/spectrumFeed'/*path*/,
+                "--device addr=" + usrpAddr2 + " --bins 2048"/*args USRP addr*/,
+                'spectrum102'/*program Name*/);
+
+
 
             var controllers = Controllers(io);
 
             // Parameters we will get, or set and get.
             var period1 = controllers.Parameter('/throttle'/*program*/,
                     'throttle'/*filter*/, 'period'/*parameter*/);
+
             var period2 = controllers.Parameter('/throttle'/*program*/,
                     'secondThrottle'/*filter*/, 'period'/*parameter*/);
+
             var bytes = controllers.Parameter('/throttle',
                     'secondThrottle', 'totalBytesOut');
 
@@ -33,20 +52,23 @@
 
             Label(bytes, { prefix: 'Total Bytes', suffix: 'bytes',
                 digits: 0 });
+
             Label(bytes, { prefix: 'Total Bytes ', suffix: ' kbytes',
                 scale: 1.0/1024.0, digits: 1 });
+
             Label(bytes, { prefix: 'Total Bytes ', suffix: ' Mbytes',
                 scale: 1.0e-6, digits: 1 });
 
             ScrollPlot(period2, { yTicks: [ 0.0, 0.2, 0.4, 0.6, 0.8, 1.0 ]});
 
             ScrollPlot(period2, { 
-                        yLog: true,
-                        yTicks: [ 0.2, 0.4, 0.6, 0.8, 1.0 ],
-                        yMin: 0.01,
-                        yMax: 2.0,
-                        yLabel: "Period2 (seconds)"
+                    yLog: true,
+                    yTicks: [ 0.2, 0.4, 0.6, 0.8, 1.0 ],
+                    yMin: 0.01,
+                    yMax: 2.0,
+                    yLabel: "Period2 (seconds)"
             });
+
 
 
             ///////////////////////////////////////////////////////////////////
@@ -98,6 +120,17 @@
                     yMax: 1e5,
                     yLabel: "bits/sec"
             });
+            ///////////////////////////////////////////////////////////////////
+
+
+            SpectrumPlot(io, usrpAddr1);
+
+            SpectrumPlot(io, usrpAddr1, { yMin: -90, yMax: -60 });
+
+            // So with the above this tests that we can run many spectum
+            // plots at the same time.
+            SpectrumPlot(io, usrpAddr2, { yMin: -100, yMax: -50 });
+
 
 
 
@@ -105,7 +138,7 @@
 
 
         }, { 
-            showHeader: true,
+            showHeader: true, // Carl wants this to be false.
             loadCRTScss: false
         });
     };

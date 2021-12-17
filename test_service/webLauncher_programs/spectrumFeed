@@ -1,0 +1,49 @@
+#!/bin/bash
+
+# Basic idea is: setup environment variables and then replace
+# this program with the spectrum feed program.  That's it...
+
+
+# all of this above is specific to the vm called "peach" and
+# how things this script depends on are installed.
+
+
+#
+# To see possible options args run:
+#  ./spectrumFeed --help
+#
+
+
+# The PREFIX where out of core GNUradio block module "gr-specest" is:
+specest_root=/usr/local/encap/gr-specst-8b872b5-try-1
+
+set -ex
+
+args="$*"
+
+# change working directory to this directory.
+cd $(dirname ${BASH_SOURCE[0]})
+
+
+# need these 2 exports for out of core GNUradio block module "gr-specest"
+export PYTHONPATH=$specest_root/lib/python3.9/site-packages
+export GRC_BLOCKS_PATH=$specest_root/share/gnuradio/grc/blocks
+
+
+# grrun will add yet more crap to GRC_BLOCKS_PATH and PYTHONPATH and other
+# stuff.
+#
+# Add PYTHONPATH and stuff to environment so GNUradio can run.
+_JUST_PATHS_=yes # so grrun does not take over this process.
+source /usr/local/bin/grrun
+
+# Put back to verbose shell.
+set -x
+
+# Note: the user may have passed in arguments in via $args
+#
+# exec with replace this process:
+exec ../../bin/crts_spectrumFeed2\
+ --period 0.1\
+ --bandwidth 4.0\
+ $args
