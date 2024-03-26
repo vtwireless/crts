@@ -4,7 +4,7 @@
   "description": "web servers for CRTS",
   "main": "crts_server.js",
   "dependencies": {
-    "express": "4.16.3",
+    "express": "4.19.2",
     "serve-index": "",
     "ws": "5.2.0"
   },
